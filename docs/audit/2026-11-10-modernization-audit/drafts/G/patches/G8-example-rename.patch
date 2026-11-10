@@ -1,0 +1,16 @@
+diff --git a/list/list_resource_test.go b/list/list_resource_test.go
+index b6b6d56..5dea93d 100644
+--- a/list/list_resource_test.go
++++ b/list/list_resource_test.go
+@@ -36,9 +36,9 @@ func (c *ComputeInstanceWithListResourceConfigValidators) ListResourceConfigVali
+ 	return nil
+ }
+ 
+-// ExampleResource_listable demonstrates a resource.Resource that implements
++// ExampleListResource demonstrates a resource.Resource that implements
+ // list.ListResource interfaces.
+-func ExampleResource_listable() {
++func ExampleListResource() {
+ 	var _ list.ListResource = &ComputeInstanceResource{}
+ 	var _ list.ListResourceWithConfigure = &ComputeInstanceResource{}
+ 	var _ list.ListResourceWithValidateConfig = &ComputeInstanceWithValidateListResourceConfig{}

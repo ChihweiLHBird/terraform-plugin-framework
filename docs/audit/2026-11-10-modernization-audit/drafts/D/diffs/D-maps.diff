@@ -1,0 +1,657 @@
+--- /home/user/terraform-plugin-framework/action/schema/attribute.go	2026-10-24 21:30:10.371852253 +0000
++++ /home/user/terraform-plugin-framework/action/schema/attribute.go (draft)	2026-10-24 23:09:11.037848105 +0000
+@@ -37,14 +37,3 @@
+ type Attribute interface {
+ 	fwschema.Attribute
+ }
+-
+-// schemaAttributes is an action attribute to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/action/schema/block.go	2026-10-24 21:30:10.371852253 +0000
++++ /home/user/terraform-plugin-framework/action/schema/block.go (draft)	2026-10-24 23:09:11.038107553 +0000
+@@ -28,14 +28,3 @@
+ type Block interface {
+ 	fwschema.Block
+ }
+-
+-// schemaBlocks is an action block to fwschema type conversion function.
+-func schemaBlocks(blocks map[string]Block) map[string]fwschema.Block {
+-	result := make(map[string]fwschema.Block, len(blocks))
+-
+-	for name, block := range blocks {
+-		result[name] = block
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/action/schema/nested_attribute_object.go	2026-10-24 21:30:10.378010441 +0000
++++ /home/user/terraform-plugin-framework/action/schema/nested_attribute_object.go (draft)	2026-10-24 23:09:11.041805782 +0000
+@@ -64,7 +64,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedAttributeObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/action/schema/nested_block_object.go	2026-10-24 21:30:10.382054869 +0000
++++ /home/user/terraform-plugin-framework/action/schema/nested_block_object.go (draft)	2026-10-24 23:09:11.042199488 +0000
+@@ -71,12 +71,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedBlockObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // GetAttributes returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(o.Blocks)
++	return fwschema.BlocksMap(o.Blocks)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/action/schema/schema.go	2026-10-24 21:30:10.382054869 +0000
++++ /home/user/terraform-plugin-framework/action/schema/schema.go (draft)	2026-10-24 23:09:11.043212568 +0000
+@@ -81,12 +81,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks returns the Blocks field value.
+ func (s Schema) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(s.Blocks)
++	return fwschema.BlocksMap(s.Blocks)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/single_nested_attribute.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/single_nested_attribute.go (draft)	2026-10-24 23:09:11.044603990 +0000
+@@ -158,7 +158,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (a SingleNestedAttribute) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(a.Attributes)
++	return fwschema.AttributesMap(a.Attributes)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/nested_attribute_object.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/nested_attribute_object.go (draft)	2026-10-24 23:09:10.638272855 +0000
+@@ -64,7 +64,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedAttributeObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/nested_block_object.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/nested_block_object.go (draft)	2026-10-24 23:09:10.638548304 +0000
+@@ -71,12 +71,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedBlockObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // GetAttributes returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(o.Blocks)
++	return fwschema.BlocksMap(o.Blocks)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/schema.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/schema.go (draft)	2026-10-24 23:09:10.639556465 +0000
+@@ -83,12 +83,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks returns the Blocks field value.
+ func (s Schema) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(s.Blocks)
++	return fwschema.BlocksMap(s.Blocks)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+@@ -163,25 +163,3 @@
+ 
+ 	return diags
+ }
+-
+-// schemaAttributes is a datasource to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+-
+-// schemaBlocks is a datasource to fwschema type conversion function.
+-func schemaBlocks(blocks map[string]Block) map[string]fwschema.Block {
+-	result := make(map[string]fwschema.Block, len(blocks))
+-
+-	for name, block := range blocks {
+-		result[name] = block
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/datasource/schema/single_nested_attribute.go	2026-10-24 21:30:10.399597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/single_nested_attribute.go (draft)	2026-10-24 23:09:10.641075032 +0000
+@@ -170,7 +170,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (a SingleNestedAttribute) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(a.Attributes)
++	return fwschema.AttributesMap(a.Attributes)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/nested_attribute_object.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/nested_attribute_object.go (draft)	2026-10-24 23:09:10.933952453 +0000
+@@ -64,7 +64,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedAttributeObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/nested_block_object.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/nested_block_object.go (draft)	2026-10-24 23:09:10.934324336 +0000
+@@ -71,12 +71,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedBlockObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // GetAttributes returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(o.Blocks)
++	return fwschema.BlocksMap(o.Blocks)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/schema.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/schema.go (draft)	2026-10-24 23:09:10.935426395 +0000
+@@ -83,12 +83,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks returns the Blocks field value.
+ func (s Schema) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(s.Blocks)
++	return fwschema.BlocksMap(s.Blocks)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+@@ -163,25 +163,3 @@
+ 
+ 	return diags
+ }
+-
+-// schemaAttributes is a ephemeral resource to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+-
+-// schemaBlocks is a ephemeral resource to fwschema type conversion function.
+-func schemaBlocks(blocks map[string]Block) map[string]fwschema.Block {
+-	result := make(map[string]fwschema.Block, len(blocks))
+-
+-	for name, block := range blocks {
+-		result[name] = block
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/ephemeral/schema/single_nested_attribute.go	2026-10-24 21:30:10.419597582 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/single_nested_attribute.go (draft)	2026-10-24 23:09:10.939019450 +0000
+@@ -168,7 +168,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (a SingleNestedAttribute) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(a.Attributes)
++	return fwschema.AttributesMap(a.Attributes)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /dev/null	2026-10-23 04:17:44.166722291 +0000
++++ /home/user/terraform-plugin-framework/internal/fwschema/maps.go (draft)	2026-10-24 23:09:10.485563657 +0000
+@@ -0,0 +1,27 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package fwschema
++
++// AttributesMap converts a map of concept-specific attributes into a map of
++// Attribute.
++func AttributesMap[T Attribute](attributes map[string]T) map[string]Attribute {
++	result := make(map[string]Attribute, len(attributes))
++
++	for name, attribute := range attributes {
++		result[name] = attribute
++	}
++
++	return result
++}
++
++// BlocksMap converts a map of concept-specific blocks into a map of Block.
++func BlocksMap[T Block](blocks map[string]T) map[string]Block {
++	result := make(map[string]Block, len(blocks))
++
++	for name, block := range blocks {
++		result[name] = block
++	}
++
++	return result
++}
+--- /home/user/terraform-plugin-framework/list/schema/nested_attribute_object.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/nested_attribute_object.go (draft)	2026-10-24 23:09:11.143381597 +0000
+@@ -64,7 +64,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedAttributeObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/list/schema/nested_block_object.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/nested_block_object.go (draft)	2026-10-24 23:09:11.143712291 +0000
+@@ -71,12 +71,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedBlockObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // GetAttributes returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(o.Blocks)
++	return fwschema.BlocksMap(o.Blocks)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/list/schema/schema.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/schema.go (draft)	2026-10-24 23:09:11.144952002 +0000
+@@ -82,12 +82,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks returns the Blocks field value.
+ func (s Schema) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(s.Blocks)
++	return fwschema.BlocksMap(s.Blocks)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+@@ -155,25 +155,3 @@
+ 
+ 	return diags
+ }
+-
+-// schemaAttributes is a resource to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+-
+-// schemaBlocks is a resource to fwschema type conversion function.
+-func schemaBlocks(blocks map[string]Block) map[string]fwschema.Block {
+-	result := make(map[string]fwschema.Block, len(blocks))
+-
+-	for name, block := range blocks {
+-		result[name] = block
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/list/schema/single_nested_attribute.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/single_nested_attribute.go (draft)	2026-10-24 23:09:11.145689849 +0000
+@@ -155,7 +155,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (a SingleNestedAttribute) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(a.Attributes)
++	return fwschema.AttributesMap(a.Attributes)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/metaschema/nested_attribute_object.go	2026-10-24 21:30:10.711597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/nested_attribute_object.go (draft)	2026-10-24 23:09:10.833578185 +0000
+@@ -50,7 +50,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedAttributeObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // Type returns the framework type of the NestedAttributeObject.
+--- /home/user/terraform-plugin-framework/provider/metaschema/schema.go	2026-10-24 21:30:10.711597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/schema.go (draft)	2026-10-24 23:09:10.834664288 +0000
+@@ -52,7 +52,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks always returns nil as meta schemas cannot contain blocks.
+@@ -126,14 +126,3 @@
+ 
+ 	return diags
+ }
+-
+-// schemaAttributes is a provider to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/provider/metaschema/single_nested_attribute.go	2026-10-24 21:30:10.715597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/single_nested_attribute.go (draft)	2026-10-24 23:09:10.835544557 +0000
+@@ -105,7 +105,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (a SingleNestedAttribute) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(a.Attributes)
++	return fwschema.AttributesMap(a.Attributes)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/schema/nested_attribute_object.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/nested_attribute_object.go (draft)	2026-10-24 23:09:10.733994462 +0000
+@@ -64,7 +64,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedAttributeObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/provider/schema/nested_block_object.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/nested_block_object.go (draft)	2026-10-24 23:09:10.734287761 +0000
+@@ -71,12 +71,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedBlockObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // GetAttributes returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(o.Blocks)
++	return fwschema.BlocksMap(o.Blocks)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/provider/schema/schema.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/schema.go (draft)	2026-10-24 23:09:10.735218623 +0000
+@@ -81,12 +81,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks returns the Blocks field value.
+ func (s Schema) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(s.Blocks)
++	return fwschema.BlocksMap(s.Blocks)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+@@ -161,25 +161,3 @@
+ 
+ 	return diags
+ }
+-
+-// schemaAttributes is a provider to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+-
+-// schemaBlocks is a provider to fwschema type conversion function.
+-func schemaBlocks(blocks map[string]Block) map[string]fwschema.Block {
+-	result := make(map[string]fwschema.Block, len(blocks))
+-
+-	for name, block := range blocks {
+-		result[name] = block
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/provider/schema/single_nested_attribute.go	2026-10-24 21:30:10.730448115 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/single_nested_attribute.go (draft)	2026-10-24 23:09:10.736579012 +0000
+@@ -163,7 +163,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (a SingleNestedAttribute) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(a.Attributes)
++	return fwschema.AttributesMap(a.Attributes)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/identityschema/schema.go	2026-10-24 21:30:10.737537070 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/schema.go (draft)	2026-10-24 23:09:11.329880750 +0000
+@@ -59,7 +59,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks returns an empty map as it's not relevant for identity schemas.
+@@ -132,14 +132,3 @@
+ 
+ 	return diags
+ }
+-
+-// schemaAttributes is a identity to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/resource/schema/nested_attribute_object.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/nested_attribute_object.go (draft)	2026-10-24 23:09:10.534296755 +0000
+@@ -85,7 +85,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedAttributeObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // ObjectPlanModifiers returns the PlanModifiers field value.
+--- /home/user/terraform-plugin-framework/resource/schema/nested_block_object.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/nested_block_object.go (draft)	2026-10-24 23:09:10.534626612 +0000
+@@ -92,12 +92,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedBlockObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // GetAttributes returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(o.Blocks)
++	return fwschema.BlocksMap(o.Blocks)
+ }
+ 
+ // ObjectPlanModifiers returns the PlanModifiers field value.
+--- /home/user/terraform-plugin-framework/resource/schema/schema.go	2026-10-24 21:30:10.779597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/schema.go (draft)	2026-10-24 23:09:10.535889545 +0000
+@@ -94,12 +94,12 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks returns the Blocks field value.
+ func (s Schema) GetBlocks() map[string]fwschema.Block {
+-	return schemaBlocks(s.Blocks)
++	return fwschema.BlocksMap(s.Blocks)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+@@ -175,28 +175,6 @@
+ 	return diags
+ }
+ 
+-// schemaAttributes is a resource to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+-
+-// schemaBlocks is a resource to fwschema type conversion function.
+-func schemaBlocks(blocks map[string]Block) map[string]fwschema.Block {
+-	result := make(map[string]fwschema.Block, len(blocks))
+-
+-	for name, block := range blocks {
+-		result[name] = block
+-	}
+-
+-	return result
+-}
+-
+ // nonComputedAttributeWithDefaultDiag returns a diagnostic for use when a non-computed
+ // attribute is using a default value.
+ func nonComputedAttributeWithDefaultDiag(path path.Path) diag.Diagnostic {
+--- /home/user/terraform-plugin-framework/resource/schema/single_nested_attribute.go	2026-10-24 21:30:10.783597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/single_nested_attribute.go (draft)	2026-10-24 23:09:10.539802982 +0000
+@@ -211,7 +211,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (a SingleNestedAttribute) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(a.Attributes)
++	return fwschema.AttributesMap(a.Attributes)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/attribute.go	2026-10-24 21:30:10.799678047 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/attribute.go (draft)	2026-10-24 23:09:11.227965147 +0000
+@@ -31,14 +31,3 @@
+ type Attribute interface {
+ 	fwschema.Attribute
+ }
+-
+-// schemaAttributes is a state store attribute to fwschema type conversion function.
+-func schemaAttributes(attributes map[string]Attribute) map[string]fwschema.Attribute {
+-	result := make(map[string]fwschema.Attribute, len(attributes))
+-
+-	for name, attribute := range attributes {
+-		result[name] = attribute
+-	}
+-
+-	return result
+-}
+--- /home/user/terraform-plugin-framework/statestore/schema/nested_attribute_object.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/nested_attribute_object.go (draft)	2026-10-24 23:09:11.231371749 +0000
+@@ -63,7 +63,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (o NestedAttributeObject) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(o.Attributes)
++	return fwschema.AttributesMap(o.Attributes)
+ }
+ 
+ // ObjectValidators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/schema.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/schema.go (draft)	2026-10-24 23:09:11.232424648 +0000
+@@ -82,7 +82,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (s Schema) GetAttributes() map[string]fwschema.Attribute {
+-	return schemaAttributes(s.Attributes)
++	return fwschema.AttributesMap(s.Attributes)
+ }
+ 
+ // GetBlocks returns an empty map of nested blocks as they are not supported in state store schemas.
+--- /home/user/terraform-plugin-framework/statestore/schema/single_nested_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/single_nested_attribute.go (draft)	2026-10-24 23:09:11.234299876 +0000
+@@ -139,7 +139,7 @@
+ 
+ // GetAttributes returns the Attributes field value.
+ func (a SingleNestedAttribute) GetAttributes() fwschema.UnderlyingAttributes {
+-	return schemaAttributes(a.Attributes)
++	return fwschema.AttributesMap(a.Attributes)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.

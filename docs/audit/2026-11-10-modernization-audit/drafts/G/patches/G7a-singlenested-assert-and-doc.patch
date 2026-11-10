@@ -1,0 +1,26 @@
+diff --git a/internal/testing/testtypes/doc.go b/internal/testing/testtypes/doc.go
+index 748a938..9da41b3 100644
+--- a/internal/testing/testtypes/doc.go
++++ b/internal/testing/testtypes/doc.go
+@@ -1,5 +1,5 @@
+ // Copyright IBM Corp. 2021, 2026
+ // SPDX-License-Identifier: MPL-2.0
+ 
+-// types contains shared attr.Type implementations for unit testing.
++// Package testtypes contains shared attr.Type implementations for unit testing.
+ package testtypes
+diff --git a/internal/testing/testtypes/singlenestedattributescustom.go b/internal/testing/testtypes/singlenestedattributescustom.go
+index b5dcc46..a80ee2d 100644
+--- a/internal/testing/testtypes/singlenestedattributescustom.go
++++ b/internal/testing/testtypes/singlenestedattributescustom.go
+@@ -15,8 +15,8 @@ import (
+ )
+ 
+ var (
+-	_ basetypes.SetTypable  = SetNestedAttributesCustomTypeType{}
+-	_ basetypes.SetValuable = &SetNestedAttributesCustomValue{}
++	_ basetypes.ObjectTypable  = SingleNestedAttributesCustomTypeType{}
++	_ basetypes.ObjectValuable = &SingleNestedAttributesCustomValue{}
+ )
+ 
+ type SingleNestedAttributesCustomTypeType struct {

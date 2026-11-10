@@ -1,0 +1,105 @@
+diff --git a/internal/fwschema/attribute_name_validation.go b/internal/fwschema/attribute_name_validation.go
+index 1dc8e6e..be5ad26 100644
+--- a/internal/fwschema/attribute_name_validation.go
++++ b/internal/fwschema/attribute_name_validation.go
+@@ -6,6 +6,7 @@ package fwschema
+ import (
+ 	"fmt"
+ 	"regexp"
++	"slices"
+ 	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+@@ -73,21 +74,17 @@ func IsReservedProviderAttributeName(name string, attributePath path.Path) diag.
+ 		return diags
+ 	}
+ 
+-	for _, reservedName := range ReservedProviderAttributeNames {
+-		if name == reservedName {
+-			// The diagnostic path is intentionally omitted as it is invalid
+-			// in this context. Diagnostic paths are intended to be mapped to
+-			// actual data, while this path information must be synthesized.
+-			diags.AddError(
+-				"Reserved Root Attribute/Block Name",
+-				"When validating the provider schema, an implementation issue was found. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+-					fmt.Sprintf("%q is a reserved root attribute/block name. ", name)+
+-					"This is to prevent practitioners from needing special Terraform configuration syntax.",
+-			)
+-
+-			break
+-		}
++	if slices.Contains(ReservedProviderAttributeNames, name) {
++		// The diagnostic path is intentionally omitted as it is invalid
++		// in this context. Diagnostic paths are intended to be mapped to
++		// actual data, while this path information must be synthesized.
++		diags.AddError(
++			"Reserved Root Attribute/Block Name",
++			"When validating the provider schema, an implementation issue was found. "+
++				"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
++				fmt.Sprintf("%q is a reserved root attribute/block name. ", name)+
++				"This is to prevent practitioners from needing special Terraform configuration syntax.",
++		)
+ 	}
+ 
+ 	return diags
+@@ -106,21 +103,17 @@ func IsReservedResourceAttributeName(name string, attributePath path.Path) diag.
+ 		return diags
+ 	}
+ 
+-	for _, reservedName := range ReservedResourceAttributeNames {
+-		if name == reservedName {
+-			// The diagnostic path is intentionally omitted as it is invalid
+-			// in this context. Diagnostic paths are intended to be mapped to
+-			// actual data, while this path information must be synthesized.
+-			diags.AddError(
+-				"Reserved Root Attribute/Block Name",
+-				"When validating the resource or data source schema, an implementation issue was found. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+-					fmt.Sprintf("%q is a reserved root attribute/block name. ", name)+
+-					"This is to prevent practitioners from needing special Terraform configuration syntax.",
+-			)
+-
+-			break
+-		}
++	if slices.Contains(ReservedResourceAttributeNames, name) {
++		// The diagnostic path is intentionally omitted as it is invalid
++		// in this context. Diagnostic paths are intended to be mapped to
++		// actual data, while this path information must be synthesized.
++		diags.AddError(
++			"Reserved Root Attribute/Block Name",
++			"When validating the resource or data source schema, an implementation issue was found. "+
++				"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
++				fmt.Sprintf("%q is a reserved root attribute/block name. ", name)+
++				"This is to prevent practitioners from needing special Terraform configuration syntax.",
++		)
+ 	}
+ 
+ 	return diags
+diff --git a/internal/fwtype/missing_underlying_type_validation.go b/internal/fwtype/missing_underlying_type_validation.go
+index a40139a..bfdbe8a 100644
+--- a/internal/fwtype/missing_underlying_type_validation.go
++++ b/internal/fwtype/missing_underlying_type_validation.go
+@@ -5,6 +5,7 @@ package fwtype
+ 
+ import (
+ 	"fmt"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+@@ -37,13 +38,7 @@ func ContainsMissingUnderlyingType(typ attr.Type) bool {
+ 	case basetypes.SetType:
+ 		return ContainsMissingUnderlyingType(attrType.ElemType)
+ 	case basetypes.TupleType:
+-		for _, elemType := range attrType.ElemTypes {
+-			if ContainsMissingUnderlyingType(elemType) {
+-				return true
+-			}
+-		}
+-
+-		return false
++		return slices.ContainsFunc(attrType.ElemTypes, ContainsMissingUnderlyingType)
+ 	// Everything else (primitives, custom types, etc.)
+ 	default:
+ 		return false

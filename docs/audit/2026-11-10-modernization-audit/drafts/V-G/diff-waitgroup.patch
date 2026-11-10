@@ -1,0 +1,44 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-G/copy/internal/proto5server/serve_test.go (old)
++++ /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-G/copy/internal/proto5server/serve_test.go (new)
+@@ -27,9 +27,7 @@
+ 	s := &Server{}
+ 	testCtx := context.Background()
+ 	for i := 0; i < 10; i++ {
+-		wg.Add(1)
+-		go func() {
+-			defer wg.Done()
++		wg.Go(func() {
+ 			ctx := context.Background()
+ 			ctx = s.registerContext(ctx)
+ 			select {
+@@ -39,7 +37,7 @@
+ 			case <-ctx.Done():
+ 				return
+ 			}
+-		}()
++		})
+ 	}
+ 	// avoid any race conditions around canceling the contexts before
+ 	// they're all set up
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-G/copy/internal/proto6server/serve_test.go (old)
++++ /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-G/copy/internal/proto6server/serve_test.go (new)
+@@ -26,9 +26,7 @@
+ 	s := &Server{}
+ 	testCtx := context.Background()
+ 	for i := 0; i < 10; i++ {
+-		wg.Add(1)
+-		go func() {
+-			defer wg.Done()
++		wg.Go(func() {
+ 			ctx := context.Background()
+ 			ctx = s.registerContext(ctx)
+ 			select {
+@@ -38,7 +36,7 @@
+ 			case <-ctx.Done():
+ 				return
+ 			}
+-		}()
++		})
+ 	}
+ 	// avoid any race conditions around canceling the contexts before
+ 	// they're all set up

@@ -1,0 +1,28 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/draft-providermeta/schema_plan_modification.go	2026-10-24 23:17:24.833105952 +0000
++++ internal/fwserver/schema_plan_modification.go	2026-10-24 23:17:24.853474835 +0000
+@@ -26,9 +26,6 @@
+ 	// Plan is the planned new state for the resource.
+ 	Plan tfsdk.Plan
+ 
+-	// ProviderMeta is metadata from the provider_meta block of the module.
+-	ProviderMeta tfsdk.Config
+-
+ 	// Private is provider private state data.
+ 	Private *privatestate.ProviderData
+ }
+@@ -87,7 +84,6 @@
+ 			Config:        req.Config,
+ 			State:         req.State,
+ 			Plan:          req.Plan,
+-			ProviderMeta:  req.ProviderMeta,
+ 			Private:       req.Private,
+ 		}
+ 
+@@ -144,7 +140,6 @@
+ 			Config:        req.Config,
+ 			State:         req.State,
+ 			Plan:          req.Plan,
+-			ProviderMeta:  req.ProviderMeta,
+ 			Private:       req.Private,
+ 		}
+ 

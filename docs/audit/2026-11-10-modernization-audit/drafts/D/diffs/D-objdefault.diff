@@ -1,0 +1,17 @@
+--- /home/user/terraform-plugin-framework/resource/schema/object_attribute.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/object_attribute.go (draft)	2026-10-24 23:17:25.177509115 +0000
+@@ -311,8 +311,12 @@
+ 			return
+ 		}
+ 
+-		if a.AttributeTypes != nil && !a.GetType().Equal(defaultResp.PlanValue.Type(ctx)) {
+-			resp.Diagnostics.Append(fwschema.AttributeDefaultTypeMismatchDiag(req.Path, a.GetType(), defaultResp.PlanValue.Type(ctx)))
++		if a.AttributeTypes != nil {
++			expectedType := types.ObjectType{AttrTypes: a.AttributeTypes}
++
++			if !expectedType.Equal(defaultResp.PlanValue.Type(ctx)) {
++				resp.Diagnostics.Append(fwschema.AttributeDefaultTypeMismatchDiag(req.Path, expectedType, defaultResp.PlanValue.Type(ctx)))
++			}
+ 		}
+ 	}
+ }

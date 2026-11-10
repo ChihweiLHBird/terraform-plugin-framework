@@ -1,0 +1,42 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-B1/pristine/internal/fwserver/schema_plan_modification.go	2026-10-24 21:30:10.000000000 +0000
++++ schema_plan_modification.go	2026-11-10 21:06:19.886472535 +0000
+@@ -83,12 +83,13 @@
+ 
+ 	for name, attribute := range s.GetAttributes() {
+ 		attrReq := ModifyAttributePlanRequest{
+-			AttributePath: path.Root(name),
+-			Config:        req.Config,
+-			State:         req.State,
+-			Plan:          req.Plan,
+-			ProviderMeta:  req.ProviderMeta,
+-			Private:       req.Private,
++			AttributePath:           path.Root(name),
++			AttributePathExpression: path.MatchRoot(name),
++			Config:                  req.Config,
++			State:                   req.State,
++			Plan:                    req.Plan,
++			ProviderMeta:            req.ProviderMeta,
++			Private:                 req.Private,
+ 		}
+ 
+ 		attrReq.AttributeConfig, diags = configData.ValueAtPath(ctx, attrReq.AttributePath)
+@@ -140,12 +141,13 @@
+ 
+ 	for name, block := range s.GetBlocks() {
+ 		blockReq := ModifyAttributePlanRequest{
+-			AttributePath: path.Root(name),
+-			Config:        req.Config,
+-			State:         req.State,
+-			Plan:          req.Plan,
+-			ProviderMeta:  req.ProviderMeta,
+-			Private:       req.Private,
++			AttributePath:           path.Root(name),
++			AttributePathExpression: path.MatchRoot(name),
++			Config:                  req.Config,
++			State:                   req.State,
++			Plan:                    req.Plan,
++			ProviderMeta:            req.ProviderMeta,
++			Private:                 req.Private,
+ 		}
+ 
+ 		blockReq.AttributeConfig, diags = configData.ValueAtPath(ctx, blockReq.AttributePath)

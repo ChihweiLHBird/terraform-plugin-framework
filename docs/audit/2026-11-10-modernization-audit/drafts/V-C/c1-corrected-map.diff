@@ -1,0 +1,37 @@
+diff --git a/tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-C/orig/internal/reflect/map.go b/internal/reflect/map.go
+index 9fb1f64..e65d13f 100644
+--- a/tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-C/orig/internal/reflect/map.go
++++ b/internal/reflect/map.go
+@@ -62,6 +62,18 @@ func Map(ctx context.Context, typ attr.Type, val tftypes.Value, target reflect.V
+ 		return target, diags
+ 	}
+ 
++	keyType := underlyingValue.Type().Key()
++	stringType := reflect.TypeFor[string]()
++
++	if len(values) > 0 && !stringType.AssignableTo(keyType) && keyType.Kind() != reflect.String {
++		diags.Append(diag.WithPath(path, DiagIntoIncompatibleType{
++			Val:        val,
++			TargetType: target.Type(),
++			Err:        fmt.Errorf("map keys must be strings, got %s", keyType),
++		}))
++		return target, diags
++	}
++
+ 	// we need to know the type the slice is wrapping
+ 	elemType := underlyingValue.Type().Elem()
+ 	elemAttrType := elemTyper.ElementType()
+@@ -86,7 +98,12 @@ func Map(ctx context.Context, typ attr.Type, val tftypes.Value, target reflect.V
+ 			return target, diags
+ 		}
+ 
+-		m.SetMapIndex(reflect.ValueOf(key), result)
++		keyValue := reflect.ValueOf(key)
++		if !stringType.AssignableTo(keyType) {
++			keyValue = keyValue.Convert(keyType)
++		}
++
++		m.SetMapIndex(keyValue, result)
+ 	}
+ 
+ 	return m, diags

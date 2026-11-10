@@ -1,0 +1,146 @@
+diff -ru repo/types/basetypes/float32_value.go draft8/types/basetypes/float32_value.go
+--- repo/types/basetypes/float32_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft8/types/basetypes/float32_value.go	2026-10-24 23:17:41.385248758 +0000
+@@ -91,7 +91,7 @@
+ 
+ // Float32SemanticEquals returns true if the given Float32Value is semantically equal to the current Float32Value.
+ // The underlying value *big.Float can store more precise float values then the Go built-in float32 type. This only
+-// compares the precision of the value that can be represented as the Go built-in float32, which is 53 bits of precision.
++// compares the precision of the value that can be represented as the Go built-in float32, which is 24 bits of precision.
+ func (f Float32Value) Float32SemanticEquals(ctx context.Context, newValuable Float32Valuable) (bool, diag.Diagnostics) {
+ 	var diags diag.Diagnostics
+ 
+diff -ru repo/types/basetypes/float64_value.go draft8/types/basetypes/float64_value.go
+--- repo/types/basetypes/float64_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft8/types/basetypes/float64_value.go	2026-10-24 23:17:41.385410845 +0000
+@@ -53,9 +53,6 @@
+ 
+ // Float64Unknown creates a Float64 with an unknown value. Determine whether the
+ // value is unknown via the Float64 type IsUnknown method.
+-//
+-// Setting the deprecated Float64 type Null, Unknown, or Value fields after
+-// creating a Float64 with this function has no effect.
+ func NewFloat64Unknown() Float64Value {
+ 	return Float64Value{
+ 		state: attr.ValueStateUnknown,
+@@ -64,9 +61,6 @@
+ 
+ // Float64Value creates a Float64 with a known value. Access the value via the Float64
+ // type ValueFloat64 method. Passing a value of `NaN` will result in a panic.
+-//
+-// Setting the deprecated Float64 type Null, Unknown, or Value fields after
+-// creating a Float64 with this function has no effect.
+ func NewFloat64Value(value float64) Float64Value {
+ 	return Float64Value{
+ 		state: attr.ValueStateKnown,
+diff -ru repo/types/basetypes/missing_value.go draft8/types/basetypes/missing_value.go
+--- repo/types/basetypes/missing_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft8/types/basetypes/missing_value.go	2026-10-24 23:17:41.385601813 +0000
+@@ -50,7 +50,7 @@
+ 	return "!!! MISSING VALUE !!!"
+ }
+ 
+-// ToTerraformValue always returns an error.
++// ToTerraformValue returns an empty tftypes.Value and no error.
+ func (v missingValue) ToTerraformValue(_ context.Context) (tftypes.Value, error) {
+ 	return tftypes.Value{}, nil
+ }
+diff -ru repo/types/basetypes/number_value.go draft8/types/basetypes/number_value.go
+--- repo/types/basetypes/number_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft8/types/basetypes/number_value.go	2026-10-24 23:17:41.385146061 +0000
+@@ -154,7 +154,7 @@
+ }
+ 
+ // ValueBigFloat returns the known *big.Float value. If Number is null or unknown, returns
+-// 0.0.
++// nil.
+ func (n NumberValue) ValueBigFloat() *big.Float {
+ 	return n.value
+ }
+diff -ru repo/types/basetypes/object_value.go draft8/types/basetypes/object_value.go
+--- repo/types/basetypes/object_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft8/types/basetypes/object_value.go	2026-10-24 23:17:41.384956631 +0000
+@@ -63,7 +63,7 @@
+ }
+ 
+ // NewObjectValue creates a Object with a known value. Access the value via the Object
+-// type ElementsAs method.
++// type Attributes or As methods.
+ func NewObjectValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ObjectValue, diag.Diagnostics) {
+ 	var diags diag.Diagnostics
+ 
+@@ -125,7 +125,7 @@
+ // NewObjectValueFrom creates a Object with a known value, using reflection rules.
+ // The attributes must be a map of string attribute names to attribute values
+ // which can convert into the given attribute type or a struct with tfsdk field
+-// tags. Access the value via the Object type Elements or ElementsAs methods.
++// tags. Access the value via the Object type Attributes or As methods.
+ func NewObjectValueFrom(ctx context.Context, attributeTypes map[string]attr.Type, attributes any) (ObjectValue, diag.Diagnostics) {
+ 	attrValue, diags := reflect.FromValue(
+ 		ctx,
+@@ -154,7 +154,7 @@
+ 
+ // NewObjectValueMust creates a Object with a known value, converting any diagnostics
+ // into a panic at runtime. Access the value via the Object
+-// type Elements or ElementsAs methods.
++// type Attributes or As methods.
+ //
+ // This creation function is only recommended to create Object values which will
+ // not potentially effect practitioners, such as testing, or exhaustively
+diff -ru repo/types/basetypes/string_value.go draft8/types/basetypes/string_value.go
+--- repo/types/basetypes/string_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft8/types/basetypes/string_value.go	2026-10-24 23:17:41.385516619 +0000
+@@ -44,9 +44,6 @@
+ 
+ // NewStringNull creates a String with a null value. Determine whether the value is
+ // null via the String type IsNull method.
+-//
+-// Setting the deprecated String type Null, Unknown, or Value fields after
+-// creating a String with this function has no effect.
+ func NewStringNull() StringValue {
+ 	return StringValue{
+ 		state: attr.ValueStateNull,
+@@ -55,9 +52,6 @@
+ 
+ // NewStringUnknown creates a String with an unknown value. Determine whether the
+ // value is unknown via the String type IsUnknown method.
+-//
+-// Setting the deprecated String type Null, Unknown, or Value fields after
+-// creating a String with this function has no effect.
+ func NewStringUnknown() StringValue {
+ 	return StringValue{
+ 		state: attr.ValueStateUnknown,
+@@ -66,9 +60,6 @@
+ 
+ // NewStringValue creates a String with a known value. Access the value via the String
+ // type ValueString method.
+-//
+-// Setting the deprecated String type Null, Unknown, or Value fields after
+-// creating a String with this function has no effect.
+ func NewStringValue(value string) StringValue {
+ 	return StringValue{
+ 		state: attr.ValueStateKnown,
+diff -ru repo/path/path.go draft8/path/path.go
+--- repo/path/path.go	2026-09-25 10:13:00.000000000 +0000
++++ draft8/path/path.go	2026-10-24 23:17:41.385689354 +0000
+@@ -24,7 +24,7 @@
+ // For example, to represent the first list element with a root list attribute
+ // named "some_attribute":
+ //
+-//	path.MatchRoot("some_attribute").AtListIndex(0)
++//	path.Root("some_attribute").AtListIndex(0)
+ //
+ // Path is used for functionality which must exactly match the underlying
+ // schema structure and types, such as diagnostics that are intended for a
+diff -ru repo/diag/warning_diagnostic.go draft8/diag/warning_diagnostic.go
+--- repo/diag/warning_diagnostic.go	2026-09-25 10:13:00.000000000 +0000
++++ draft8/diag/warning_diagnostic.go	2026-10-24 23:17:41.385780452 +0000
+@@ -37,7 +37,7 @@
+ 	return d.summary
+ }
+ 
+-// NewErrorDiagnostic returns a new warning severity diagnostic with the given summary and detail.
++// NewWarningDiagnostic returns a new warning severity diagnostic with the given summary and detail.
+ func NewWarningDiagnostic(summary string, detail string) WarningDiagnostic {
+ 	return WarningDiagnostic{
+ 		detail:  detail,

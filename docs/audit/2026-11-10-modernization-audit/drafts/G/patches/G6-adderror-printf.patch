@@ -1,0 +1,567 @@
+diff --git a/internal/fwserver/block_plan_modification_test.go b/internal/fwserver/block_plan_modification_test.go
+index 98f6cfb..d21fd61 100644
+--- a/internal/fwserver/block_plan_modification_test.go
++++ b/internal/fwserver/block_plan_modification_test.go
+@@ -8377,7 +8377,7 @@ func (t testBlockPlanModifierPrivateGet) PlanModifyList(ctx context.Context, req
+ 	resp.Diagnostics.Append(diags...)
+ 
+ 	if string(got) != expected {
+-		resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++		resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 	}
+ }
+ 
+diff --git a/internal/fwserver/server_applyresourcechange_test.go b/internal/fwserver/server_applyresourcechange_test.go
+index 8ceaef8..34855e7 100644
+--- a/internal/fwserver/server_applyresourcechange_test.go
++++ b/internal/fwserver/server_applyresourcechange_test.go
+@@ -215,7 +215,7 @@ func TestServerApplyResourceChange(t *testing.T) {
+ 						resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+ 
+ 						if data.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.Config value: %s", data.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Config value", data.TestRequired.ValueString())
+ 						}
+ 
+ 						// Prevent missing resource state error diagnostic
+@@ -261,7 +261,7 @@ func TestServerApplyResourceChange(t *testing.T) {
+ 						resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+ 
+ 						if data.TestRequired.ValueString() != "test-plannedstate-value" {
+-							resp.Diagnostics.AddError("unexpected req.Plan value: %s", data.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Plan value", data.TestRequired.ValueString())
+ 						}
+ 
+ 						// Prevent missing resource state error diagnostic
+@@ -767,7 +767,7 @@ func TestServerApplyResourceChange(t *testing.T) {
+ 						resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+ 
+ 						if data.TestRequired.ValueString() != "test-priorstate-value" {
+-							resp.Diagnostics.AddError("unexpected req.State value: %s", data.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.State value", data.TestRequired.ValueString())
+ 						}
+ 					},
+ 					UpdateMethod: func(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
+@@ -849,7 +849,7 @@ func TestServerApplyResourceChange(t *testing.T) {
+ 						resp.Diagnostics.Append(req.ProviderMeta.Get(ctx, &data)...)
+ 
+ 						if data.TestProviderMetaAttribute.ValueString() != "test-provider-meta-value" {
+-							resp.Diagnostics.AddError("unexpected req.ProviderMeta value: %s", data.TestProviderMetaAttribute.ValueString())
++							resp.Diagnostics.AddError("unexpected req.ProviderMeta value", data.TestProviderMetaAttribute.ValueString())
+ 						}
+ 					},
+ 					UpdateMethod: func(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
+diff --git a/internal/fwserver/server_closeephemeralresource_test.go b/internal/fwserver/server_closeephemeralresource_test.go
+index cb93d4f..adf3836 100644
+--- a/internal/fwserver/server_closeephemeralresource_test.go
++++ b/internal/fwserver/server_closeephemeralresource_test.go
+@@ -77,7 +77,7 @@ func TestServerCloseEphemeralResource(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if string(got) != expected {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+@@ -101,7 +101,7 @@ func TestServerCloseEphemeralResource(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if !bytes.Equal(got, expected) {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+diff --git a/internal/fwserver/server_deleteresource_test.go b/internal/fwserver/server_deleteresource_test.go
+index 17d874b..5b96338 100644
+--- a/internal/fwserver/server_deleteresource_test.go
++++ b/internal/fwserver/server_deleteresource_test.go
+@@ -159,7 +159,7 @@ func TestServerDeleteResource(t *testing.T) {
+ 						resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+ 
+ 						if data.TestRequired.ValueString() != "test-priorstate-value" {
+-							resp.Diagnostics.AddError("unexpected req.State value: %s", data.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.State value", data.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+@@ -227,7 +227,7 @@ func TestServerDeleteResource(t *testing.T) {
+ 						resp.Diagnostics.Append(req.ProviderMeta.Get(ctx, &data)...)
+ 
+ 						if data.TestProviderMetaAttribute.ValueString() != "test-provider-meta-value" {
+-							resp.Diagnostics.AddError("unexpected req.ProviderMeta value: %s", data.TestProviderMetaAttribute.ValueString())
++							resp.Diagnostics.AddError("unexpected req.ProviderMeta value", data.TestProviderMetaAttribute.ValueString())
+ 						}
+ 					},
+ 				},
+diff --git a/internal/fwserver/server_importresourcestate_test.go b/internal/fwserver/server_importresourcestate_test.go
+index a10872b..986cab7 100644
+--- a/internal/fwserver/server_importresourcestate_test.go
++++ b/internal/fwserver/server_importresourcestate_test.go
+@@ -239,7 +239,7 @@ func TestServerImportResourceState(t *testing.T) {
+ 					Resource: &testprovider.Resource{},
+ 					ImportStateMethod: func(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+ 						if req.ID != "test-id" {
+-							resp.Diagnostics.AddError("unexpected req.ID value: %s", req.ID)
++							resp.Diagnostics.AddError("unexpected req.ID value", req.ID)
+ 						}
+ 
+ 						resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+@@ -276,7 +276,7 @@ func TestServerImportResourceState(t *testing.T) {
+ 						resp.Diagnostics.Append(req.Identity.Get(ctx, &identityData)...)
+ 
+ 						if identityData.TestID.ValueString() != "id-123" {
+-							resp.Diagnostics.AddError("unexpected req.Identity value: %s", identityData.TestID.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Identity value", identityData.TestID.ValueString())
+ 						}
+ 
+ 						resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+@@ -558,7 +558,7 @@ func TestServerImportResourceState(t *testing.T) {
+ 					Resource: &testprovider.Resource{},
+ 					ImportStateMethod: func(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+ 						if req.ID != "test-id" {
+-							resp.Diagnostics.AddError("unexpected req.ID value: %s", req.ID)
++							resp.Diagnostics.AddError("unexpected req.ID value", req.ID)
+ 						}
+ 
+ 						resp.Deferred = &resource.Deferred{
+diff --git a/internal/fwserver/server_invokeaction_test.go b/internal/fwserver/server_invokeaction_test.go
+index 3c9c67e..529d0d0 100644
+--- a/internal/fwserver/server_invokeaction_test.go
++++ b/internal/fwserver/server_invokeaction_test.go
+@@ -91,7 +91,7 @@ func TestServerInvokeAction(t *testing.T) {
+ 						resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 						if config.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+diff --git a/internal/fwserver/server_openephemeralresource_test.go b/internal/fwserver/server_openephemeralresource_test.go
+index 405bcba..42fe5d8 100644
+--- a/internal/fwserver/server_openephemeralresource_test.go
++++ b/internal/fwserver/server_openephemeralresource_test.go
+@@ -154,7 +154,7 @@ func TestServerOpenEphemeralResource(t *testing.T) {
+ 						resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 						if config.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+@@ -271,7 +271,7 @@ func TestServerOpenEphemeralResource(t *testing.T) {
+ 						resp.Deferred = &ephemeral.Deferred{Reason: ephemeral.DeferredReasonAbsentPrereq}
+ 
+ 						if config.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+diff --git a/internal/fwserver/server_planaction_test.go b/internal/fwserver/server_planaction_test.go
+index 1b6b532..1130cb2 100644
+--- a/internal/fwserver/server_planaction_test.go
++++ b/internal/fwserver/server_planaction_test.go
+@@ -114,7 +114,7 @@ func TestServerPlanAction(t *testing.T) {
+ 						resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 						if config.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+@@ -204,7 +204,7 @@ func TestServerPlanAction(t *testing.T) {
+ 						resp.Deferred = &action.Deferred{Reason: action.DeferredReasonAbsentPrereq}
+ 
+ 						if config.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+diff --git a/internal/fwserver/server_planresourcechange_test.go b/internal/fwserver/server_planresourcechange_test.go
+index 9a17052..1273e32 100644
+--- a/internal/fwserver/server_planresourcechange_test.go
++++ b/internal/fwserver/server_planresourcechange_test.go
+@@ -1207,7 +1207,7 @@ func TestServerPlanResourceChange(t *testing.T) {
+ 							resp.Diagnostics.Append(diags...)
+ 
+ 							if string(got) != expected {
+-								resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++								resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 							}
+ 						},
+ 					},
+@@ -3048,7 +3048,7 @@ func TestServerPlanResourceChange(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if string(got) != expected {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+@@ -3695,7 +3695,7 @@ func TestServerPlanResourceChange(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if string(got) != expected {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+@@ -3837,7 +3837,7 @@ func TestServerPlanResourceChange(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if string(got) != expected {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+@@ -6561,7 +6561,7 @@ func TestServerPlanResourceChange(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if string(got) != expected {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+diff --git a/internal/fwserver/server_readdatasource_test.go b/internal/fwserver/server_readdatasource_test.go
+index 975e77f..fd42065 100644
+--- a/internal/fwserver/server_readdatasource_test.go
++++ b/internal/fwserver/server_readdatasource_test.go
+@@ -168,7 +168,7 @@ func TestServerReadDataSource(t *testing.T) {
+ 						resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 						if config.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+@@ -194,7 +194,7 @@ func TestServerReadDataSource(t *testing.T) {
+ 						resp.Diagnostics.Append(req.ProviderMeta.Get(ctx, &config)...)
+ 
+ 						if config.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.ProviderMeta value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.ProviderMeta value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+@@ -293,7 +293,7 @@ func TestServerReadDataSource(t *testing.T) {
+ 						resp.Deferred = &datasource.Deferred{Reason: datasource.DeferredReasonAbsentPrereq}
+ 
+ 						if config.TestRequired.ValueString() != "test-config-value" {
+-							resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+diff --git a/internal/fwserver/server_readresource_test.go b/internal/fwserver/server_readresource_test.go
+index a1cc4a4..0f7f89b 100644
+--- a/internal/fwserver/server_readresource_test.go
++++ b/internal/fwserver/server_readresource_test.go
+@@ -297,7 +297,7 @@ func TestServerReadResource(t *testing.T) {
+ 						resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+ 
+ 						if data.TestRequired.ValueString() != "test-currentstate-value" {
+-							resp.Diagnostics.AddError("unexpected req.State value: %s", data.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.State value", data.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+@@ -325,7 +325,7 @@ func TestServerReadResource(t *testing.T) {
+ 							resp.Diagnostics.Append(req.Identity.Get(ctx, &identityData)...)
+ 
+ 							if identityData.TestID.ValueString() != "id-123" {
+-								resp.Diagnostics.AddError("unexpected req.Identity value: %s", identityData.TestID.ValueString())
++								resp.Diagnostics.AddError("unexpected req.Identity value", identityData.TestID.ValueString())
+ 							}
+ 						},
+ 					},
+@@ -353,7 +353,7 @@ func TestServerReadResource(t *testing.T) {
+ 						resp.Diagnostics.Append(req.ProviderMeta.Get(ctx, &config)...)
+ 
+ 						if config.TestRequired.ValueString() != "test-currentstate-value" {
+-							resp.Diagnostics.AddError("unexpected req.ProviderMeta value: %s", config.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.ProviderMeta value", config.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+@@ -380,7 +380,7 @@ func TestServerReadResource(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if string(got) != expected {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+@@ -407,7 +407,7 @@ func TestServerReadResource(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if !bytes.Equal(got, expected) {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+@@ -504,7 +504,7 @@ func TestServerReadResource(t *testing.T) {
+ 						resp.Deferred = &resource.Deferred{Reason: resource.DeferredReasonAbsentPrereq}
+ 
+ 						if data.TestRequired.ValueString() != "test-currentstate-value" {
+-							resp.Diagnostics.AddError("unexpected req.State value: %s", data.TestRequired.ValueString())
++							resp.Diagnostics.AddError("unexpected req.State value", data.TestRequired.ValueString())
+ 						}
+ 					},
+ 				},
+diff --git a/internal/fwserver/server_renewephemeralresource_test.go b/internal/fwserver/server_renewephemeralresource_test.go
+index 7b85441..970411e 100644
+--- a/internal/fwserver/server_renewephemeralresource_test.go
++++ b/internal/fwserver/server_renewephemeralresource_test.go
+@@ -88,7 +88,7 @@ func TestServerRenewEphemeralResource(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if string(got) != expected {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+@@ -114,7 +114,7 @@ func TestServerRenewEphemeralResource(t *testing.T) {
+ 						resp.Diagnostics.Append(diags...)
+ 
+ 						if !bytes.Equal(got, expected) {
+-							resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++							resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 						}
+ 					},
+ 				},
+diff --git a/internal/proto5server/server_importresourcestate_test.go b/internal/proto5server/server_importresourcestate_test.go
+index 3187292..a28786b 100644
+--- a/internal/proto5server/server_importresourcestate_test.go
++++ b/internal/proto5server/server_importresourcestate_test.go
+@@ -113,7 +113,7 @@ func TestServerImportResourceState(t *testing.T) {
+ 										},
+ 										ImportStateMethod: func(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+ 											if req.ID != "test-id" {
+-												resp.Diagnostics.AddError("unexpected req.ID value: %s", req.ID)
++												resp.Diagnostics.AddError("unexpected req.ID value", req.ID)
+ 											}
+ 
+ 											resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+diff --git a/internal/proto5server/server_invokeaction_test.go b/internal/proto5server/server_invokeaction_test.go
+index 291225b..3345bc7 100644
+--- a/internal/proto5server/server_invokeaction_test.go
++++ b/internal/proto5server/server_invokeaction_test.go
+@@ -102,7 +102,7 @@ func TestServerInvokeAction(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.TestRequired.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto5server/server_openephemeralresource_test.go b/internal/proto5server/server_openephemeralresource_test.go
+index 24ebb49..9ed2f3a 100644
+--- a/internal/proto5server/server_openephemeralresource_test.go
++++ b/internal/proto5server/server_openephemeralresource_test.go
+@@ -109,7 +109,7 @@ func TestServerOpenEphemeralResource(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.TestRequired.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto5server/server_planaction_test.go b/internal/proto5server/server_planaction_test.go
+index 93c898d..cc5f782 100644
+--- a/internal/proto5server/server_planaction_test.go
++++ b/internal/proto5server/server_planaction_test.go
+@@ -98,7 +98,7 @@ func TestServerPlanAction(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.TestRequired.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto5server/server_readdatasource_test.go b/internal/proto5server/server_readdatasource_test.go
+index f71228c..f0cffb5 100644
+--- a/internal/proto5server/server_readdatasource_test.go
++++ b/internal/proto5server/server_readdatasource_test.go
+@@ -123,7 +123,7 @@ func TestServerReadDataSource(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.TestRequired.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+@@ -165,7 +165,7 @@ func TestServerReadDataSource(t *testing.T) {
+ 												resp.Diagnostics.Append(req.ProviderMeta.Get(ctx, &config)...)
+ 
+ 												if config.TestRequired.ValueString() != "test-config-value" {
+-													resp.Diagnostics.AddError("unexpected req.ProviderMeta value: %s", config.TestRequired.ValueString())
++													resp.Diagnostics.AddError("unexpected req.ProviderMeta value", config.TestRequired.ValueString())
+ 												}
+ 											},
+ 										}
+diff --git a/internal/proto5server/server_readresource_test.go b/internal/proto5server/server_readresource_test.go
+index b722a10..1d0cdc1 100644
+--- a/internal/proto5server/server_readresource_test.go
++++ b/internal/proto5server/server_readresource_test.go
+@@ -149,7 +149,7 @@ func TestServerReadResource(t *testing.T) {
+ 											resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+ 
+ 											if data.TestRequired.ValueString() != "test-currentstate-value" {
+-												resp.Diagnostics.AddError("unexpected req.State value: %s", data.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.State value", data.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto6server/server_configurestatestore_test.go b/internal/proto6server/server_configurestatestore_test.go
+index be50ece..eee4c86 100644
+--- a/internal/proto6server/server_configurestatestore_test.go
++++ b/internal/proto6server/server_configurestatestore_test.go
+@@ -98,7 +98,7 @@ func TestServerConfigureStateStore(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.Test.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.Test.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.Test.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto6server/server_importresourcestate_test.go b/internal/proto6server/server_importresourcestate_test.go
+index 62f7c37..e54db3a 100644
+--- a/internal/proto6server/server_importresourcestate_test.go
++++ b/internal/proto6server/server_importresourcestate_test.go
+@@ -113,7 +113,7 @@ func TestServerImportResourceState(t *testing.T) {
+ 										},
+ 										ImportStateMethod: func(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+ 											if req.ID != "test-id" {
+-												resp.Diagnostics.AddError("unexpected req.ID value: %s", req.ID)
++												resp.Diagnostics.AddError("unexpected req.ID value", req.ID)
+ 											}
+ 
+ 											resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+diff --git a/internal/proto6server/server_invokeaction_test.go b/internal/proto6server/server_invokeaction_test.go
+index 0fbc348..42fdc88 100644
+--- a/internal/proto6server/server_invokeaction_test.go
++++ b/internal/proto6server/server_invokeaction_test.go
+@@ -102,7 +102,7 @@ func TestServerInvokeAction(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.TestRequired.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto6server/server_openephemeralresource_test.go b/internal/proto6server/server_openephemeralresource_test.go
+index 7273a0e..bf811ba 100644
+--- a/internal/proto6server/server_openephemeralresource_test.go
++++ b/internal/proto6server/server_openephemeralresource_test.go
+@@ -109,7 +109,7 @@ func TestServerOpenEphemeralResource(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.TestRequired.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto6server/server_planaction_test.go b/internal/proto6server/server_planaction_test.go
+index 2a86410..fe1b59e 100644
+--- a/internal/proto6server/server_planaction_test.go
++++ b/internal/proto6server/server_planaction_test.go
+@@ -98,7 +98,7 @@ func TestServerPlanAction(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.TestRequired.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto6server/server_readdatasource_test.go b/internal/proto6server/server_readdatasource_test.go
+index dc9c2e9..47dd99c 100644
+--- a/internal/proto6server/server_readdatasource_test.go
++++ b/internal/proto6server/server_readdatasource_test.go
+@@ -123,7 +123,7 @@ func TestServerReadDataSource(t *testing.T) {
+ 											resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+ 
+ 											if config.TestRequired.ValueString() != "test-config-value" {
+-												resp.Diagnostics.AddError("unexpected req.Config value: %s", config.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.Config value", config.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+@@ -165,7 +165,7 @@ func TestServerReadDataSource(t *testing.T) {
+ 												resp.Diagnostics.Append(req.ProviderMeta.Get(ctx, &config)...)
+ 
+ 												if config.TestRequired.ValueString() != "test-config-value" {
+-													resp.Diagnostics.AddError("unexpected req.ProviderMeta value: %s", config.TestRequired.ValueString())
++													resp.Diagnostics.AddError("unexpected req.ProviderMeta value", config.TestRequired.ValueString())
+ 												}
+ 											},
+ 										}
+diff --git a/internal/proto6server/server_readresource_test.go b/internal/proto6server/server_readresource_test.go
+index 0d11f67..0e050ca 100644
+--- a/internal/proto6server/server_readresource_test.go
++++ b/internal/proto6server/server_readresource_test.go
+@@ -149,7 +149,7 @@ func TestServerReadResource(t *testing.T) {
+ 											resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+ 
+ 											if data.TestRequired.ValueString() != "test-currentstate-value" {
+-												resp.Diagnostics.AddError("unexpected req.State value: %s", data.TestRequired.ValueString())
++												resp.Diagnostics.AddError("unexpected req.State value", data.TestRequired.ValueString())
+ 											}
+ 										},
+ 									}
+diff --git a/internal/proto6server/server_upgraderesourcestate_test.go b/internal/proto6server/server_upgraderesourcestate_test.go
+index 6cc45a8..ef3babe 100644
+--- a/internal/proto6server/server_upgraderesourcestate_test.go
++++ b/internal/proto6server/server_upgraderesourcestate_test.go
+@@ -78,7 +78,7 @@ func TestServerUpgradeResourceState(t *testing.T) {
+ 														})
+ 
+ 														if diff := cmp.Diff(req.RawState, expectedRawState); diff != "" {
+-															resp.Diagnostics.AddError("unexpected req.RawState difference: %s", diff)
++															resp.Diagnostics.AddError("unexpected req.RawState difference", diff)
+ 														}
+ 
+ 														// Prevent Missing Upgraded Resource State error
+diff --git a/internal/testing/planmodifiers/planmodifiers.go b/internal/testing/planmodifiers/planmodifiers.go
+index 3c03595..b7c012e 100644
+--- a/internal/testing/planmodifiers/planmodifiers.go
++++ b/internal/testing/planmodifiers/planmodifiers.go
+@@ -20,7 +20,7 @@ func (t TestAttrPlanPrivateModifierGet) PlanModifyList(ctx context.Context, req
+ 	resp.Diagnostics.Append(diags...)
+ 
+ 	if string(got) != expected {
+-		resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++		resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 	}
+ }
+ 
+@@ -33,7 +33,7 @@ func (t TestAttrPlanPrivateModifierGet) PlanModifyString(ctx context.Context, re
+ 	resp.Diagnostics.Append(diags...)
+ 
+ 	if string(got) != expected {
+-		resp.Diagnostics.AddError("unexpected req.Private.Provider value: %s", string(got))
++		resp.Diagnostics.AddError("unexpected req.Private.Provider value", string(got))
+ 	}
+ }
+ 

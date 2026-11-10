@@ -1,0 +1,336 @@
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_list.go	2026-10-24 21:30:10.508094224 +0000
++++ internal/fwschemadata/value_semantic_equality_list.go	2026-10-24 23:00:29.592334310 +0000
+@@ -8,7 +8,7 @@
+ 	"fmt"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -19,69 +19,9 @@
+ // cannot be assumed that the collection type implementation runs all possible
+ // element implementations.
+ func ValueSemanticEqualityList(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.ListValuableWithSemanticEquals)
+-
+-	// While the collection type itself does not implement the interface,
+-	// underlying elements might. Check elements automatically, if possible.
+-	if !ok {
+-		ValueSemanticEqualityListElements(ctx, req, resp)
+-
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.ListValuableWithSemanticEquals)
+-
+-	// While the collection type itself does not implement the interface,
+-	// underlying elements might. Check elements automatically, if possible.
+-	if !ok {
+-		ValueSemanticEqualityListElements(ctx, req, resp)
+-
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.ListSemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if resp.Diagnostics.HasError() {
+-		return
+-	}
+-
+-	// If the collection type signaled semantic equality, respect the
+-	// determination to use the whole prior value and return early since
+-	// checking elements is not necessary.
+-	if usePriorValue {
+-		resp.NewValue = priorValuable
+-
+-		return
+-	}
+-
+-	// While the collection type itself did not signal semantic equality,
+-	// underlying elements might, which should still modify the collection.
+-	// Check elements automatically, if possible.
+-	//
+-	// This logic pessimistically assumes that collection type semantic equality
+-	// implementations may be missing proper element type handling. While
+-	// correct implementations receive a small performance penalty of
+-	// being re-checked, this ensures that less-correct implementations do not
+-	// cause inconsistent data handling behaviors for developers.
+-	ValueSemanticEqualityListElements(ctx, req, resp)
++	valueSemanticEqualityNested(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.ListValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.ListSemanticEquals(ctx, priorValuable)
++	}, ValueSemanticEqualityListElements)
+ }
+ 
+ // ValueSemanticEqualityListElements performs list type semantic equality
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_map.go	2026-10-24 21:30:10.508094224 +0000
++++ internal/fwschemadata/value_semantic_equality_map.go	2026-10-24 23:00:29.592739216 +0000
+@@ -8,7 +8,7 @@
+ 	"fmt"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -19,69 +19,9 @@
+ // cannot be assumed that the collection type implementation runs all possible
+ // element implementations.
+ func ValueSemanticEqualityMap(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.MapValuableWithSemanticEquals)
+-
+-	// While the collection type itself does not implement the interface,
+-	// underlying elements might. Check elements automatically, if possible.
+-	if !ok {
+-		ValueSemanticEqualityMapElements(ctx, req, resp)
+-
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.MapValuableWithSemanticEquals)
+-
+-	// While the collection type itself does not implement the interface,
+-	// underlying elements might. Check elements automatically, if possible.
+-	if !ok {
+-		ValueSemanticEqualityMapElements(ctx, req, resp)
+-
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.MapSemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if resp.Diagnostics.HasError() {
+-		return
+-	}
+-
+-	// If the collection type signaled semantic equality, respect the
+-	// determination to use the whole prior value and return early since
+-	// checking elements is not necessary.
+-	if usePriorValue {
+-		resp.NewValue = priorValuable
+-
+-		return
+-	}
+-
+-	// While the collection type itself did not signal semantic equality,
+-	// underlying elements might, which should still modify the collection.
+-	// Check elements automatically, if possible.
+-	//
+-	// This logic pessimistically assumes that collection type semantic equality
+-	// implementations may be missing proper element type handling. While
+-	// correct implementations receive a small performance penalty of
+-	// being re-checked, this ensures that less-correct implementations do not
+-	// cause inconsistent data handling behaviors for developers.
+-	ValueSemanticEqualityMapElements(ctx, req, resp)
++	valueSemanticEqualityNested(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.MapValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.MapSemanticEquals(ctx, priorValuable)
++	}, ValueSemanticEqualityMapElements)
+ }
+ 
+ // ValueSemanticEqualityMapElements performs list type semantic equality
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_set.go	2026-10-24 21:30:10.508094224 +0000
++++ internal/fwschemadata/value_semantic_equality_set.go	2026-10-24 23:00:29.593062157 +0000
+@@ -8,7 +8,7 @@
+ 	"fmt"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -19,69 +19,9 @@
+ // cannot be assumed that the collection type implementation runs all possible
+ // element implementations.
+ func ValueSemanticEqualitySet(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.SetValuableWithSemanticEquals)
+-
+-	// While the collection type itself does not implement the interface,
+-	// underlying elements might. Check elements automatically, if possible.
+-	if !ok {
+-		ValueSemanticEqualitySetElements(ctx, req, resp)
+-
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.SetValuableWithSemanticEquals)
+-
+-	// While the collection type itself does not implement the interface,
+-	// underlying elements might. Check elements automatically, if possible.
+-	if !ok {
+-		ValueSemanticEqualitySetElements(ctx, req, resp)
+-
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.SetSemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if resp.Diagnostics.HasError() {
+-		return
+-	}
+-
+-	// If the collection type signaled semantic equality, respect the
+-	// determination to use the whole prior value and return early since
+-	// checking elements is not necessary.
+-	if usePriorValue {
+-		resp.NewValue = priorValuable
+-
+-		return
+-	}
+-
+-	// While the collection type itself did not signal semantic equality,
+-	// underlying elements might, which should still modify the collection.
+-	// Check elements automatically, if possible.
+-	//
+-	// This logic pessimistically assumes that collection type semantic equality
+-	// implementations may be missing proper element type handling. While
+-	// correct implementations receive a small performance penalty of
+-	// being re-checked, this ensures that less-correct implementations do not
+-	// cause inconsistent data handling behaviors for developers.
+-	ValueSemanticEqualitySetElements(ctx, req, resp)
++	valueSemanticEqualityNested(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.SetValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.SetSemanticEquals(ctx, priorValuable)
++	}, ValueSemanticEqualitySetElements)
+ }
+ 
+ // ValueSemanticEqualitySetElements performs list type semantic equality
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_object.go	2026-10-24 21:30:10.508094224 +0000
++++ internal/fwschemadata/value_semantic_equality_object.go	2026-10-24 23:00:29.593549843 +0000
+@@ -8,7 +8,7 @@
+ 	"fmt"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -19,69 +19,9 @@
+ // cannot be assumed that the structural type implementation runs all possible
+ // attribute implementations.
+ func ValueSemanticEqualityObject(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.ObjectValuableWithSemanticEquals)
+-
+-	// While the structural type itself does not implement the interface,
+-	// underlying attributes might. Check attributes automatically, if possible.
+-	if !ok {
+-		ValueSemanticEqualityObjectAttributes(ctx, req, resp)
+-
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.ObjectValuableWithSemanticEquals)
+-
+-	// While the structural type itself does not implement the interface,
+-	// underlying attributes might. Check attributes automatically, if possible.
+-	if !ok {
+-		ValueSemanticEqualityObjectAttributes(ctx, req, resp)
+-
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.ObjectSemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if resp.Diagnostics.HasError() {
+-		return
+-	}
+-
+-	// If the structural type signaled semantic equality, respect the
+-	// determination to use the whole prior value and return early since
+-	// checking attributes is not necessary.
+-	if usePriorValue {
+-		resp.NewValue = priorValuable
+-
+-		return
+-	}
+-
+-	// While the structural type itself did not signal semantic equality,
+-	// underlying attributes might, which should still modify the structural.
+-	// Check attributes automatically, if possible.
+-	//
+-	// This logic pessimistically assumes that structural type semantic equality
+-	// implementations may be missing proper attribute type handling. While
+-	// correct implementations receive a small performance penalty of
+-	// being re-checked, this ensures that less-correct implementations do not
+-	// cause inconsistent data handling behaviors for developers.
+-	ValueSemanticEqualityObjectAttributes(ctx, req, resp)
++	valueSemanticEqualityNested(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.ObjectValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.ObjectSemanticEquals(ctx, priorValuable)
++	}, ValueSemanticEqualityObjectAttributes)
+ }
+ 
+ // ValueSemanticEqualityObjectAttributes performs object type semantic equality

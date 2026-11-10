@@ -1,0 +1,80 @@
+diff --git a/types/basetypes/map_value.go b/types/basetypes/map_value.go
+index 173bbe9..b00ca40 100644
+--- a/types/basetypes/map_value.go
++++ b/types/basetypes/map_value.go
+@@ -9,6 +9,7 @@ package basetypes
+ import (
+ 	"context"
+ 	"fmt"
++	"maps"
+ 	"sort"
+ 	"strings"
+ 
+@@ -174,9 +175,7 @@ func (m MapValue) Elements() map[string]attr.Value {
+ 	// Ensure callers cannot mutate the internal elements
+ 	result := make(map[string]attr.Value, len(m.elements))
+ 
+-	for key, value := range m.elements {
+-		result[key] = value
+-	}
++	maps.Copy(result, m.elements)
+ 
+ 	return result
+ }
+diff --git a/types/basetypes/object_type.go b/types/basetypes/object_type.go
+index 8a3d1ae..64b0ff0 100644
+--- a/types/basetypes/object_type.go
++++ b/types/basetypes/object_type.go
+@@ -6,6 +6,7 @@ package basetypes
+ import (
+ 	"context"
+ 	"fmt"
++	"maps"
+ 	"sort"
+ 	"strings"
+ 
+@@ -43,9 +44,7 @@ func (o ObjectType) AttributeTypes() map[string]attr.Type {
+ 	// Ensure callers cannot mutate the value
+ 	result := make(map[string]attr.Type, len(o.AttrTypes))
+ 
+-	for key, value := range o.AttrTypes {
+-		result[key] = value
+-	}
++	maps.Copy(result, o.AttrTypes)
+ 
+ 	return result
+ }
+diff --git a/types/basetypes/object_value.go b/types/basetypes/object_value.go
+index b0e9ec8..53b584f 100644
+--- a/types/basetypes/object_value.go
++++ b/types/basetypes/object_value.go
+@@ -6,6 +6,7 @@ package basetypes
+ import (
+ 	"context"
+ 	"fmt"
++	"maps"
+ 	"sort"
+ 	"strings"
+ 
+@@ -235,9 +236,7 @@ func (o ObjectValue) Attributes() map[string]attr.Value {
+ 	// Ensure callers cannot mutate the internal attributes
+ 	result := make(map[string]attr.Value, len(o.attributes))
+ 
+-	for name, value := range o.attributes {
+-		result[name] = value
+-	}
++	maps.Copy(result, o.attributes)
+ 
+ 	return result
+ }
+@@ -247,9 +246,7 @@ func (o ObjectValue) AttributeTypes(_ context.Context) map[string]attr.Type {
+ 	// Ensure callers cannot mutate the internal attribute types
+ 	result := make(map[string]attr.Type, len(o.attributeTypes))
+ 
+-	for name, typ := range o.attributeTypes {
+-		result[name] = typ
+-	}
++	maps.Copy(result, o.attributeTypes)
+ 
+ 	return result
+ }

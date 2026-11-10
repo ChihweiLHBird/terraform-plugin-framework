@@ -1,0 +1,122 @@
+--- /home/user/terraform-plugin-framework/internal/fwschema/underlying_attributes.go	2026-10-24 21:30:10.491446142 +0000
++++ internal/fwschema/underlying_attributes.go	2026-10-24 23:16:34.617510069 +0000
+@@ -5,6 +5,7 @@
+ 
+ import (
+ 	"fmt"
++	"maps"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+@@ -37,23 +38,7 @@
+ 
+ // Equal returns true if all underlying attributes are equal.
+ func (u UnderlyingAttributes) Equal(o UnderlyingAttributes) bool {
+-	if len(u) != len(o) {
+-		return false
+-	}
+-
+-	for name, uAttribute := range u {
+-		oAttribute, ok := o[name]
+-
+-		if !ok {
+-			return false
+-		}
+-
+-		if !uAttribute.Equal(oAttribute) {
+-			return false
+-		}
+-	}
+-
+-	return true
++	return maps.EqualFunc(u, o, Attribute.Equal)
+ }
+ 
+ // Type returns the framework type of the underlying attributes.
+--- /home/user/terraform-plugin-framework/internal/fwschema/nested_attribute_object.go	2026-10-24 21:30:10.491446142 +0000
++++ internal/fwschema/nested_attribute_object.go	2026-10-24 23:16:34.649553498 +0000
+@@ -5,6 +5,7 @@
+ 
+ import (
+ 	"fmt"
++	"maps"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/types"
+@@ -57,23 +58,7 @@
+ 		return false
+ 	}
+ 
+-	if len(a.GetAttributes()) != len(b.GetAttributes()) {
+-		return false
+-	}
+-
+-	for name, aAttribute := range a.GetAttributes() {
+-		bAttribute, ok := b.GetAttributes()[name]
+-
+-		if !ok {
+-			return false
+-		}
+-
+-		if !aAttribute.Equal(bAttribute) {
+-			return false
+-		}
+-	}
+-
+-	return true
++	return maps.EqualFunc(a.GetAttributes(), b.GetAttributes(), Attribute.Equal)
+ }
+ 
+ // NestedAttributeObjectType is a helper function to perform base type handling
+--- /home/user/terraform-plugin-framework/internal/fwschema/nested_block_object.go	2026-10-24 21:30:10.491446142 +0000
++++ internal/fwschema/nested_block_object.go	2026-10-24 23:16:34.649553498 +0000
+@@ -5,6 +5,7 @@
+ 
+ import (
+ 	"fmt"
++	"maps"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/types"
+@@ -66,39 +67,11 @@
+ 		return false
+ 	}
+ 
+-	if len(a.GetAttributes()) != len(b.GetAttributes()) {
++	if !maps.EqualFunc(a.GetAttributes(), b.GetAttributes(), Attribute.Equal) {
+ 		return false
+ 	}
+ 
+-	for name, aAttribute := range a.GetAttributes() {
+-		bAttribute, ok := b.GetAttributes()[name]
+-
+-		if !ok {
+-			return false
+-		}
+-
+-		if !aAttribute.Equal(bAttribute) {
+-			return false
+-		}
+-	}
+-
+-	if len(a.GetBlocks()) != len(b.GetBlocks()) {
+-		return false
+-	}
+-
+-	for name, aBlock := range a.GetBlocks() {
+-		bBlock, ok := b.GetBlocks()[name]
+-
+-		if !ok {
+-			return false
+-		}
+-
+-		if !aBlock.Equal(bBlock) {
+-			return false
+-		}
+-	}
+-
+-	return true
++	return maps.EqualFunc(a.GetBlocks(), b.GetBlocks(), Block.Equal)
+ }
+ 
+ // NestedBlockObjectType is a helper function to perform base type handling

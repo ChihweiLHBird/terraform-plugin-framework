@@ -1,0 +1,23 @@
+--- /home/user/terraform-plugin-framework/internal/proto6server/server_invokeaction.go	2026-10-24 21:30:10.577352980 +0000
++++ drafts/A6_proto6server_server_invokeaction.go	2026-10-24 23:16:59.417862964 +0000
+@@ -84,6 +84,20 @@
+ 				// Actions can push multiple progress events
+ 				case progressEvent := <-fwResp.ProgressEvents:
+ 					if !push(toproto6.ProgressInvokeActionEventType(ctx, progressEvent)) {
++						// The consumer stopped (e.g. the RPC context was canceled), but the
++						// provider's Invoke may still call SendProgress on the unbuffered
++						// channel. Keep receiving until Invoke returns so it is not blocked
++						// forever.
++						go func() {
++							for {
++								select {
++								case <-fwResp.ProgressEvents:
++								case <-completedChan:
++									return
++								}
++							}
++						}()
++
+ 						return
+ 					}
+ 				}

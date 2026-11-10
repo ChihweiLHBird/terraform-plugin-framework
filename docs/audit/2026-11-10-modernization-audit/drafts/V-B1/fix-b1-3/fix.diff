@@ -1,0 +1,39 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-B1/pristine/internal/fwserver/block_validation.go	2026-10-24 21:30:10.000000000 +0000
++++ block_validation.go	2026-11-10 21:11:36.411901976 +0000
+@@ -46,6 +46,20 @@
+ 		BlockValidateSet(ctx, blockWithValidators, req, resp)
+ 	}
+ 
++	BlockValidateNestedBlockObject(ctx, b, req, resp)
++
++	// Show deprecation warning only on known values.
++	if b.GetDeprecationMessage() != "" && !attributeConfig.IsNull() && !attributeConfig.IsUnknown() {
++		resp.Diagnostics.AddAttributeWarning(
++			req.AttributePath,
++			"Block Deprecated",
++			b.GetDeprecationMessage(),
++		)
++	}
++}
++
++// BlockValidateNestedBlockObject performs all nested block object validation.
++func BlockValidateNestedBlockObject(ctx context.Context, b fwschema.Block, req ValidateAttributeRequest, resp *ValidateAttributeResponse) {
+ 	nestedBlockObject := b.GetNestedObject()
+ 
+ 	nm := b.GetNestingMode()
+@@ -163,15 +177,6 @@
+ 
+ 		return
+ 	}
+-
+-	// Show deprecation warning only on known values.
+-	if b.GetDeprecationMessage() != "" && !attributeConfig.IsNull() && !attributeConfig.IsUnknown() {
+-		resp.Diagnostics.AddAttributeWarning(
+-			req.AttributePath,
+-			"Block Deprecated",
+-			b.GetDeprecationMessage(),
+-		)
+-	}
+ }
+ 
+ // BlockValidateList performs all types.List validation.

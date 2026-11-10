@@ -1,0 +1,12 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/draft-providermeta/attribute_plan_modification.go	2026-10-24 23:17:24.832999866 +0000
++++ internal/fwserver/attribute_plan_modification.go	2026-10-24 23:17:24.852988962 +0000
+@@ -52,9 +52,6 @@
+ 	// AttributePlan is the planned new state for the attribute.
+ 	AttributePlan attr.Value
+ 
+-	// ProviderMeta is metadata from the provider_meta block of the module.
+-	ProviderMeta tfsdk.Config
+-
+ 	// Private is provider-defined resource private state data which was previously
+ 	// stored with the resource state. This data is opaque to Terraform and does
+ 	// not affect plan output. Any existing data is copied to

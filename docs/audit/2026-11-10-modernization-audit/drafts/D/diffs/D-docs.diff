@@ -1,0 +1,493 @@
+--- /home/user/terraform-plugin-framework/action/schema/bool_attribute.go	2026-10-24 21:30:10.371852253 +0000
++++ /home/user/terraform-plugin-framework/action/schema/bool_attribute.go (draft)	2026-10-24 23:25:50.496589352 +0000
+@@ -141,7 +141,7 @@
+ 	return a.MarkdownDescription
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/action/schema/nested_block_object.go	2026-10-24 21:30:10.382054869 +0000
++++ /home/user/terraform-plugin-framework/action/schema/nested_block_object.go (draft)	2026-10-24 23:25:50.496892364 +0000
+@@ -74,7 +74,7 @@
+ 	return schemaAttributes(o.Attributes)
+ }
+ 
+-// GetAttributes returns the Blocks field value.
++// GetBlocks returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+ 	return schemaBlocks(o.Blocks)
+ }
+--- /home/user/terraform-plugin-framework/action/schema/object_attribute.go	2026-10-24 21:30:10.382054869 +0000
++++ /home/user/terraform-plugin-framework/action/schema/object_attribute.go (draft)	2026-10-24 23:25:50.498805994 +0000
+@@ -188,7 +188,7 @@
+ 	return a.Required
+ }
+ 
+-// IsWriteOnly always returns false as action schema attributes cannot be WriteOnly.
++// IsSensitive always returns false as action schema attributes cannot be Sensitive.
+ func (a ObjectAttribute) IsSensitive() bool {
+ 	return false
+ }
+--- /home/user/terraform-plugin-framework/action/schema/schema.go	2026-10-24 21:30:10.382054869 +0000
++++ /home/user/terraform-plugin-framework/action/schema/schema.go (draft)	2026-10-24 23:25:50.497039165 +0000
+@@ -72,9 +72,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/action/schema/single_nested_attribute.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/single_nested_attribute.go (draft)	2026-10-24 23:25:50.496740716 +0000
+@@ -191,7 +191,7 @@
+ 	return fwschema.NestingModeSingle
+ }
+ 
+-// GetType returns ListType of ObjectType or CustomType.
++// GetType returns ObjectType or CustomType.
+ func (a SingleNestedAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/datasource/schema/bool_attribute.go	2026-10-24 21:30:10.390475505 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/bool_attribute.go (draft)	2026-10-24 23:25:50.494190896 +0000
+@@ -158,7 +158,7 @@
+ 	return a.MarkdownDescription
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/datasource/schema/nested_block_object.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/nested_block_object.go (draft)	2026-10-24 23:25:50.494524896 +0000
+@@ -74,7 +74,7 @@
+ 	return schemaAttributes(o.Attributes)
+ }
+ 
+-// GetAttributes returns the Blocks field value.
++// GetBlocks returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+ 	return schemaBlocks(o.Blocks)
+ }
+--- /home/user/terraform-plugin-framework/datasource/schema/schema.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/schema.go (draft)	2026-10-24 23:25:50.494685649 +0000
+@@ -74,9 +74,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/datasource/schema/single_nested_attribute.go	2026-10-24 21:30:10.399597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/single_nested_attribute.go (draft)	2026-10-24 23:25:50.494326521 +0000
+@@ -203,7 +203,7 @@
+ 	return fwschema.NestingModeSingle
+ }
+ 
+-// GetType returns ListType of ObjectType or CustomType.
++// GetType returns ObjectType or CustomType.
+ func (a SingleNestedAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/ephemeral/schema/bool_attribute.go	2026-10-24 21:30:10.409210950 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/bool_attribute.go (draft)	2026-10-24 23:25:50.495943708 +0000
+@@ -156,7 +156,7 @@
+ 	return a.MarkdownDescription
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/ephemeral/schema/nested_block_object.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/nested_block_object.go (draft)	2026-10-24 23:25:50.496235683 +0000
+@@ -74,7 +74,7 @@
+ 	return schemaAttributes(o.Attributes)
+ }
+ 
+-// GetAttributes returns the Blocks field value.
++// GetBlocks returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+ 	return schemaBlocks(o.Blocks)
+ }
+--- /home/user/terraform-plugin-framework/ephemeral/schema/schema.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/schema.go (draft)	2026-10-24 23:25:50.496375837 +0000
+@@ -74,9 +74,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/ephemeral/schema/single_nested_attribute.go	2026-10-24 21:30:10.419597582 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/single_nested_attribute.go (draft)	2026-10-24 23:25:50.496088270 +0000
+@@ -201,7 +201,7 @@
+ 	return fwschema.NestingModeSingle
+ }
+ 
+-// GetType returns ListType of ObjectType or CustomType.
++// GetType returns ObjectType or CustomType.
+ func (a SingleNestedAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/list/schema/bool_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/bool_attribute.go (draft)	2026-10-24 23:25:50.497186948 +0000
+@@ -143,7 +143,7 @@
+ 	return a.MarkdownDescription
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/list/schema/nested_block_object.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/nested_block_object.go (draft)	2026-10-24 23:25:50.497622990 +0000
+@@ -74,7 +74,7 @@
+ 	return schemaAttributes(o.Attributes)
+ }
+ 
+-// GetAttributes returns the Blocks field value.
++// GetBlocks returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+ 	return schemaBlocks(o.Blocks)
+ }
+--- /home/user/terraform-plugin-framework/list/schema/schema.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/schema.go (draft)	2026-10-24 23:25:50.497775508 +0000
+@@ -73,9 +73,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/list/schema/single_nested_attribute.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/single_nested_attribute.go (draft)	2026-10-24 23:25:50.497430605 +0000
+@@ -188,7 +188,7 @@
+ 	return fwschema.NestingModeSingle
+ }
+ 
+-// GetType returns ListType of ObjectType or CustomType.
++// GetType returns ObjectType or CustomType.
+ func (a SingleNestedAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/provider/metaschema/bool_attribute.go	2026-10-24 21:30:10.707597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/bool_attribute.go (draft)	2026-10-24 23:25:50.495483111 +0000
+@@ -89,7 +89,7 @@
+ 	return a.MarkdownDescription
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/provider/metaschema/schema.go	2026-10-24 21:30:10.711597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/schema.go (draft)	2026-10-24 23:25:50.495802386 +0000
+@@ -43,9 +43,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/provider/metaschema/single_nested_attribute.go	2026-10-24 21:30:10.715597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/single_nested_attribute.go (draft)	2026-10-24 23:25:50.495651972 +0000
+@@ -138,7 +138,7 @@
+ 	return fwschema.NestingModeSingle
+ }
+ 
+-// GetType returns ListType of ObjectType or CustomType.
++// GetType returns ObjectType or CustomType.
+ func (a SingleNestedAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/provider/schema/bool_attribute.go	2026-10-24 21:30:10.715597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/bool_attribute.go (draft)	2026-10-24 23:25:50.494856429 +0000
+@@ -151,7 +151,7 @@
+ 	return a.MarkdownDescription
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/provider/schema/doc.go	2026-10-24 21:30:10.715597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/doc.go (draft)	2026-10-24 23:25:50.498955891 +0000
+@@ -1,8 +1,8 @@
+ // Copyright IBM Corp. 2021, 2026
+ // SPDX-License-Identifier: MPL-2.0
+ 
+-// Package schema contains all available schema functionality for data sources.
+-// Data source schemas define the structure and value types for configuration
+-// and state data. Schemas are implemented via the datasource.DataSource type
++// Package schema contains all available schema functionality for providers.
++// Provider schemas define the structure and value types for provider
++// configuration data. Schemas are implemented via the provider.Provider type
+ // Schema method.
+ package schema
+--- /home/user/terraform-plugin-framework/provider/schema/nested_block_object.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/nested_block_object.go (draft)	2026-10-24 23:25:50.495144893 +0000
+@@ -74,7 +74,7 @@
+ 	return schemaAttributes(o.Attributes)
+ }
+ 
+-// GetAttributes returns the Blocks field value.
++// GetBlocks returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+ 	return schemaBlocks(o.Blocks)
+ }
+--- /home/user/terraform-plugin-framework/provider/schema/schema.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/schema.go (draft)	2026-10-24 23:25:50.495279664 +0000
+@@ -72,9 +72,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/provider/schema/single_nested_attribute.go	2026-10-24 21:30:10.730448115 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/single_nested_attribute.go (draft)	2026-10-24 23:25:50.494998025 +0000
+@@ -196,7 +196,7 @@
+ 	return fwschema.NestingModeSingle
+ }
+ 
+-// GetType returns ListType of ObjectType or CustomType.
++// GetType returns ObjectType or CustomType.
+ func (a SingleNestedAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/resource/identityschema/bool_attribute.go	2026-10-24 21:30:10.731597575 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/bool_attribute.go (draft)	2026-10-24 23:25:50.498480971 +0000
+@@ -82,7 +82,7 @@
+ 	return a.Description
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/resource/identityschema/schema.go	2026-10-24 21:30:10.737537070 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/schema.go (draft)	2026-10-24 23:25:50.498652071 +0000
+@@ -50,9 +50,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/bool_attribute.go	2026-10-24 21:30:10.740157399 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/bool_attribute.go (draft)	2026-10-24 23:25:50.493469947 +0000
+@@ -210,7 +210,7 @@
+ 	return a.MarkdownDescription
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/resource/schema/defaults/doc.go	2026-10-24 21:30:10.745643924 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/defaults/doc.go (draft)	2026-10-24 23:25:50.499815734 +0000
+@@ -10,7 +10,7 @@
+ //
+ // Each attr.Type has a corresponding {TYPE} interface which
+ // implements concretely typed Default{TYPE} methods, such as
+-// StringDefault and DefaultString.
++// String and DefaultString.
+ //
+ // The framework has to choose between default value developers handling a
+ // concrete framework value type, such as types.Bool, or the framework
+--- /home/user/terraform-plugin-framework/resource/schema/nested_block_object.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/nested_block_object.go (draft)	2026-10-24 23:25:50.493898615 +0000
+@@ -95,7 +95,7 @@
+ 	return schemaAttributes(o.Attributes)
+ }
+ 
+-// GetAttributes returns the Blocks field value.
++// GetBlocks returns the Blocks field value.
+ func (o NestedBlockObject) GetBlocks() map[string]fwschema.Block {
+ 	return schemaBlocks(o.Blocks)
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/planmodifier/doc.go	2026-10-24 21:30:10.775597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/planmodifier/doc.go (draft)	2026-10-24 23:25:50.499485557 +0000
+@@ -10,7 +10,7 @@
+ //
+ // Each attr.Type has a corresponding {TYPE} interface which
+ // implements concretely typed PlanModify{TYPE} methods, such as
+-// StringPlanModifier and PlanModifyString.
++// String and PlanModifyString.
+ //
+ // The framework has to choose between plan modifier developers handling a
+ // concrete framework value type, such as types.Bool, or the framework
+@@ -31,6 +31,6 @@
+ // developers can choose to call the type's ValueFrom{TYPE} method to get the
+ // desired custom type in a plan modifier.
+ //
+-// PlanModifers that are not type dependent need to implement all interfaces,
++// PlanModifiers that are not type dependent need to implement all interfaces,
+ // but can use shared logic to reduce implementation code.
+ package planmodifier
+--- /home/user/terraform-plugin-framework/resource/schema/schema.go	2026-10-24 21:30:10.779597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/schema.go (draft)	2026-10-24 23:25:50.494049675 +0000
+@@ -85,9 +85,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/single_nested_attribute.go	2026-10-24 21:30:10.783597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/single_nested_attribute.go (draft)	2026-10-24 23:25:50.493739864 +0000
+@@ -244,7 +244,7 @@
+ 	return fwschema.NestingModeSingle
+ }
+ 
+-// GetType returns ListType of ObjectType or CustomType.
++// GetType returns ObjectType or CustomType.
+ func (a SingleNestedAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/schema/doc.go	2026-10-24 21:30:10.794467848 +0000
++++ /home/user/terraform-plugin-framework/schema/doc.go (draft)	2026-10-24 23:25:50.499098683 +0000
+@@ -2,6 +2,8 @@
+ // SPDX-License-Identifier: MPL-2.0
+ 
+ // Package schema contains functionality common to all schemas. Refer to the
+-// datasource/schema, provider/schema, and resource/schema packages for concept
+-// specific implementations.
++// action/schema, datasource/schema, ephemeral/schema, list/schema,
++// provider/metaschema, provider/schema, resource/identityschema,
++// resource/schema, and statestore/schema packages for concept specific
++// implementations.
+ package schema
+--- /home/user/terraform-plugin-framework/schema/validator/doc.go	2026-10-24 21:30:10.794467848 +0000
++++ /home/user/terraform-plugin-framework/schema/validator/doc.go (draft)	2026-10-24 23:25:50.499252471 +0000
+@@ -5,21 +5,21 @@
+ // implementations. These validators are used by concept specific packages
+ // such as datasource/schema, provider/schema, and resource/schema.
+ //
+-// Each attr.Type has a corresponding {TYPE}Validator interface which
++// Each attr.Type has a corresponding {TYPE} interface which
+ // implements concretely typed Validate{TYPE} methods, such as
+-// StringValidator and ValidateString. Custom attr.Type can also consider
++// String and ValidateString. Custom attr.Type can also consider
+ // implementing native type validation via the attr/xattr.TypeWithValidate
+ // interface instead of schema validators.
+ //
+ // The framework has to choose between validator developers handling a concrete
+ // framework value type, such as types.Bool, or the framework interface for
+-// custom value basetypes. such as basetypes.BoolValuable.
++// custom value basetypes, such as basetypes.BoolValuable.
+ //
+ // In the framework type model, the developer can immediately use the value.
+ // If the value was associated with a custom type and using the custom value
+ // type is desired, the developer must use the type's ValueFrom{TYPE} method.
+ //
+-// In the custom type model, the developer must always convert to a concreate
++// In the custom type model, the developer must always convert to a concrete
+ // type before using the value unless checking for null or unknown. Since any
+ // custom type may be passed due to the schema, it is possible, if not likely,
+ // that unknown concrete types will be passed to the validator.
+@@ -29,7 +29,7 @@
+ // easier use cases where the framework type is sufficient. More advanced
+ // developers can choose to implement native type validation for custom
+ // types or call the type's ValueFrom{TYPE} method to get the desired
+-// desired custom type in a validator.
++// custom type in a validator.
+ //
+ // Validators that are not type dependent need to implement all interfaces,
+ // but can use shared logic to reduce implementation code.
+--- /home/user/terraform-plugin-framework/statestore/schema/bool_attribute.go	2026-10-24 21:30:10.800154874 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/bool_attribute.go (draft)	2026-10-24 23:25:50.497982282 +0000
+@@ -122,7 +122,7 @@
+ 	return a.MarkdownDescription
+ }
+ 
+-// GetType returns types.StringType or the CustomType field value if defined.
++// GetType returns types.BoolType or the CustomType field value if defined.
+ func (a BoolAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType
+--- /home/user/terraform-plugin-framework/statestore/schema/schema.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/schema.go (draft)	2026-10-24 23:25:50.498295262 +0000
+@@ -73,9 +73,9 @@
+ 	return fwschema.SchemaAttributeAtPath(ctx, s, p)
+ }
+ 
+-// AttributeAtPath returns the Attribute at the passed path. If the path points
+-// to an element or attribute of a complex type, rather than to an Attribute,
+-// it will return an ErrPathInsideAtomicAttribute error.
++// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.
++// If the path points to an element or attribute of a complex type, rather
++// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.
+ func (s Schema) AttributeAtTerraformPath(ctx context.Context, p *tftypes.AttributePath) (fwschema.Attribute, error) {
+ 	return fwschema.SchemaAttributeAtTerraformPath(ctx, s, p)
+ }
+--- /home/user/terraform-plugin-framework/statestore/schema/single_nested_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/single_nested_attribute.go (draft)	2026-10-24 23:25:50.498144537 +0000
+@@ -172,7 +172,7 @@
+ 	return fwschema.NestingModeSingle
+ }
+ 
+-// GetType returns ListType of ObjectType or CustomType.
++// GetType returns ObjectType or CustomType.
+ func (a SingleNestedAttribute) GetType() attr.Type {
+ 	if a.CustomType != nil {
+ 		return a.CustomType

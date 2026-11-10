@@ -1,0 +1,13 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/draft-providermeta/server_planresourcechange.go	2026-10-24 23:17:24.833201359 +0000
++++ internal/fwserver/server_planresourcechange.go	2026-10-24 23:17:24.853805935 +0000
+@@ -280,10 +280,6 @@
+ 			Private: resp.PlannedPrivate.Provider,
+ 		}
+ 
+-		if req.ProviderMeta != nil {
+-			modifySchemaPlanReq.ProviderMeta = *req.ProviderMeta
+-		}
+-
+ 		modifySchemaPlanResp := ModifySchemaPlanResponse{
+ 			Diagnostics: resp.Diagnostics,
+ 			Plan:        modifySchemaPlanReq.Plan,

@@ -1,0 +1,165 @@
+diff -ruN repo/types/basetypes/collection_value.go draft4/types/basetypes/collection_value.go
+--- repo/types/basetypes/collection_value.go	1970-01-01 00:00:00.000000000 +0000
++++ draft4/types/basetypes/collection_value.go	2026-10-24 23:07:42.046680069 +0000
+@@ -0,0 +1,57 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package basetypes
++
++import (
++	"context"
++	"fmt"
++
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	"github.com/hashicorp/terraform-plugin-framework/attr"
++)
++
++// collectionToTerraformValue implements ToTerraformValue for ListValue and
++// SetValue. The name is used in the panic message for an unhandled state.
++func collectionToTerraformValue(ctx context.Context, collectionType tftypes.Type, name string, state attr.ValueState, elements []attr.Value) (tftypes.Value, error) {
++	switch state {
++	case attr.ValueStateKnown:
++		// MAINTAINER NOTE:
++		// ListValue and SetValue do not support DynamicType as an element type. It is not explicitly prevented from being created with the
++		// Framework type system, but the Framework-supported List and Set attributes and blocks all prevent DynamicType
++		// from being used as an element type.
++		//
++		// In the future, if we ever need to support a list or set of dynamic element types, this creation logic will need to be modified to ensure
++		// that known values contain the exact same concrete element type, specifically with unknown and null values. Dynamic values will return the correct concrete
++		// element type for known values from `elem.ToTerraformValue`, but unknown and null values will be tftypes.DynamicPseudoType, causing an error due to multiple element
++		// types in a tftypes.List or tftypes.Set.
++		//
++		// Unknown and null element types of tftypes.DynamicPseudoType must be recreated as the concrete element type unknown/null value. This can be done by checking `elements`
++		// for a single concrete type (i.e. not tftypes.DynamicPseudoType), and using that concrete type to create unknown and null dynamic values later.
++		//
++		vals := make([]tftypes.Value, 0, len(elements))
++
++		for _, elem := range elements {
++			val, err := elem.ToTerraformValue(ctx)
++
++			if err != nil {
++				return tftypes.NewValue(collectionType, tftypes.UnknownValue), err
++			}
++
++			vals = append(vals, val)
++		}
++
++		if err := tftypes.ValidateValue(collectionType, vals); err != nil {
++			return tftypes.NewValue(collectionType, tftypes.UnknownValue), err
++		}
++
++		return tftypes.NewValue(collectionType, vals), nil
++	case attr.ValueStateNull:
++		return tftypes.NewValue(collectionType, nil), nil
++	case attr.ValueStateUnknown:
++		return tftypes.NewValue(collectionType, tftypes.UnknownValue), nil
++	default:
++		panic(fmt.Sprintf("unhandled %s state in ToTerraformValue: %s", name, state))
++	}
++}
+diff -ruN repo/types/basetypes/list_value.go draft4/types/basetypes/list_value.go
+--- repo/types/basetypes/list_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft4/types/basetypes/list_value.go	2026-10-24 23:07:42.046088036 +0000
+@@ -222,47 +222,7 @@
+ 
+ // ToTerraformValue returns the data contained in the List as a tftypes.Value.
+ func (l ListValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+-	listType := tftypes.List{ElementType: l.ElementType(ctx).TerraformType(ctx)}
+-
+-	switch l.state {
+-	case attr.ValueStateKnown:
+-		// MAINTAINER NOTE:
+-		// ListValue does not support DynamicType as an element type. It is not explicitly prevented from being created with the
+-		// Framework type system, but the Framework-supported ListAttribute, ListNestedAttribute, and ListNestedBlock all prevent DynamicType
+-		// from being used as an element type.
+-		//
+-		// In the future, if we ever need to support a list of dynamic element types, this tftypes.List creation logic will need to be modified to ensure
+-		// that known values contain the exact same concrete element type, specifically with unknown and null values. Dynamic values will return the correct concrete
+-		// element type for known values from `elem.ToTerraformValue`, but unknown and null values will be tftypes.DynamicPseudoType, causing an error due to multiple element
+-		// types in a tftypes.List.
+-		//
+-		// Unknown and null element types of tftypes.DynamicPseudoType must be recreated as the concrete element type unknown/null value. This can be done by checking `l.elements`
+-		// for a single concrete type (i.e. not tftypes.DynamicPseudoType), and using that concrete type to create unknown and null dynamic values later.
+-		//
+-		vals := make([]tftypes.Value, 0, len(l.elements))
+-
+-		for _, elem := range l.elements {
+-			val, err := elem.ToTerraformValue(ctx)
+-
+-			if err != nil {
+-				return tftypes.NewValue(listType, tftypes.UnknownValue), err
+-			}
+-
+-			vals = append(vals, val)
+-		}
+-
+-		if err := tftypes.ValidateValue(listType, vals); err != nil {
+-			return tftypes.NewValue(listType, tftypes.UnknownValue), err
+-		}
+-
+-		return tftypes.NewValue(listType, vals), nil
+-	case attr.ValueStateNull:
+-		return tftypes.NewValue(listType, nil), nil
+-	case attr.ValueStateUnknown:
+-		return tftypes.NewValue(listType, tftypes.UnknownValue), nil
+-	default:
+-		panic(fmt.Sprintf("unhandled List state in ToTerraformValue: %s", l.state))
+-	}
++	return collectionToTerraformValue(ctx, tftypes.List{ElementType: l.ElementType(ctx).TerraformType(ctx)}, "List", l.state, l.elements)
+ }
+ 
+ // Equal returns true if the given attr.Value is also a ListValue, has the
+diff -ruN repo/types/basetypes/set_value.go draft4/types/basetypes/set_value.go
+--- repo/types/basetypes/set_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft4/types/basetypes/set_value.go	2026-10-24 23:07:42.046522787 +0000
+@@ -222,47 +222,7 @@
+ 
+ // ToTerraformValue returns the data contained in the Set as a tftypes.Value.
+ func (s SetValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+-	setType := tftypes.Set{ElementType: s.ElementType(ctx).TerraformType(ctx)}
+-
+-	switch s.state {
+-	case attr.ValueStateKnown:
+-		// MAINTAINER NOTE:
+-		// SetValue does not support DynamicType as an element type. It is not explicitly prevented from being created with the
+-		// Framework type system, but the Framework-supported SetAttribute, SetNestedAttribute, and SetNestedBlock all prevent DynamicType
+-		// from being used as an element type.
+-		//
+-		// In the future, if we ever need to support a set of dynamic element types, this tftypes.Set creation logic will need to be modified to ensure
+-		// that known values contain the exact same concrete element type, specifically with unknown and null values. Dynamic values will return the correct concrete
+-		// element type for known values from `elem.ToTerraformValue`, but unknown and null values will be tftypes.DynamicPseudoType, causing an error due to multiple element
+-		// types in a tftypes.Set.
+-		//
+-		// Unknown and null element types of tftypes.DynamicPseudoType must be recreated as the concrete element type unknown/null value. This can be done by checking `s.elements`
+-		// for a single concrete type (i.e. not tftypes.DynamicPseudoType), and using that concrete type to create unknown and null dynamic values later.
+-		//
+-		vals := make([]tftypes.Value, 0, len(s.elements))
+-
+-		for _, elem := range s.elements {
+-			val, err := elem.ToTerraformValue(ctx)
+-
+-			if err != nil {
+-				return tftypes.NewValue(setType, tftypes.UnknownValue), err
+-			}
+-
+-			vals = append(vals, val)
+-		}
+-
+-		if err := tftypes.ValidateValue(setType, vals); err != nil {
+-			return tftypes.NewValue(setType, tftypes.UnknownValue), err
+-		}
+-
+-		return tftypes.NewValue(setType, vals), nil
+-	case attr.ValueStateNull:
+-		return tftypes.NewValue(setType, nil), nil
+-	case attr.ValueStateUnknown:
+-		return tftypes.NewValue(setType, tftypes.UnknownValue), nil
+-	default:
+-		panic(fmt.Sprintf("unhandled Set state in ToTerraformValue: %s", s.state))
+-	}
++	return collectionToTerraformValue(ctx, tftypes.Set{ElementType: s.ElementType(ctx).TerraformType(ctx)}, "Set", s.state, s.elements)
+ }
+ 
+ // Equal returns true if the given attr.Value is also a SetValue, has the

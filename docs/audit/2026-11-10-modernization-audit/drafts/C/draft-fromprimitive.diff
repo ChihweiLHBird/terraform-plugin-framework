@@ -1,0 +1,195 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/C/reflect-step1-backup/number.go	2026-10-24 23:12:49.859068257 +0000
++++ internal/reflect/number.go	2026-10-24 23:13:06.179756049 +0000
+@@ -194,124 +194,33 @@
+ //
+ // It is meant to be called through FromValue, not directly.
+ func FromInt(ctx context.Context, typ attr.Type, val int64, path path.Path) (attr.Value, diag.Diagnostics) {
+-	var diags diag.Diagnostics
+-	err := tftypes.ValidateValue(tftypes.Number, val)
+-	if err != nil {
+-		return nil, append(diags, validateValueErrorDiag(err, path))
+-	}
+-	tfNum := tftypes.NewValue(tftypes.Number, val)
+-
+-	num, err := typ.ValueFromTerraform(ctx, tfNum)
+-	if err != nil {
+-		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+-	}
+-
+-	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+-
+-	if diags.HasError() {
+-		return nil, diags
+-	}
+-
+-	return num, diags
++	return fromPrimitive(ctx, typ, tftypes.Number, val, path)
+ }
+ 
+ // FromUint creates an attr.Value using `typ` from a uint64.
+ //
+ // It is meant to be called through FromValue, not directly.
+ func FromUint(ctx context.Context, typ attr.Type, val uint64, path path.Path) (attr.Value, diag.Diagnostics) {
+-	var diags diag.Diagnostics
+-	err := tftypes.ValidateValue(tftypes.Number, val)
+-	if err != nil {
+-		return nil, append(diags, validateValueErrorDiag(err, path))
+-	}
+-	tfNum := tftypes.NewValue(tftypes.Number, val)
+-
+-	num, err := typ.ValueFromTerraform(ctx, tfNum)
+-	if err != nil {
+-		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+-	}
+-
+-	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+-
+-	if diags.HasError() {
+-		return nil, diags
+-	}
+-
+-	return num, diags
++	return fromPrimitive(ctx, typ, tftypes.Number, val, path)
+ }
+ 
+ // FromFloat creates an attr.Value using `typ` from a float64.
+ //
+ // It is meant to be called through FromValue, not directly.
+ func FromFloat(ctx context.Context, typ attr.Type, val float64, path path.Path) (attr.Value, diag.Diagnostics) {
+-	var diags diag.Diagnostics
+-	err := tftypes.ValidateValue(tftypes.Number, val)
+-	if err != nil {
+-		return nil, append(diags, validateValueErrorDiag(err, path))
+-	}
+-	tfNum := tftypes.NewValue(tftypes.Number, val)
+-
+-	num, err := typ.ValueFromTerraform(ctx, tfNum)
+-	if err != nil {
+-		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+-	}
+-
+-	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+-
+-	if diags.HasError() {
+-		return nil, diags
+-	}
+-
+-	return num, diags
++	return fromPrimitive(ctx, typ, tftypes.Number, val, path)
+ }
+ 
+ // FromBigFloat creates an attr.Value using `typ` from a *big.Float.
+ //
+ // It is meant to be called through FromValue, not directly.
+ func FromBigFloat(ctx context.Context, typ attr.Type, val *big.Float, path path.Path) (attr.Value, diag.Diagnostics) {
+-	var diags diag.Diagnostics
+-	err := tftypes.ValidateValue(tftypes.Number, val)
+-	if err != nil {
+-		return nil, append(diags, validateValueErrorDiag(err, path))
+-	}
+-	tfNum := tftypes.NewValue(tftypes.Number, val)
+-
+-	num, err := typ.ValueFromTerraform(ctx, tfNum)
+-	if err != nil {
+-		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+-	}
+-
+-	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+-
+-	if diags.HasError() {
+-		return nil, diags
+-	}
+-
+-	return num, diags
++	return fromPrimitive(ctx, typ, tftypes.Number, val, path)
+ }
+ 
+ // FromBigInt creates an attr.Value using `typ` from a *big.Int.
+ //
+ // It is meant to be called through FromValue, not directly.
+ func FromBigInt(ctx context.Context, typ attr.Type, val *big.Int, path path.Path) (attr.Value, diag.Diagnostics) {
+-	var diags diag.Diagnostics
+-	fl := big.NewFloat(0).SetInt(val)
+-	err := tftypes.ValidateValue(tftypes.Number, fl)
+-	if err != nil {
+-		return nil, append(diags, validateValueErrorDiag(err, path))
+-	}
+-	tfNum := tftypes.NewValue(tftypes.Number, fl)
+-
+-	num, err := typ.ValueFromTerraform(ctx, tfNum)
+-	if err != nil {
+-		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+-	}
+-
+-	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+-
+-	if diags.HasError() {
+-		return nil, diags
+-	}
+-
+-	return num, diags
++	return fromPrimitive(ctx, typ, tftypes.Number, big.NewFloat(0).SetInt(val), path)
+ }
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/C/reflect-step1-backup/primitive.go	2026-10-24 23:12:49.859942712 +0000
++++ internal/reflect/primitive.go	2026-10-24 23:13:06.180168660 +0000
+@@ -61,48 +61,36 @@
+ //
+ // It is meant to be called through FromValue, not directly.
+ func FromString(ctx context.Context, typ attr.Type, val string, path path.Path) (attr.Value, diag.Diagnostics) {
+-	var diags diag.Diagnostics
+-	err := tftypes.ValidateValue(tftypes.String, val)
+-	if err != nil {
+-		return nil, append(diags, validateValueErrorDiag(err, path))
+-	}
+-	tfStr := tftypes.NewValue(tftypes.String, val)
+-
+-	str, err := typ.ValueFromTerraform(ctx, tfStr)
+-	if err != nil {
+-		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+-	}
+-
+-	diags.Append(validateAttributeValue(ctx, typ, str, tfStr, path)...)
+-
+-	if diags.HasError() {
+-		return nil, diags
+-	}
+-
+-	return str, diags
++	return fromPrimitive(ctx, typ, tftypes.String, val, path)
+ }
+ 
+ // FromBool returns an attr.Value as produced by `typ` from a bool.
+ //
+ // It is meant to be called through FromValue, not directly.
+ func FromBool(ctx context.Context, typ attr.Type, val bool, path path.Path) (attr.Value, diag.Diagnostics) {
++	return fromPrimitive(ctx, typ, tftypes.Bool, val, path)
++}
++
++// fromPrimitive returns an attr.Value as produced by `typ` from val, a Go
++// value accepted by tftypes.NewValue for tfType, and validates it.
++func fromPrimitive(ctx context.Context, typ attr.Type, tfType tftypes.Type, val any, path path.Path) (attr.Value, diag.Diagnostics) {
+ 	var diags diag.Diagnostics
+-	err := tftypes.ValidateValue(tftypes.Bool, val)
++	err := tftypes.ValidateValue(tfType, val)
+ 	if err != nil {
+ 		return nil, append(diags, validateValueErrorDiag(err, path))
+ 	}
+-	tfBool := tftypes.NewValue(tftypes.Bool, val)
++	tfVal := tftypes.NewValue(tfType, val)
+ 
+-	b, err := typ.ValueFromTerraform(ctx, tfBool)
++	attrVal, err := typ.ValueFromTerraform(ctx, tfVal)
+ 	if err != nil {
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	diags.Append(validateAttributeValue(ctx, typ, b, tfBool, path)...)
++	diags.Append(validateAttributeValue(ctx, typ, attrVal, tfVal, path)...)
+ 
+ 	if diags.HasError() {
+ 		return nil, diags
+ 	}
+ 
+-	return b, diags
++	return attrVal, diags
+ }

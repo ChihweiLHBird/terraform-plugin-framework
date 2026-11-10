@@ -1,0 +1,22 @@
+diff --git a/internal/testing/testschema/nested_attribute.go b/internal/testing/testschema/nested_attribute.go
+index e7b9835..fb07315 100644
+--- a/internal/testing/testschema/nested_attribute.go
++++ b/internal/testing/testschema/nested_attribute.go
+@@ -48,7 +48,7 @@ func (a NestedAttribute) ApplyTerraform5AttributePathStep(step tftypes.Attribute
+ 		_, ok := step.(tftypes.ElementKeyString)
+ 
+ 		if !ok {
+-			return nil, fmt.Errorf("cannot apply step %T to ListNestedAttribute", step)
++			return nil, fmt.Errorf("cannot apply step %T to MapNestedAttribute", step)
+ 		}
+ 
+ 		return a.NestedObject, nil
+@@ -56,7 +56,7 @@ func (a NestedAttribute) ApplyTerraform5AttributePathStep(step tftypes.Attribute
+ 		_, ok := step.(tftypes.ElementKeyValue)
+ 
+ 		if !ok {
+-			return nil, fmt.Errorf("cannot apply step %T to ListNestedAttribute", step)
++			return nil, fmt.Errorf("cannot apply step %T to SetNestedAttribute", step)
+ 		}
+ 
+ 		return a.NestedObject, nil

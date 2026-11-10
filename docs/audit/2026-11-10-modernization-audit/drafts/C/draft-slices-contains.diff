@@ -1,0 +1,169 @@
+--- /home/user/terraform-plugin-framework/internal/fwschema/attribute_name_validation.go	2026-10-24 21:30:10.487914473 +0000
++++ internal/fwschema/attribute_name_validation.go	2026-10-24 23:20:43.348302858 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"fmt"
+ 	"regexp"
++	"slices"
+ 	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+@@ -73,21 +74,17 @@
+ 		return diags
+ 	}
+ 
+-	for _, reservedName := range ReservedProviderAttributeNames {
+-		if name == reservedName {
+-			// The diagnostic path is intentionally omitted as it is invalid
+-			// in this context. Diagnostic paths are intended to be mapped to
+-			// actual data, while this path information must be synthesized.
+-			diags.AddError(
+-				"Reserved Root Attribute/Block Name",
+-				"When validating the provider schema, an implementation issue was found. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+-					fmt.Sprintf("%q is a reserved root attribute/block name. ", name)+
+-					"This is to prevent practitioners from needing special Terraform configuration syntax.",
+-			)
+-
+-			break
+-		}
++	if slices.Contains(ReservedProviderAttributeNames, name) {
++		// The diagnostic path is intentionally omitted as it is invalid
++		// in this context. Diagnostic paths are intended to be mapped to
++		// actual data, while this path information must be synthesized.
++		diags.AddError(
++			"Reserved Root Attribute/Block Name",
++			"When validating the provider schema, an implementation issue was found. "+
++				"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
++				fmt.Sprintf("%q is a reserved root attribute/block name. ", name)+
++				"This is to prevent practitioners from needing special Terraform configuration syntax.",
++		)
+ 	}
+ 
+ 	return diags
+@@ -106,21 +103,17 @@
+ 		return diags
+ 	}
+ 
+-	for _, reservedName := range ReservedResourceAttributeNames {
+-		if name == reservedName {
+-			// The diagnostic path is intentionally omitted as it is invalid
+-			// in this context. Diagnostic paths are intended to be mapped to
+-			// actual data, while this path information must be synthesized.
+-			diags.AddError(
+-				"Reserved Root Attribute/Block Name",
+-				"When validating the resource or data source schema, an implementation issue was found. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+-					fmt.Sprintf("%q is a reserved root attribute/block name. ", name)+
+-					"This is to prevent practitioners from needing special Terraform configuration syntax.",
+-			)
+-
+-			break
+-		}
++	if slices.Contains(ReservedResourceAttributeNames, name) {
++		// The diagnostic path is intentionally omitted as it is invalid
++		// in this context. Diagnostic paths are intended to be mapped to
++		// actual data, while this path information must be synthesized.
++		diags.AddError(
++			"Reserved Root Attribute/Block Name",
++			"When validating the resource or data source schema, an implementation issue was found. "+
++				"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
++				fmt.Sprintf("%q is a reserved root attribute/block name. ", name)+
++				"This is to prevent practitioners from needing special Terraform configuration syntax.",
++		)
+ 	}
+ 
+ 	return diags
+--- /home/user/terraform-plugin-framework/internal/fwtype/missing_underlying_type_validation.go	2026-10-24 21:30:10.543597579 +0000
++++ internal/fwtype/missing_underlying_type_validation.go	2026-10-24 23:20:43.348700573 +0000
+@@ -5,6 +5,7 @@
+ 
+ import (
+ 	"fmt"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+@@ -37,13 +38,7 @@
+ 	case basetypes.SetType:
+ 		return ContainsMissingUnderlyingType(attrType.ElemType)
+ 	case basetypes.TupleType:
+-		for _, elemType := range attrType.ElemTypes {
+-			if ContainsMissingUnderlyingType(elemType) {
+-				return true
+-			}
+-		}
+-
+-		return false
++		return slices.ContainsFunc(attrType.ElemTypes, ContainsMissingUnderlyingType)
+ 	// Everything else (primitives, custom types, etc.)
+ 	default:
+ 		return false
+--- /home/user/terraform-plugin-framework/internal/fwtype/static_collection_validation.go	2026-10-24 21:30:10.543597579 +0000
++++ internal/fwtype/static_collection_validation.go	2026-10-24 23:20:43.349837649 +0000
+@@ -5,6 +5,7 @@
+ 
+ import (
+ 	"fmt"
++	"slices"
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+@@ -30,13 +31,7 @@
+ 		return containsDynamic(attrType.ElementType())
+ 	// Tuples
+ 	case attr.TypeWithElementTypes:
+-		for _, elemType := range attrType.ElementTypes() {
+-			hasDynamic := ContainsCollectionWithDynamic(elemType)
+-			if hasDynamic {
+-				return true
+-			}
+-		}
+-		return false
++		return slices.ContainsFunc(attrType.ElementTypes(), ContainsCollectionWithDynamic)
+ 	// Objects
+ 	case attr.TypeWithAttributeTypes:
+ 		for _, objAttrType := range attrType.AttributeTypes() {
+@@ -63,13 +58,7 @@
+ 		return containsDynamic(attrType.ElementType())
+ 	// Tuples
+ 	case attr.TypeWithElementTypes:
+-		for _, elemType := range attrType.ElementTypes() {
+-			hasDynamic := containsDynamic(elemType)
+-			if hasDynamic {
+-				return true
+-			}
+-		}
+-		return false
++		return slices.ContainsFunc(attrType.ElementTypes(), containsDynamic)
+ 	// Objects
+ 	case attr.TypeWithAttributeTypes:
+ 		for _, objAttrType := range attrType.AttributeTypes() {
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/tftypes_value.go	2026-10-24 21:30:10.503118708 +0000
++++ internal/fwschemadata/tftypes_value.go	2026-10-24 23:20:43.350563510 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 	"fmt"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+@@ -190,16 +191,7 @@
+ 		}
+ 
+ 		// Prevent duplicates
+-		var found bool
+-
+-		for _, parentElem := range parentElems {
+-			if parentElem.Equal(childValue) {
+-				found = true
+-				break
+-			}
+-		}
+-
+-		if !found {
++		if !slices.ContainsFunc(parentElems, func(parentElem tftypes.Value) bool { return parentElem.Equal(childValue) }) {
+ 			parentElems = append(parentElems, childValue)
+ 		}
+ 

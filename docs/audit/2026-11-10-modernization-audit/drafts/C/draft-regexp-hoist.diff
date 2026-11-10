@@ -1,0 +1,19 @@
+--- /home/user/terraform-plugin-framework/internal/reflect/helpers.go	2026-10-24 21:30:10.588381323 +0000
++++ single/helpers.go	2026-10-24 23:13:40.633090183 +0000
+@@ -130,11 +130,14 @@
+ 	return tags, nil
+ }
+ 
++// validFieldNameRegex matches names that can be used as a field name in a
++// Terraform resource or data source.
++var validFieldNameRegex = regexp.MustCompile("^[a-z][a-z0-9_]*$")
++
+ // isValidFieldName returns true if `name` can be used as a field name in a
+ // Terraform resource or data source.
+ func isValidFieldName(name string) bool {
+-	re := regexp.MustCompile("^[a-z][a-z0-9_]*$")
+-	return re.MatchString(name)
++	return validFieldNameRegex.MatchString(name)
+ }
+ 
+ // canBeNil returns true if `target`'s type can hold a nil value

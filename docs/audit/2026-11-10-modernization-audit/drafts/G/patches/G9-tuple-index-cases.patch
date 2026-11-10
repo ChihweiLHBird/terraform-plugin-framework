@@ -1,0 +1,29 @@
+diff --git a/path/path_test.go b/path/path_test.go
+index e38888d..7b153dd 100644
+--- a/path/path_test.go
++++ b/path/path_test.go
+@@ -377,6 +377,13 @@ func TestPathSteps(t *testing.T) {
+ 				path.PathStepElementKeyInt(1),
+ 			},
+ 		},
++		"tuple-index": {
++			path: path.Root("test").AtTupleIndex(1),
++			expected: path.PathSteps{
++				path.PathStepAttributeName("test"),
++				path.PathStepElementKeyInt(1),
++			},
++		},
+ 	}
+ 
+ 	for name, testCase := range testCases {
+@@ -419,6 +426,10 @@ func TestPathString(t *testing.T) {
+ 			path:     path.Root("test").AtListIndex(0),
+ 			expected: `test[0]`,
+ 		},
++		"AttributeName-TupleIndex": {
++			path:     path.Root("test").AtTupleIndex(0),
++			expected: `test[0]`,
++		},
+ 		"AttributeName-ElementKeyInt-AttributeName": {
+ 			path:     path.Root("test1").AtListIndex(0).AtName("test2"),
+ 			expected: `test1[0].test2`,

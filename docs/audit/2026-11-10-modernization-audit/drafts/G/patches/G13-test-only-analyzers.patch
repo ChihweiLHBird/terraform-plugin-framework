@@ -1,0 +1,149 @@
+diff --git a/internal/privatestate/data_test.go b/internal/privatestate/data_test.go
+index a2106fd..24ac73a 100644
+--- a/internal/privatestate/data_test.go
++++ b/internal/privatestate/data_test.go
+@@ -46,7 +46,7 @@ func TestData_Bytes(t *testing.T) {
+ 		"framework-data-value-invalid-utf-8": {
+ 			data: &Data{
+ 				Framework: map[string][]byte{
+-					".frameworkKeyOne": []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
++					".frameworkKeyOne": fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
+ 				},
+ 			},
+ 			expectedDiags: diag.Diagnostics{
+@@ -111,7 +111,7 @@ func TestData_Bytes(t *testing.T) {
+ 			data: &Data{
+ 				Provider: &ProviderData{
+ 					data: map[string][]byte{
+-						"providerKeyOne": []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++						"providerKeyOne": fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 					},
+ 				},
+ 			},
+@@ -230,7 +230,7 @@ func TestNewData(t *testing.T) {
+ 	})
+ 
+ 	frameworkValueInvalidUTF8 := MustMarshalToJson(map[string][]byte{
+-		".frameworkKeyOne": []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
++		".frameworkKeyOne": fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
+ 		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+ 		"providerKeyOne":   []byte(`{"pKeyOne": {"k0": "zero", "k1": 1}}`),
+ 		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+@@ -260,7 +260,7 @@ func TestNewData(t *testing.T) {
+ 	providerValueInvalidUTF8 := MustMarshalToJson(map[string][]byte{
+ 		".frameworkKeyOne": []byte(`{"fwKeyOne": {"k0": "zero", "k1": 1}}`),
+ 		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+-		"providerKeyOne":   []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
++		"providerKeyOne":   fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
+ 		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+ 	})
+ 
+@@ -755,7 +755,7 @@ func TestProviderData_SetKey(t *testing.T) {
+ 		"value-utf8-invalid-data-uninitialized": {
+ 			providerData: &ProviderData{},
+ 			key:          "key",
+-			value:        []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++			value:        fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 			expected: &ProviderData{
+ 				data: map[string][]byte{},
+ 			},
+@@ -772,7 +772,7 @@ func TestProviderData_SetKey(t *testing.T) {
+ 				data: map[string][]byte{},
+ 			},
+ 			key:   "key",
+-			value: []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++			value: fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 			expected: &ProviderData{
+ 				data: map[string][]byte{},
+ 			},
+diff --git a/internal/proto5server/serve_test.go b/internal/proto5server/serve_test.go
+index 8c9e9b4..4e24216 100644
+--- a/internal/proto5server/serve_test.go
++++ b/internal/proto5server/serve_test.go
+@@ -26,10 +26,8 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 	wg := new(sync.WaitGroup)
+ 	s := &Server{}
+ 	testCtx := context.Background()
+-	for i := 0; i < 10; i++ {
+-		wg.Add(1)
+-		go func() {
+-			defer wg.Done()
++	for range 10 {
++		wg.Go(func() {
+ 			ctx := context.Background()
+ 			ctx = s.registerContext(ctx)
+ 			select {
+@@ -39,7 +37,7 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 			case <-ctx.Done():
+ 				return
+ 			}
+-		}()
++		})
+ 	}
+ 	// avoid any race conditions around canceling the contexts before
+ 	// they're all set up
+diff --git a/internal/proto5server/server_invokeaction_test.go b/internal/proto5server/server_invokeaction_test.go
+index 291225b..279bd09 100644
+--- a/internal/proto5server/server_invokeaction_test.go
++++ b/internal/proto5server/server_invokeaction_test.go
+@@ -236,7 +236,7 @@ func TestServerInvokeAction(t *testing.T) {
+ 											resp.TypeName = "test_action"
+ 										},
+ 										InvokeMethod: func(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
+-											for i := 0; i < 5; i++ {
++											for i := range 5 {
+ 												resp.SendProgress(action.InvokeProgressEvent{Message: fmt.Sprintf("progress event %d", i+1)})
+ 											}
+ 
+diff --git a/internal/proto6server/serve_test.go b/internal/proto6server/serve_test.go
+index 645f4b2..3a3489f 100644
+--- a/internal/proto6server/serve_test.go
++++ b/internal/proto6server/serve_test.go
+@@ -25,10 +25,8 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 	wg := new(sync.WaitGroup)
+ 	s := &Server{}
+ 	testCtx := context.Background()
+-	for i := 0; i < 10; i++ {
+-		wg.Add(1)
+-		go func() {
+-			defer wg.Done()
++	for range 10 {
++		wg.Go(func() {
+ 			ctx := context.Background()
+ 			ctx = s.registerContext(ctx)
+ 			select {
+@@ -38,7 +36,7 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 			case <-ctx.Done():
+ 				return
+ 			}
+-		}()
++		})
+ 	}
+ 	// avoid any race conditions around canceling the contexts before
+ 	// they're all set up
+diff --git a/internal/proto6server/server_invokeaction_test.go b/internal/proto6server/server_invokeaction_test.go
+index 0fbc348..4e98cf1 100644
+--- a/internal/proto6server/server_invokeaction_test.go
++++ b/internal/proto6server/server_invokeaction_test.go
+@@ -236,7 +236,7 @@ func TestServerInvokeAction(t *testing.T) {
+ 											resp.TypeName = "test_action"
+ 										},
+ 										InvokeMethod: func(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
+-											for i := 0; i < 5; i++ {
++											for i := range 5 {
+ 												resp.SendProgress(action.InvokeProgressEvent{Message: fmt.Sprintf("progress event %d", i+1)})
+ 											}
+ 
+diff --git a/types/basetypes/object_value_test.go b/types/basetypes/object_value_test.go
+index 0b0b572..c2c5556 100644
+--- a/types/basetypes/object_value_test.go
++++ b/types/basetypes/object_value_test.go
+@@ -25,7 +25,7 @@ func benchmarkObjectValueToTerraformValue(b *testing.B, attributes int) {
+ 	attributeValues := make(map[string]attr.Value, attributes)
+ 	ctx := context.Background()
+ 
+-	for i := 0; i < attributes; i++ {
++	for i := range attributes {
+ 		attributeName := "testattr" + strconv.Itoa(i)
+ 		attributeTypes[attributeName] = BoolType{}
+ 		attributeValues[attributeName] = NewBoolNull()

@@ -1,0 +1,138 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/repo-base/internal/fwserver/schema_semantic_equality.go	2026-10-24 21:30:10.000000000 +0000
++++ internal/fwserver/schema_semantic_equality.go	2026-10-24 23:14:23.561366520 +0000
+@@ -50,97 +50,64 @@
+ // design may be necessary so that provider developer data handling intentions
+ // are kept based on both the value based logic and schema based logic.
+ func SchemaSemanticEquality(ctx context.Context, req SchemaSemanticEqualityRequest, resp *SchemaSemanticEqualityResponse) {
+-	var diags diag.Diagnostics
+-
+ 	for name := range req.ProposedNewData.Schema.GetAttributes() {
+-		valueReq := fwschemadata.ValueSemanticEqualityRequest{
+-			Path: path.Root(name),
+-		}
+-
+-		valueReq.PriorValue, diags = req.PriorData.ValueAtPath(ctx, valueReq.Path)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
+-
+-		valueReq.ProposedNewValue, diags = req.ProposedNewData.ValueAtPath(ctx, valueReq.Path)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if resp.Diagnostics.HasError() {
++		if !schemaSemanticEqualityAtRoot(ctx, name, req, resp) {
+ 			return
+ 		}
++	}
+ 
+-		valueResp := &fwschemadata.ValueSemanticEqualityResponse{
+-			NewValue: valueReq.ProposedNewValue,
+-		}
+-
+-		fwschemadata.ValueSemanticEquality(ctx, valueReq, valueResp)
+-
+-		resp.Diagnostics.Append(valueResp.Diagnostics...)
+-
+-		if resp.Diagnostics.HasError() {
++	for name := range req.ProposedNewData.Schema.GetBlocks() {
++		if !schemaSemanticEqualityAtRoot(ctx, name, req, resp) {
+ 			return
+ 		}
++	}
++}
+ 
+-		// If the response value equals the original proposed new value, move
+-		// to next attribute.
+-		if valueResp.NewValue.Equal(valueReq.ProposedNewValue) {
+-			continue
+-		}
+-
+-		resp.Diagnostics.Append(resp.NewData.SetAtPath(ctx, valueReq.Path, valueResp.NewValue)...)
++// schemaSemanticEqualityAtRoot runs semantic equality logic for the root
++// attribute or block name. It returns false if SchemaSemanticEquality must
++// stop.
++func schemaSemanticEqualityAtRoot(ctx context.Context, name string, req SchemaSemanticEqualityRequest, resp *SchemaSemanticEqualityResponse) bool {
++	var diags diag.Diagnostics
+ 
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
++	valueReq := fwschemadata.ValueSemanticEqualityRequest{
++		Path: path.Root(name),
+ 	}
+ 
+-	for name := range req.ProposedNewData.Schema.GetBlocks() {
+-		valueReq := fwschemadata.ValueSemanticEqualityRequest{
+-			Path: path.Root(name),
+-		}
+-
+-		valueReq.PriorValue, diags = req.PriorData.ValueAtPath(ctx, valueReq.Path)
++	valueReq.PriorValue, diags = req.PriorData.ValueAtPath(ctx, valueReq.Path)
+ 
+-		resp.Diagnostics.Append(diags...)
++	resp.Diagnostics.Append(diags...)
+ 
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
++	if resp.Diagnostics.HasError() {
++		return false
++	}
+ 
+-		valueReq.ProposedNewValue, diags = req.ProposedNewData.ValueAtPath(ctx, valueReq.Path)
++	valueReq.ProposedNewValue, diags = req.ProposedNewData.ValueAtPath(ctx, valueReq.Path)
+ 
+-		resp.Diagnostics.Append(diags...)
++	resp.Diagnostics.Append(diags...)
+ 
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
++	if resp.Diagnostics.HasError() {
++		return false
++	}
+ 
+-		valueResp := &fwschemadata.ValueSemanticEqualityResponse{
+-			NewValue: valueReq.ProposedNewValue,
+-		}
++	valueResp := &fwschemadata.ValueSemanticEqualityResponse{
++		NewValue: valueReq.ProposedNewValue,
++	}
+ 
+-		fwschemadata.ValueSemanticEquality(ctx, valueReq, valueResp)
++	fwschemadata.ValueSemanticEquality(ctx, valueReq, valueResp)
+ 
+-		resp.Diagnostics.Append(valueResp.Diagnostics...)
++	resp.Diagnostics.Append(valueResp.Diagnostics...)
+ 
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
++	if resp.Diagnostics.HasError() {
++		return false
++	}
+ 
+-		// If the response value equals the original proposed new value, move
+-		// to next block.
+-		if valueResp.NewValue.Equal(valueReq.ProposedNewValue) {
+-			continue
+-		}
++	// If the response value equals the original proposed new value, move
++	// to next attribute or block.
++	if valueResp.NewValue.Equal(valueReq.ProposedNewValue) {
++		return true
++	}
+ 
+-		resp.Diagnostics.Append(resp.NewData.SetAtPath(ctx, valueReq.Path, valueResp.NewValue)...)
++	resp.Diagnostics.Append(resp.NewData.SetAtPath(ctx, valueReq.Path, valueResp.NewValue)...)
+ 
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
+-	}
++	return !resp.Diagnostics.HasError()
+ }

@@ -1,0 +1,1958 @@
+diff --git a/function/arguments_data_test.go b/function/arguments_data_test.go
+index dc04efa..613abc4 100644
+--- a/function/arguments_data_test.go
++++ b/function/arguments_data_test.go
+@@ -142,9 +142,9 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new(attr.Value),
+ 			},
+ 			expected: []any{
+-				pointer(attr.Value(basetypes.NewBoolNull())),
+-				pointer(attr.Value(basetypes.NewInt64Unknown())),
+-				pointer(attr.Value(basetypes.NewStringValue("test"))),
++				new(attr.Value(basetypes.NewBoolNull())),
++				new(attr.Value(basetypes.NewInt64Unknown())),
++				new(attr.Value(basetypes.NewStringValue("test"))),
+ 			},
+ 		},
+ 		"attr-value-variadic": {
+@@ -170,10 +170,10 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new(attr.Value),
+ 			},
+ 			expected: []any{
+-				pointer(attr.Value(basetypes.NewBoolNull())),
+-				pointer(attr.Value(basetypes.NewInt64Unknown())),
+-				pointer(attr.Value(basetypes.NewStringValue("test"))),
+-				pointer(attr.Value(
++				new(attr.Value(basetypes.NewBoolNull())),
++				new(attr.Value(basetypes.NewInt64Unknown())),
++				new(attr.Value(basetypes.NewStringValue("test"))),
++				new(attr.Value(
+ 					basetypes.NewTupleValueMust(
+ 						[]attr.Type{
+ 							basetypes.StringType{},
+@@ -199,9 +199,9 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new(basetypes.StringValue),
+ 			},
+ 			expected: []any{
+-				pointer(basetypes.NewBoolNull()),
+-				pointer(basetypes.NewInt64Unknown()),
+-				pointer(basetypes.NewStringValue("test")),
++				new(basetypes.NewBoolNull()),
++				new(basetypes.NewInt64Unknown()),
++				new(basetypes.NewStringValue("test")),
+ 			},
+ 		},
+ 		"framework-type-variadic": {
+@@ -227,10 +227,10 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new(basetypes.TupleValue),
+ 			},
+ 			expected: []any{
+-				pointer(basetypes.NewBoolNull()),
+-				pointer(basetypes.NewInt64Unknown()),
+-				pointer(basetypes.NewStringValue("test")),
+-				pointer(
++				new(basetypes.NewBoolNull()),
++				new(basetypes.NewInt64Unknown()),
++				new(basetypes.NewStringValue("test")),
++				new(
+ 					basetypes.NewTupleValueMust(
+ 						[]attr.Type{
+ 							basetypes.StringType{},
+@@ -261,8 +261,8 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new(basetypes.DynamicValue),
+ 			},
+ 			expected: []any{
+-				pointer(basetypes.NewDynamicValue(basetypes.NewStringValue("dynamic_test"))),
+-				pointer(basetypes.NewDynamicValue(basetypes.NewListValueMust(
++				new(basetypes.NewDynamicValue(basetypes.NewStringValue("dynamic_test"))),
++				new(basetypes.NewDynamicValue(basetypes.NewListValueMust(
+ 					basetypes.StringType{},
+ 					[]attr.Value{
+ 						basetypes.NewStringValue("hello"),
+@@ -291,7 +291,7 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new([]basetypes.DynamicValue),
+ 			},
+ 			expected: []any{
+-				pointer([]basetypes.DynamicValue{
++				new([]basetypes.DynamicValue{
+ 					basetypes.NewDynamicValue(basetypes.NewStringValue("test1")),
+ 					basetypes.NewDynamicValue(basetypes.NewNumberValue(big.NewFloat(1.23))),
+ 					basetypes.NewDynamicValue(basetypes.NewBoolValue(true)),
+@@ -308,8 +308,8 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new(string),
+ 			},
+ 			expected: []any{
+-				pointer((*bool)(nil)),
+-				pointer("test"),
++				new((*bool)(nil)),
++				new("test"),
+ 			},
+ 		},
+ 		"reflection-variadic": {
+@@ -331,8 +331,8 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new([]string),
+ 			},
+ 			expected: []any{
+-				pointer((*bool)(nil)),
+-				pointer([]string{
++				new((*bool)(nil)),
++				new([]string{
+ 					"test1",
+ 					"test2",
+ 				}),
+@@ -348,8 +348,8 @@ func TestArgumentsDataGet(t *testing.T) {
+ 				new([]string),
+ 			},
+ 			expected: []any{
+-				pointer((*bool)(nil)),
+-				pointer([]string{}),
++				new((*bool)(nil)),
++				new([]string{}),
+ 			},
+ 		},
+ 	}
+@@ -439,7 +439,7 @@ func TestArgumentsDataGetArgument(t *testing.T) {
+ 			}),
+ 			position: 0,
+ 			target:   new(attr.Value),
+-			expected: pointer(attr.Value(basetypes.NewBoolNull())),
++			expected: new(attr.Value(basetypes.NewBoolNull())),
+ 		},
+ 		"framework-type": {
+ 			argumentsData: function.NewArgumentsData([]attr.Value{
+@@ -447,7 +447,7 @@ func TestArgumentsDataGetArgument(t *testing.T) {
+ 			}),
+ 			position: 0,
+ 			target:   new(basetypes.BoolValue),
+-			expected: pointer(basetypes.NewBoolNull()),
++			expected: new(basetypes.NewBoolNull()),
+ 		},
+ 		"reflection": {
+ 			argumentsData: function.NewArgumentsData([]attr.Value{
+@@ -455,7 +455,7 @@ func TestArgumentsDataGetArgument(t *testing.T) {
+ 			}),
+ 			position: 0,
+ 			target:   new(*bool),
+-			expected: pointer((*bool)(nil)),
++			expected: new((*bool)(nil)),
+ 		},
+ 	}
+ 
+diff --git a/function/bool_parameter_test.go b/function/bool_parameter_test.go
+index c85842f..2879a08 100644
+--- a/function/bool_parameter_test.go
++++ b/function/bool_parameter_test.go
+@@ -288,7 +288,7 @@ func TestBoolParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -298,7 +298,7 @@ func TestBoolParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/dynamic_parameter_test.go b/function/dynamic_parameter_test.go
+index 08e5cd7..59b1c58 100644
+--- a/function/dynamic_parameter_test.go
++++ b/function/dynamic_parameter_test.go
+@@ -288,7 +288,7 @@ func TestDynamicParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -298,7 +298,7 @@ func TestDynamicParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/float32_parameter_test.go b/function/float32_parameter_test.go
+index a94e04a..36c81dc 100644
+--- a/function/float32_parameter_test.go
++++ b/function/float32_parameter_test.go
+@@ -288,7 +288,7 @@ func TestFloat32ParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -298,7 +298,7 @@ func TestFloat32ParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/float64_parameter_test.go b/function/float64_parameter_test.go
+index dc4d784..7abe33e 100644
+--- a/function/float64_parameter_test.go
++++ b/function/float64_parameter_test.go
+@@ -288,7 +288,7 @@ func TestFloat64ParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -298,7 +298,7 @@ func TestFloat64ParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/func_error_test.go b/function/func_error_test.go
+index 7d07aab..2daa77a 100644
+--- a/function/func_error_test.go
++++ b/function/func_error_test.go
+@@ -188,30 +188,30 @@ func TestConcatFuncErrors(t *testing.T) {
+ 		"nil-argument": {
+ 			funcErr: nil,
+ 			other: &function.FuncError{
+-				FunctionArgument: pointer(int64(0)),
++				FunctionArgument: new(int64(0)),
+ 			},
+ 			expected: &function.FuncError{
+-				FunctionArgument: pointer(int64(0)),
++				FunctionArgument: new(int64(0)),
+ 			},
+ 		},
+ 		"argument-nil": {
+ 			funcErr: &function.FuncError{
+-				FunctionArgument: pointer(int64(0)),
++				FunctionArgument: new(int64(0)),
+ 			},
+ 			other: nil,
+ 			expected: &function.FuncError{
+-				FunctionArgument: pointer(int64(0)),
++				FunctionArgument: new(int64(0)),
+ 			},
+ 		},
+ 		"argument-precedence": {
+ 			funcErr: &function.FuncError{
+-				FunctionArgument: pointer(int64(0)),
++				FunctionArgument: new(int64(0)),
+ 			},
+ 			other: &function.FuncError{
+-				FunctionArgument: pointer(int64(1)),
++				FunctionArgument: new(int64(1)),
+ 			},
+ 			expected: &function.FuncError{
+-				FunctionArgument: pointer(int64(0)),
++				FunctionArgument: new(int64(0)),
+ 			},
+ 		},
+ 	}
+diff --git a/function/int32_parameter_test.go b/function/int32_parameter_test.go
+index f0c5cb3..078f057 100644
+--- a/function/int32_parameter_test.go
++++ b/function/int32_parameter_test.go
+@@ -288,7 +288,7 @@ func TestInt32ParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -298,7 +298,7 @@ func TestInt32ParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/int64_parameter_test.go b/function/int64_parameter_test.go
+index 7d17025..6a16320 100644
+--- a/function/int64_parameter_test.go
++++ b/function/int64_parameter_test.go
+@@ -288,7 +288,7 @@ func TestInt64ParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -298,7 +298,7 @@ func TestInt64ParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/list_parameter_test.go b/function/list_parameter_test.go
+index c01f058..a22ed39 100644
+--- a/function/list_parameter_test.go
++++ b/function/list_parameter_test.go
+@@ -301,7 +301,7 @@ func TestListParameterValidateImplementation(t *testing.T) {
+ 				CustomType: testtypes.ListType{},
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -311,7 +311,7 @@ func TestListParameterValidateImplementation(t *testing.T) {
+ 				ElementType: types.StringType,
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -321,7 +321,7 @@ func TestListParameterValidateImplementation(t *testing.T) {
+ 				ElementType: types.DynamicType,
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+@@ -361,7 +361,7 @@ func TestListParameterValidateImplementation(t *testing.T) {
+ 				// ElementType intentionally missing
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+@@ -382,7 +382,7 @@ func TestListParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -393,7 +393,7 @@ func TestListParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/map_parameter_test.go b/function/map_parameter_test.go
+index aabd479..25a0fea 100644
+--- a/function/map_parameter_test.go
++++ b/function/map_parameter_test.go
+@@ -301,7 +301,7 @@ func TestMapParameterValidateImplementation(t *testing.T) {
+ 				CustomType: testtypes.MapType{},
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -311,7 +311,7 @@ func TestMapParameterValidateImplementation(t *testing.T) {
+ 				ElementType: types.StringType,
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -321,7 +321,7 @@ func TestMapParameterValidateImplementation(t *testing.T) {
+ 				ElementType: types.DynamicType,
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+@@ -361,7 +361,7 @@ func TestMapParameterValidateImplementation(t *testing.T) {
+ 				// ElementType intentionally missing
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+@@ -382,7 +382,7 @@ func TestMapParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -393,7 +393,7 @@ func TestMapParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/number_parameter_test.go b/function/number_parameter_test.go
+index c020c57..d2101b9 100644
+--- a/function/number_parameter_test.go
++++ b/function/number_parameter_test.go
+@@ -288,7 +288,7 @@ func TestNumberParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -298,7 +298,7 @@ func TestNumberParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/object_parameter_test.go b/function/object_parameter_test.go
+index c787033..8416b2b 100644
+--- a/function/object_parameter_test.go
++++ b/function/object_parameter_test.go
+@@ -309,7 +309,7 @@ func TestObjectParameterValidateImplementation(t *testing.T) {
+ 				CustomType: testtypes.ObjectType{},
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -321,7 +321,7 @@ func TestObjectParameterValidateImplementation(t *testing.T) {
+ 				},
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -341,7 +341,7 @@ func TestObjectParameterValidateImplementation(t *testing.T) {
+ 				},
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -355,7 +355,7 @@ func TestObjectParameterValidateImplementation(t *testing.T) {
+ 				},
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+@@ -399,7 +399,7 @@ func TestObjectParameterValidateImplementation(t *testing.T) {
+ 				// AttributeTypes intentionally missing
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				// No diagnostics are expected as objects can be empty
+@@ -413,7 +413,7 @@ func TestObjectParameterValidateImplementation(t *testing.T) {
+ 				},
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+@@ -436,7 +436,7 @@ func TestObjectParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -449,7 +449,7 @@ func TestObjectParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/pointer_test.go b/function/pointer_test.go
+deleted file mode 100644
+index 56735e9..0000000
+--- a/function/pointer_test.go
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// Copyright IBM Corp. 2021, 2026
+-// SPDX-License-Identifier: MPL-2.0
+-
+-package function_test
+-
+-func pointer[T any](value T) *T {
+-	return &value
+-}
+diff --git a/function/set_parameter_test.go b/function/set_parameter_test.go
+index 0100c93..29c8d02 100644
+--- a/function/set_parameter_test.go
++++ b/function/set_parameter_test.go
+@@ -301,7 +301,7 @@ func TestSetParameterValidateImplementation(t *testing.T) {
+ 				CustomType: testtypes.SetType{},
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -311,7 +311,7 @@ func TestSetParameterValidateImplementation(t *testing.T) {
+ 				ElementType: types.StringType,
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -321,7 +321,7 @@ func TestSetParameterValidateImplementation(t *testing.T) {
+ 				ElementType: types.DynamicType,
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+@@ -361,7 +361,7 @@ func TestSetParameterValidateImplementation(t *testing.T) {
+ 				// ElementType intentionally missing
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+@@ -382,7 +382,7 @@ func TestSetParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -393,7 +393,7 @@ func TestSetParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/function/string_parameter_test.go b/function/string_parameter_test.go
+index faa60a9..07c5e05 100644
+--- a/function/string_parameter_test.go
++++ b/function/string_parameter_test.go
+@@ -288,7 +288,7 @@ func TestStringParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{},
+ 		},
+@@ -298,7 +298,7 @@ func TestStringParameterValidateImplementation(t *testing.T) {
+ 			},
+ 			request: fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      "testfunc",
+-				ParameterPosition: pointer(int64(0)),
++				ParameterPosition: new(int64(0)),
+ 			},
+ 			expected: &fwfunction.ValidateParameterImplementationResponse{
+ 				Diagnostics: diag.Diagnostics{
+diff --git a/internal/fwschemadata/data_get_at_path_test.go b/internal/fwschemadata/data_get_at_path_test.go
+index aba42bb..a4ff1e2 100644
+--- a/internal/fwschemadata/data_get_at_path_test.go
++++ b/internal/fwschemadata/data_get_at_path_test.go
+@@ -161,7 +161,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("test"),
+ 			target:   new(types.String),
+-			expected: pointer(types.StringNull()),
++			expected: new(types.StringNull()),
+ 		},
+ 		"AttrTypeWithValidateError": {
+ 			data: fwschemadata.Data{
+@@ -248,7 +248,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("bool"),
+ 			target:   new(types.Bool),
+-			expected: pointer(types.BoolNull()),
++			expected: new(types.BoolNull()),
+ 		},
+ 		"BoolType-types.Bool-unknown": {
+ 			data: fwschemadata.Data{
+@@ -273,7 +273,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("bool"),
+ 			target:   new(types.Bool),
+-			expected: pointer(types.BoolUnknown()),
++			expected: new(types.BoolUnknown()),
+ 		},
+ 		"BoolType-types.Bool-value": {
+ 			data: fwschemadata.Data{
+@@ -298,7 +298,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("bool"),
+ 			target:   new(types.Bool),
+-			expected: pointer(types.BoolValue(true)),
++			expected: new(types.BoolValue(true)),
+ 		},
+ 		"BoolType-*bool-null": {
+ 			data: fwschemadata.Data{
+@@ -382,7 +382,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("bool"),
+ 			target:   new(*bool),
+-			expected: pointer(pointer(true)),
++			expected: new(new(true)),
+ 		},
+ 		"BoolType-bool-null": {
+ 			data: fwschemadata.Data{
+@@ -441,7 +441,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("bool"),
+ 			target:   new(bool),
+-			expected: pointer(false),
++			expected: new(false),
+ 			expectedDiags: diag.Diagnostics{
+ 				diag.NewAttributeErrorDiagnostic(
+ 					path.Root("bool"),
+@@ -475,7 +475,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("bool"),
+ 			target:   new(bool),
+-			expected: pointer(true),
++			expected: new(true),
+ 		},
+ 		"Float32Type-types.Float32-null": {
+ 			data: fwschemadata.Data{
+@@ -500,7 +500,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float32"),
+ 			target:   new(types.Float32),
+-			expected: pointer(types.Float32Null()),
++			expected: new(types.Float32Null()),
+ 		},
+ 		"Float32Type-types.Float32-unknown": {
+ 			data: fwschemadata.Data{
+@@ -525,7 +525,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float32"),
+ 			target:   new(types.Float32),
+-			expected: pointer(types.Float32Unknown()),
++			expected: new(types.Float32Unknown()),
+ 		},
+ 		"Float32Type-types.Float32-value": {
+ 			data: fwschemadata.Data{
+@@ -550,7 +550,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float32"),
+ 			target:   new(types.Float32),
+-			expected: pointer(types.Float32Value(Float32Value)),
++			expected: new(types.Float32Value(Float32Value)),
+ 		},
+ 		"Float32Type-*float32-null": {
+ 			data: fwschemadata.Data{
+@@ -634,7 +634,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float32"),
+ 			target:   new(*float32),
+-			expected: pointer(pointer(Float32Value)),
++			expected: new(new(Float32Value)),
+ 		},
+ 		"Float32Type-float32-null": {
+ 			data: fwschemadata.Data{
+@@ -727,7 +727,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float32"),
+ 			target:   new(float32),
+-			expected: pointer(Float32Value),
++			expected: new(Float32Value),
+ 		},
+ 		"Float64Type-types.Float64-null": {
+ 			data: fwschemadata.Data{
+@@ -752,7 +752,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float64"),
+ 			target:   new(types.Float64),
+-			expected: pointer(types.Float64Null()),
++			expected: new(types.Float64Null()),
+ 		},
+ 		"Float64Type-types.Float64-unknown": {
+ 			data: fwschemadata.Data{
+@@ -777,7 +777,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float64"),
+ 			target:   new(types.Float64),
+-			expected: pointer(types.Float64Unknown()),
++			expected: new(types.Float64Unknown()),
+ 		},
+ 		"Float64Type-types.Float64-value": {
+ 			data: fwschemadata.Data{
+@@ -802,7 +802,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float64"),
+ 			target:   new(types.Float64),
+-			expected: pointer(types.Float64Value(1.2)),
++			expected: new(types.Float64Value(1.2)),
+ 		},
+ 		"Float64Type-*float64-null": {
+ 			data: fwschemadata.Data{
+@@ -886,7 +886,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float64"),
+ 			target:   new(*float64),
+-			expected: pointer(pointer(1.2)),
++			expected: new(new(1.2)),
+ 		},
+ 		"Float64Type-float64-null": {
+ 			data: fwschemadata.Data{
+@@ -979,7 +979,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("float64"),
+ 			target:   new(float64),
+-			expected: pointer(1.2),
++			expected: new(1.2),
+ 		},
+ 		"Int32Type-types.Int32-null": {
+ 			data: fwschemadata.Data{
+@@ -1004,7 +1004,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int32"),
+ 			target:   new(types.Int32),
+-			expected: pointer(types.Int32Null()),
++			expected: new(types.Int32Null()),
+ 		},
+ 		"Int32Type-types.Int32-unknown": {
+ 			data: fwschemadata.Data{
+@@ -1029,7 +1029,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int32"),
+ 			target:   new(types.Int32),
+-			expected: pointer(types.Int32Unknown()),
++			expected: new(types.Int32Unknown()),
+ 		},
+ 		"Int32Type-types.Int32-value": {
+ 			data: fwschemadata.Data{
+@@ -1054,7 +1054,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int32"),
+ 			target:   new(types.Int32),
+-			expected: pointer(types.Int32Value(12)),
++			expected: new(types.Int32Value(12)),
+ 		},
+ 		"Int32Type-*int32-null": {
+ 			data: fwschemadata.Data{
+@@ -1138,7 +1138,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int32"),
+ 			target:   new(*int32),
+-			expected: pointer(pointer(int32(12))),
++			expected: new(new(int32(12))),
+ 		},
+ 		"Int32Type-int32-null": {
+ 			data: fwschemadata.Data{
+@@ -1231,7 +1231,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int32"),
+ 			target:   new(int32),
+-			expected: pointer(int32(12)),
++			expected: new(int32(12)),
+ 		},
+ 		"Int64Type-types.Int64-null": {
+ 			data: fwschemadata.Data{
+@@ -1256,7 +1256,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int64"),
+ 			target:   new(types.Int64),
+-			expected: pointer(types.Int64Null()),
++			expected: new(types.Int64Null()),
+ 		},
+ 		"Int64Type-types.Int64-unknown": {
+ 			data: fwschemadata.Data{
+@@ -1281,7 +1281,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int64"),
+ 			target:   new(types.Int64),
+-			expected: pointer(types.Int64Unknown()),
++			expected: new(types.Int64Unknown()),
+ 		},
+ 		"Int64Type-types.Int64-value": {
+ 			data: fwschemadata.Data{
+@@ -1306,7 +1306,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int64"),
+ 			target:   new(types.Int64),
+-			expected: pointer(types.Int64Value(12)),
++			expected: new(types.Int64Value(12)),
+ 		},
+ 		"Int64Type-*int64-null": {
+ 			data: fwschemadata.Data{
+@@ -1390,7 +1390,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int64"),
+ 			target:   new(*int64),
+-			expected: pointer(pointer(int64(12))),
++			expected: new(new(int64(12))),
+ 		},
+ 		"Int64Type-int64-null": {
+ 			data: fwschemadata.Data{
+@@ -1483,7 +1483,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("int64"),
+ 			target:   new(int64),
+-			expected: pointer(int64(12)),
++			expected: new(int64(12)),
+ 		},
+ 		"ListBlock-types.List-null": {
+ 			data: fwschemadata.Data{
+@@ -1530,7 +1530,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("list"),
+ 			target: new(types.List),
+-			expected: pointer(types.ListNull(
++			expected: new(types.ListNull(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -1583,7 +1583,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("list"),
+ 			target: new(types.List),
+-			expected: pointer(types.ListUnknown(
++			expected: new(types.ListUnknown(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -1657,7 +1657,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("list"),
+ 			target: new(types.List),
+-			expected: pointer(types.ListValueMust(
++			expected: new(types.ListValueMust(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -2103,7 +2103,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("list"),
+ 			target: new(types.List),
+-			expected: pointer(types.ListNull(
++			expected: new(types.ListNull(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -2157,7 +2157,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("list"),
+ 			target: new(types.List),
+-			expected: pointer(types.ListUnknown(
++			expected: new(types.ListUnknown(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -2232,7 +2232,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("list"),
+ 			target: new(types.List),
+-			expected: pointer(types.ListValueMust(
++			expected: new(types.ListValueMust(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -2670,7 +2670,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("list"),
+ 			target:   new(types.List),
+-			expected: pointer(types.ListNull(types.StringType)),
++			expected: new(types.ListNull(types.StringType)),
+ 		},
+ 		"ListType-types.List-unknown": {
+ 			data: fwschemadata.Data{
+@@ -2704,7 +2704,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("list"),
+ 			target:   new(types.List),
+-			expected: pointer(types.ListUnknown(types.StringType)),
++			expected: new(types.ListUnknown(types.StringType)),
+ 		},
+ 		"ListType-types.List-value": {
+ 			data: fwschemadata.Data{
+@@ -2741,7 +2741,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("list"),
+ 			target: new(types.List),
+-			expected: pointer(types.ListValueMust(
++			expected: new(types.ListValueMust(
+ 				types.StringType,
+ 				[]attr.Value{
+ 					types.StringValue("test1"),
+@@ -3029,7 +3029,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("map"),
+ 			target: new(types.Map),
+-			expected: pointer(types.MapNull(
++			expected: new(types.MapNull(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -3083,7 +3083,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("map"),
+ 			target: new(types.Map),
+-			expected: pointer(types.MapUnknown(
++			expected: new(types.MapUnknown(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -3158,7 +3158,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("map"),
+ 			target: new(types.Map),
+-			expected: pointer(types.MapValueMust(
++			expected: new(types.MapValueMust(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -3596,7 +3596,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("map"),
+ 			target:   new(types.Map),
+-			expected: pointer(types.MapNull(types.StringType)),
++			expected: new(types.MapNull(types.StringType)),
+ 		},
+ 		"MapType-types.Map-unknown": {
+ 			data: fwschemadata.Data{
+@@ -3630,7 +3630,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("map"),
+ 			target:   new(types.Map),
+-			expected: pointer(types.MapUnknown(types.StringType)),
++			expected: new(types.MapUnknown(types.StringType)),
+ 		},
+ 		"MapType-types.Map-value": {
+ 			data: fwschemadata.Data{
+@@ -3667,7 +3667,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("map"),
+ 			target: new(types.Map),
+-			expected: pointer(types.MapValueMust(
++			expected: new(types.MapValueMust(
+ 				types.StringType,
+ 				map[string]attr.Value{
+ 					"key1": types.StringValue("value1"),
+@@ -3947,7 +3947,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectNull(
++			expected: new(types.ObjectNull(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -3991,7 +3991,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectUnknown(
++			expected: new(types.ObjectUnknown(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -4037,7 +4037,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectValueMust(
++			expected: new(types.ObjectValueMust(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -4185,7 +4185,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			target: new(*struct {
+ 				NestedString types.String `tfsdk:"nested_string"`
+ 			}),
+-			expected: pointer(&struct {
++			expected: new(&struct {
+ 				NestedString types.String `tfsdk:"nested_string"`
+ 			}{
+ 				NestedString: types.StringValue("test1"),
+@@ -4394,7 +4394,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("set"),
+ 			target: new(types.Set),
+-			expected: pointer(types.SetNull(
++			expected: new(types.SetNull(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -4447,7 +4447,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("set"),
+ 			target: new(types.Set),
+-			expected: pointer(types.SetUnknown(
++			expected: new(types.SetUnknown(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -4521,7 +4521,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("set"),
+ 			target: new(types.Set),
+-			expected: pointer(types.SetValueMust(
++			expected: new(types.SetValueMust(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -4967,7 +4967,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("set"),
+ 			target: new(types.Set),
+-			expected: pointer(types.SetNull(
++			expected: new(types.SetNull(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -5021,7 +5021,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("set"),
+ 			target: new(types.Set),
+-			expected: pointer(types.SetUnknown(
++			expected: new(types.SetUnknown(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -5096,7 +5096,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("set"),
+ 			target: new(types.Set),
+-			expected: pointer(types.SetValueMust(
++			expected: new(types.SetValueMust(
+ 				types.ObjectType{
+ 					AttrTypes: map[string]attr.Type{
+ 						"nested_string": types.StringType,
+@@ -5534,7 +5534,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("set"),
+ 			target:   new(types.Set),
+-			expected: pointer(types.SetNull(types.StringType)),
++			expected: new(types.SetNull(types.StringType)),
+ 		},
+ 		"SetType-types.Set-unknown": {
+ 			data: fwschemadata.Data{
+@@ -5568,7 +5568,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("set"),
+ 			target:   new(types.Set),
+-			expected: pointer(types.SetUnknown(types.StringType)),
++			expected: new(types.SetUnknown(types.StringType)),
+ 		},
+ 		"SetType-types.Set-value": {
+ 			data: fwschemadata.Data{
+@@ -5605,7 +5605,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("set"),
+ 			target: new(types.Set),
+-			expected: pointer(types.SetValueMust(
++			expected: new(types.SetValueMust(
+ 				types.StringType,
+ 				[]attr.Value{
+ 					types.StringValue("test1"),
+@@ -5888,7 +5888,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectNull(
++			expected: new(types.ObjectNull(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -5935,7 +5935,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectUnknown(
++			expected: new(types.ObjectUnknown(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -5984,7 +5984,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectValueMust(
++			expected: new(types.ObjectValueMust(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -6141,7 +6141,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			target: new(*struct {
+ 				NestedString types.String `tfsdk:"nested_string"`
+ 			}),
+-			expected: pointer(&struct {
++			expected: new(&struct {
+ 				NestedString types.String `tfsdk:"nested_string"`
+ 			}{
+ 				NestedString: types.StringValue("test1"),
+@@ -6356,7 +6356,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectNull(
++			expected: new(types.ObjectNull(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -6404,7 +6404,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectUnknown(
++			expected: new(types.ObjectUnknown(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -6454,7 +6454,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Object),
+-			expected: pointer(types.ObjectValueMust(
++			expected: new(types.ObjectValueMust(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -6614,7 +6614,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			target: new(*struct {
+ 				NestedString types.String `tfsdk:"nested_string"`
+ 			}),
+-			expected: pointer(&struct {
++			expected: new(&struct {
+ 				NestedString types.String `tfsdk:"nested_string"`
+ 			}{
+ 				NestedString: types.StringValue("test1"),
+@@ -6813,7 +6813,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("string"),
+ 			target:   new(types.String),
+-			expected: pointer(types.StringNull()),
++			expected: new(types.StringNull()),
+ 		},
+ 		"StringType-types.string-unknown": {
+ 			data: fwschemadata.Data{
+@@ -6838,7 +6838,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("string"),
+ 			target:   new(types.String),
+-			expected: pointer(types.StringUnknown()),
++			expected: new(types.StringUnknown()),
+ 		},
+ 		"StringType-types.string-value": {
+ 			data: fwschemadata.Data{
+@@ -6863,7 +6863,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("string"),
+ 			target:   new(types.String),
+-			expected: pointer(types.StringValue("test")),
++			expected: new(types.StringValue("test")),
+ 		},
+ 		"StringType-*string-null": {
+ 			data: fwschemadata.Data{
+@@ -6947,7 +6947,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("string"),
+ 			target:   new(*string),
+-			expected: pointer(pointer("test")),
++			expected: new(new("test")),
+ 		},
+ 		"StringType-string-null": {
+ 			data: fwschemadata.Data{
+@@ -7040,7 +7040,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("string"),
+ 			target:   new(string),
+-			expected: pointer("test"),
++			expected: new("test"),
+ 		},
+ 		"DynamicType-types.dynamic-null": {
+ 			data: fwschemadata.Data{
+@@ -7065,7 +7065,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("dynamic"),
+ 			target:   new(types.Dynamic),
+-			expected: pointer(types.DynamicNull()),
++			expected: new(types.DynamicNull()),
+ 		},
+ 		"DynamicType-types.dynamic-underlying-value-null": {
+ 			data: fwschemadata.Data{
+@@ -7090,7 +7090,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("dynamic"),
+ 			target:   new(types.Dynamic),
+-			expected: pointer(types.DynamicValue(types.BoolNull())),
++			expected: new(types.DynamicValue(types.BoolNull())),
+ 		},
+ 		"DynamicType-types.dynamic-unknown": {
+ 			data: fwschemadata.Data{
+@@ -7115,7 +7115,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("dynamic"),
+ 			target:   new(types.Dynamic),
+-			expected: pointer(types.DynamicUnknown()),
++			expected: new(types.DynamicUnknown()),
+ 		},
+ 		"DynamicType-types.dynamic-underlying-value-unknown": {
+ 			data: fwschemadata.Data{
+@@ -7140,7 +7140,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("dynamic"),
+ 			target:   new(types.Dynamic),
+-			expected: pointer(types.DynamicValue(types.StringUnknown())),
++			expected: new(types.DynamicValue(types.StringUnknown())),
+ 		},
+ 		"DynamicType-types.dynamic-stringvalue": {
+ 			data: fwschemadata.Data{
+@@ -7165,7 +7165,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:     path.Root("string"),
+ 			target:   new(types.Dynamic),
+-			expected: pointer(types.DynamicValue(types.StringValue("test"))),
++			expected: new(types.DynamicValue(types.StringValue("test"))),
+ 		},
+ 		"DynamicType-types.dynamic-listvalue": {
+ 			data: fwschemadata.Data{
+@@ -7200,7 +7200,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("list"),
+ 			target: new(types.Dynamic),
+-			expected: pointer(types.DynamicValue(types.ListValueMust(
++			expected: new(types.DynamicValue(types.ListValueMust(
+ 				types.StringType,
+ 				[]attr.Value{
+ 					types.StringValue("test1"),
+@@ -7241,7 +7241,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("map"),
+ 			target: new(types.Dynamic),
+-			expected: pointer(types.DynamicValue(types.MapValueMust(
++			expected: new(types.DynamicValue(types.MapValueMust(
+ 				types.StringType,
+ 				map[string]attr.Value{
+ 					"key1": types.StringValue("value1"),
+@@ -7285,7 +7285,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("object"),
+ 			target: new(types.Dynamic),
+-			expected: pointer(types.DynamicValue(types.ObjectValueMust(
++			expected: new(types.DynamicValue(types.ObjectValueMust(
+ 				map[string]attr.Type{
+ 					"nested_string": types.StringType,
+ 				},
+@@ -7327,7 +7327,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 			},
+ 			path:   path.Root("set"),
+ 			target: new(types.Dynamic),
+-			expected: pointer(types.DynamicValue(types.SetValueMust(
++			expected: new(types.DynamicValue(types.SetValueMust(
+ 				types.StringType,
+ 				[]attr.Value{
+ 					types.StringValue("test1"),
+diff --git a/internal/fwschemadata/data_get_test.go b/internal/fwschemadata/data_get_test.go
+index 7e431a7..ebb0c08 100644
+--- a/internal/fwschemadata/data_get_test.go
++++ b/internal/fwschemadata/data_get_test.go
+@@ -418,7 +418,7 @@ func TestDataGet(t *testing.T) {
+ 			expected: &struct {
+ 				Bool *bool `tfsdk:"bool"`
+ 			}{
+-				Bool: pointer(true),
++				Bool: new(true),
+ 			},
+ 		},
+ 		"BoolType-bool-null": {
+@@ -715,7 +715,7 @@ func TestDataGet(t *testing.T) {
+ 			expected: &struct {
+ 				Float32 *float32 `tfsdk:"float32"`
+ 			}{
+-				Float32: pointer(float32Value),
++				Float32: new(float32Value),
+ 			},
+ 		},
+ 		"Float32Type-float32-null": {
+@@ -1012,7 +1012,7 @@ func TestDataGet(t *testing.T) {
+ 			expected: &struct {
+ 				Float64 *float64 `tfsdk:"float64"`
+ 			}{
+-				Float64: pointer(1.2),
++				Float64: new(1.2),
+ 			},
+ 		},
+ 		"Float64Type-float64-null": {
+@@ -1309,7 +1309,7 @@ func TestDataGet(t *testing.T) {
+ 			expected: &struct {
+ 				Int32 *int32 `tfsdk:"int32"`
+ 			}{
+-				Int32: pointer(int32(12)),
++				Int32: new(int32(12)),
+ 			},
+ 		},
+ 		"Int32Type-int32-null": {
+@@ -1606,7 +1606,7 @@ func TestDataGet(t *testing.T) {
+ 			expected: &struct {
+ 				Int64 *int64 `tfsdk:"int64"`
+ 			}{
+-				Int64: pointer(int64(12)),
++				Int64: new(int64(12)),
+ 			},
+ 		},
+ 		"Int64Type-int64-null": {
+@@ -7737,7 +7737,7 @@ func TestDataGet(t *testing.T) {
+ 			expected: &struct {
+ 				String *string `tfsdk:"string"`
+ 			}{
+-				String: pointer("test"),
++				String: new("test"),
+ 			},
+ 		},
+ 		"StringType-string-null": {
+diff --git a/internal/fwschemadata/pointer_test.go b/internal/fwschemadata/pointer_test.go
+deleted file mode 100644
+index 0cf4d0f..0000000
+--- a/internal/fwschemadata/pointer_test.go
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// Copyright IBM Corp. 2021, 2026
+-// SPDX-License-Identifier: MPL-2.0
+-
+-package fwschemadata_test
+-
+-func pointer[T any](value T) *T {
+-	return &value
+-}
+diff --git a/internal/reflect/pointer_test.go b/internal/reflect/pointer_test.go
+index 05eb4ac..48dbf0f 100644
+--- a/internal/reflect/pointer_test.go
++++ b/internal/reflect/pointer_test.go
+@@ -111,7 +111,7 @@ func TestFromPointer(t *testing.T) {
+ 	}{
+ 		"simple": {
+ 			typ:      types.StringType,
+-			val:      reflect.ValueOf(strPtr("hello, world")),
++			val:      reflect.ValueOf(new("hello, world")),
+ 			expected: types.StringValue("hello, world"),
+ 		},
+ 		"null": {
+@@ -175,7 +175,3 @@ func TestFromPointer(t *testing.T) {
+ 		})
+ 	}
+ }
+-
+-func strPtr(s string) *string {
+-	return &s
+-}
+diff --git a/internal/toproto5/callfunction_test.go b/internal/toproto5/callfunction_test.go
+index f57f589..b96eaec 100644
+--- a/internal/toproto5/callfunction_test.go
++++ b/internal/toproto5/callfunction_test.go
+@@ -38,7 +38,7 @@ func TestCallFunctionResponse(t *testing.T) {
+ 			expected: &tfprotov5.CallFunctionResponse{
+ 				Error: &tfprotov5.FunctionError{
+ 					Text:             "error summary one: error detail one\nerror summary two: error detail two",
+-					FunctionArgument: pointer(int64(0)),
++					FunctionArgument: new(int64(0)),
+ 				},
+ 			},
+ 		},
+diff --git a/internal/toproto5/pointer_test.go b/internal/toproto5/pointer_test.go
+deleted file mode 100644
+index 495c45a..0000000
+--- a/internal/toproto5/pointer_test.go
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// Copyright IBM Corp. 2021, 2026
+-// SPDX-License-Identifier: MPL-2.0
+-
+-package toproto5_test
+-
+-func pointer[T any](value T) *T {
+-	return &value
+-}
+diff --git a/internal/toproto6/callfunction_test.go b/internal/toproto6/callfunction_test.go
+index ba4b9ba..91d6dfc 100644
+--- a/internal/toproto6/callfunction_test.go
++++ b/internal/toproto6/callfunction_test.go
+@@ -38,7 +38,7 @@ func TestCallFunctionResponse(t *testing.T) {
+ 			expected: &tfprotov6.CallFunctionResponse{
+ 				Error: &tfprotov6.FunctionError{
+ 					Text:             "error summary one: error detail one\nerror summary two: error detail two",
+-					FunctionArgument: pointer(int64(0)),
++					FunctionArgument: new(int64(0)),
+ 				},
+ 			},
+ 		},
+diff --git a/internal/toproto6/pointer_test.go b/internal/toproto6/pointer_test.go
+deleted file mode 100644
+index 8254979..0000000
+--- a/internal/toproto6/pointer_test.go
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// Copyright IBM Corp. 2021, 2026
+-// SPDX-License-Identifier: MPL-2.0
+-
+-package toproto6_test
+-
+-func pointer[T any](value T) *T {
+-	return &value
+-}
+diff --git a/tfsdk/config_test.go b/tfsdk/config_test.go
+index 5272ab5..1892362 100644
+--- a/tfsdk/config_test.go
++++ b/tfsdk/config_test.go
+@@ -154,7 +154,7 @@ func TestConfigGetAttribute(t *testing.T) {
+ 				},
+ 			},
+ 			target:   new(string),
+-			expected: pointer("namevalue"),
++			expected: new("namevalue"),
+ 		},
+ 		"diagnostics": {
+ 			config: tfsdk.Config{
+diff --git a/tfsdk/ephemeral_result_data_test.go b/tfsdk/ephemeral_result_data_test.go
+index ae288f0..e74435e 100644
+--- a/tfsdk/ephemeral_result_data_test.go
++++ b/tfsdk/ephemeral_result_data_test.go
+@@ -154,7 +154,7 @@ func TestEphemeralResultDataGetAttribute(t *testing.T) {
+ 				},
+ 			},
+ 			target:   new(string),
+-			expected: pointer("namevalue"),
++			expected: new("namevalue"),
+ 		},
+ 		"diagnostics": {
+ 			ephemeralResultData: tfsdk.EphemeralResultData{
+diff --git a/tfsdk/plan_test.go b/tfsdk/plan_test.go
+index 360b75d..aa81be6 100644
+--- a/tfsdk/plan_test.go
++++ b/tfsdk/plan_test.go
+@@ -154,7 +154,7 @@ func TestPlanGetAttribute(t *testing.T) {
+ 				},
+ 			},
+ 			target:   new(string),
+-			expected: pointer("namevalue"),
++			expected: new("namevalue"),
+ 		},
+ 		"diagnostics": {
+ 			plan: tfsdk.Plan{
+diff --git a/tfsdk/pointer_test.go b/tfsdk/pointer_test.go
+deleted file mode 100644
+index 66cfcfa..0000000
+--- a/tfsdk/pointer_test.go
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// Copyright IBM Corp. 2021, 2026
+-// SPDX-License-Identifier: MPL-2.0
+-
+-package tfsdk_test
+-
+-func pointer[T any](value T) *T {
+-	return &value
+-}
+diff --git a/tfsdk/resource_identity_test.go b/tfsdk/resource_identity_test.go
+index ee710ec..9cde87d 100644
+--- a/tfsdk/resource_identity_test.go
++++ b/tfsdk/resource_identity_test.go
+@@ -154,7 +154,7 @@ func TestResourceIdentityGetAttribute(t *testing.T) {
+ 				},
+ 			},
+ 			target:   new(string),
+-			expected: pointer("namevalue"),
++			expected: new("namevalue"),
+ 		},
+ 		"diagnostics": {
+ 			resourceIdentity: tfsdk.ResourceIdentity{
+diff --git a/tfsdk/resource_test.go b/tfsdk/resource_test.go
+index 2a2922b..d8aa3ab 100644
+--- a/tfsdk/resource_test.go
++++ b/tfsdk/resource_test.go
+@@ -154,7 +154,7 @@ func TestResourceGetAttribute(t *testing.T) {
+ 				},
+ 			},
+ 			target:   new(string),
+-			expected: pointer("namevalue"),
++			expected: new("namevalue"),
+ 		},
+ 		"diagnostics": {
+ 			resource: tfsdk.Resource{
+diff --git a/tfsdk/state_test.go b/tfsdk/state_test.go
+index 0f2952b..dfac107 100644
+--- a/tfsdk/state_test.go
++++ b/tfsdk/state_test.go
+@@ -154,7 +154,7 @@ func TestStateGetAttribute(t *testing.T) {
+ 				},
+ 			},
+ 			target:   new(string),
+-			expected: pointer("namevalue"),
++			expected: new("namevalue"),
+ 		},
+ 		"diagnostics": {
+ 			state: tfsdk.State{
+diff --git a/tfsdk/value_as_test.go b/tfsdk/value_as_test.go
+index 5b9b5a8..a101cf3 100644
+--- a/tfsdk/value_as_test.go
++++ b/tfsdk/value_as_test.go
+@@ -21,46 +21,26 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types"
+ )
+ 
+-func newBoolPointer(in bool) *bool {
+-	return &in
+-}
+-
+ func newBoolPointerPointer(in bool) **bool {
+ 	boolPointer := &in
+ 	return &boolPointer
+ }
+ 
+-func newFloat32Pointer(in float32) *float32 {
+-	return &in
+-}
+-
+ func newFloat32PointerPointer(in float32) **float32 {
+ 	floatPointer := &in
+ 	return &floatPointer
+ }
+ 
+-func newFloat64Pointer(in float64) *float64 {
+-	return &in
+-}
+-
+ func newFloat64PointerPointer(in float64) **float64 {
+ 	floatPointer := &in
+ 	return &floatPointer
+ }
+ 
+-func newInt32Pointer(in int32) *int32 {
+-	return &in
+-}
+-
+ func newInt32PointerPointer(in int32) **int32 {
+ 	intPointer := &in
+ 	return &intPointer
+ }
+ 
+-func newInt64Pointer(in int64) *int64 {
+-	return &in
+-}
+-
+ func newInt64PointerPointer(in int64) **int64 {
+ 	intPointer := &in
+ 	return &intPointer
+@@ -71,10 +51,6 @@ func newBigFloatPointerPointer(in uint64) **big.Float {
+ 	return &bf
+ }
+ 
+-func newStringPointer(in string) *string {
+-	return &in
+-}
+-
+ func newStringPointerPointer(in string) **string {
+ 	stringPointer := &in
+ 	return &stringPointer
+@@ -109,8 +85,8 @@ func TestValueAs(t *testing.T) {
+ 	tests := map[string]testCase{
+ 		"primitive bool pointer": {
+ 			val:      types.BoolValue(true),
+-			target:   newBoolPointer(false),
+-			expected: newBoolPointer(true),
++			target:   new(false),
++			expected: new(true),
+ 		},
+ 		"primitive bool pointer pointer": {
+ 			val:      types.BoolValue(true),
+@@ -119,8 +95,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive float32 pointer": {
+ 			val:      types.Float32Value(12.3),
+-			target:   newFloat32Pointer(0.0),
+-			expected: newFloat32Pointer(12.3),
++			target:   new(float32(0.0)),
++			expected: new(float32(12.3)),
+ 		},
+ 		"primitive float32 pointer pointer": {
+ 			val:      types.Float32Value(12.3),
+@@ -129,8 +105,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive float64 pointer": {
+ 			val:      types.Float64Value(12.3),
+-			target:   newFloat64Pointer(0.0),
+-			expected: newFloat64Pointer(12.3),
++			target:   new(0.0),
++			expected: new(12.3),
+ 		},
+ 		"primitive float64 pointer pointer": {
+ 			val:      types.Float64Value(12.3),
+@@ -139,8 +115,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive int32 pointer": {
+ 			val:      types.Int32Value(12),
+-			target:   newInt32Pointer(0),
+-			expected: newInt32Pointer(12),
++			target:   new(int32(0)),
++			expected: new(int32(12)),
+ 		},
+ 		"primitive int32 pointer pointer": {
+ 			val:      types.Int32Value(12),
+@@ -149,8 +125,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive int64 pointer": {
+ 			val:      types.Int64Value(12),
+-			target:   newInt64Pointer(0),
+-			expected: newInt64Pointer(12),
++			target:   new(int64(0)),
++			expected: new(int64(12)),
+ 		},
+ 		"primitive int64 pointer pointer": {
+ 			val:      types.Int64Value(12),
+@@ -174,8 +150,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive string pointer": {
+ 			val:      types.StringValue("hello"),
+-			target:   newStringPointer(""),
+-			expected: newStringPointer("hello"),
++			target:   new(""),
++			expected: new("hello"),
+ 		},
+ 		"primitive string pointer pointer": {
+ 			val:      types.StringValue("hello"),
+@@ -348,7 +324,7 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"incompatible-type": {
+ 			val:    types.StringValue("hello"),
+-			target: newInt64Pointer(0),
++			target: new(int64(0)),
+ 			expectedDiags: diag.Diagnostics{
+ 				diag.WithPath(
+ 					path.Empty(),
+diff --git a/types/basetypes/bool_value_test.go b/types/basetypes/bool_value_test.go
+index bd7a650..fd048d3 100644
+--- a/types/basetypes/bool_value_test.go
++++ b/types/basetypes/bool_value_test.go
+@@ -319,11 +319,11 @@ func TestBoolValueValueBoolPointer(t *testing.T) {
+ 	}{
+ 		"known-false": {
+ 			input:    NewBoolValue(false),
+-			expected: pointer(false),
++			expected: new(false),
+ 		},
+ 		"known-true": {
+ 			input:    NewBoolValue(true),
+-			expected: pointer(true),
++			expected: new(true),
+ 		},
+ 		"null": {
+ 			input:    NewBoolNull(),
+@@ -331,7 +331,7 @@ func TestBoolValueValueBoolPointer(t *testing.T) {
+ 		},
+ 		"unknown": {
+ 			input:    NewBoolUnknown(),
+-			expected: pointer(false),
++			expected: new(false),
+ 		},
+ 	}
+ 
+@@ -360,7 +360,7 @@ func TestNewBoolPointerValue(t *testing.T) {
+ 			expected: NewBoolNull(),
+ 		},
+ 		"value": {
+-			value:    pointer(true),
++			value:    new(true),
+ 			expected: NewBoolValue(true),
+ 		},
+ 	}
+diff --git a/types/basetypes/float32_value_test.go b/types/basetypes/float32_value_test.go
+index f4d9ba0..d5ba530 100644
+--- a/types/basetypes/float32_value_test.go
++++ b/types/basetypes/float32_value_test.go
+@@ -400,7 +400,7 @@ func TestFloat32ValueValueFloat32Pointer(t *testing.T) {
+ 	}{
+ 		"known": {
+ 			input:    NewFloat32Value(2.4),
+-			expected: pointer(float32(2.4)),
++			expected: new(float32(2.4)),
+ 		},
+ 		"null": {
+ 			input:    NewFloat32Null(),
+@@ -408,7 +408,7 @@ func TestFloat32ValueValueFloat32Pointer(t *testing.T) {
+ 		},
+ 		"unknown": {
+ 			input:    NewFloat32Unknown(),
+-			expected: pointer(float32(0.0)),
++			expected: new(float32(0.0)),
+ 		},
+ 	}
+ 
+@@ -437,7 +437,7 @@ func TestNewFloat32PointerValue(t *testing.T) {
+ 			expected: NewFloat32Null(),
+ 		},
+ 		"value": {
+-			value:    pointer(float32(1.2)),
++			value:    new(float32(1.2)),
+ 			expected: NewFloat32Value(1.2),
+ 		},
+ 	}
+diff --git a/types/basetypes/float64_value_test.go b/types/basetypes/float64_value_test.go
+index d76dc13..6237108 100644
+--- a/types/basetypes/float64_value_test.go
++++ b/types/basetypes/float64_value_test.go
+@@ -405,7 +405,7 @@ func TestFloat64ValueValueFloat64Pointer(t *testing.T) {
+ 	}{
+ 		"known": {
+ 			input:    NewFloat64Value(2.4),
+-			expected: pointer(2.4),
++			expected: new(2.4),
+ 		},
+ 		"null": {
+ 			input:    NewFloat64Null(),
+@@ -413,7 +413,7 @@ func TestFloat64ValueValueFloat64Pointer(t *testing.T) {
+ 		},
+ 		"unknown": {
+ 			input:    NewFloat64Unknown(),
+-			expected: pointer(0.0),
++			expected: new(0.0),
+ 		},
+ 	}
+ 
+@@ -442,7 +442,7 @@ func TestNewFloat64PointerValue(t *testing.T) {
+ 			expected: NewFloat64Null(),
+ 		},
+ 		"value": {
+-			value:    pointer(1.2),
++			value:    new(1.2),
+ 			expected: NewFloat64Value(1.2),
+ 		},
+ 	}
+diff --git a/types/basetypes/int32_value_test.go b/types/basetypes/int32_value_test.go
+index 8fa4849..2132c2c 100644
+--- a/types/basetypes/int32_value_test.go
++++ b/types/basetypes/int32_value_test.go
+@@ -286,7 +286,7 @@ func TestInt32ValueValueInt32Pointer(t *testing.T) {
+ 	}{
+ 		"known": {
+ 			input:    NewInt32Value(24),
+-			expected: pointer(int32(24)),
++			expected: new(int32(24)),
+ 		},
+ 		"null": {
+ 			input:    NewInt32Null(),
+@@ -294,7 +294,7 @@ func TestInt32ValueValueInt32Pointer(t *testing.T) {
+ 		},
+ 		"unknown": {
+ 			input:    NewInt32Unknown(),
+-			expected: pointer(int32(0)),
++			expected: new(int32(0)),
+ 		},
+ 	}
+ 
+@@ -323,7 +323,7 @@ func TestNewInt32PointerValue(t *testing.T) {
+ 			expected: NewInt32Null(),
+ 		},
+ 		"value": {
+-			value:    pointer(int32(123)),
++			value:    new(int32(123)),
+ 			expected: NewInt32Value(123),
+ 		},
+ 	}
+diff --git a/types/basetypes/int64_value_test.go b/types/basetypes/int64_value_test.go
+index b41ceb8..a20ce18 100644
+--- a/types/basetypes/int64_value_test.go
++++ b/types/basetypes/int64_value_test.go
+@@ -285,7 +285,7 @@ func TestInt64ValueValueInt64Pointer(t *testing.T) {
+ 	}{
+ 		"known": {
+ 			input:    NewInt64Value(24),
+-			expected: pointer(int64(24)),
++			expected: new(int64(24)),
+ 		},
+ 		"null": {
+ 			input:    NewInt64Null(),
+@@ -293,7 +293,7 @@ func TestInt64ValueValueInt64Pointer(t *testing.T) {
+ 		},
+ 		"unknown": {
+ 			input:    NewInt64Unknown(),
+-			expected: pointer(int64(0)),
++			expected: new(int64(0)),
+ 		},
+ 	}
+ 
+@@ -322,7 +322,7 @@ func TestNewInt64PointerValue(t *testing.T) {
+ 			expected: NewInt64Null(),
+ 		},
+ 		"value": {
+-			value:    pointer(int64(123)),
++			value:    new(int64(123)),
+ 			expected: NewInt64Value(123),
+ 		},
+ 	}
+diff --git a/types/basetypes/list_value_test.go b/types/basetypes/list_value_test.go
+index a4ac951..5881209 100644
+--- a/types/basetypes/list_value_test.go
++++ b/types/basetypes/list_value_test.go
+@@ -127,8 +127,8 @@ func TestNewListValueFrom(t *testing.T) {
+ 			elementType: StringType{},
+ 			elements: []*string{
+ 				nil,
+-				pointer("test1"),
+-				pointer("test2"),
++				new("test1"),
++				new("test2"),
+ 			},
+ 			expected: NewListValueMust(
+ 				StringType{},
+diff --git a/types/basetypes/map_value_test.go b/types/basetypes/map_value_test.go
+index d8264f5..23e88a8 100644
+--- a/types/basetypes/map_value_test.go
++++ b/types/basetypes/map_value_test.go
+@@ -127,8 +127,8 @@ func TestNewMapValueFrom(t *testing.T) {
+ 			elementType: StringType{},
+ 			elements: map[string]*string{
+ 				"key1": nil,
+-				"key2": pointer("test1"),
+-				"key3": pointer("test2"),
++				"key2": new("test1"),
++				"key3": new("test2"),
+ 			},
+ 			expected: NewMapValueMust(
+ 				StringType{},
+diff --git a/types/basetypes/object_value_test.go b/types/basetypes/object_value_test.go
+index 7ccbd48..0b0b572 100644
+--- a/types/basetypes/object_value_test.go
++++ b/types/basetypes/object_value_test.go
+@@ -183,7 +183,7 @@ func TestNewObjectValueFrom(t *testing.T) {
+ 				"bool":   BoolType{},
+ 				"string": StringType{},
+ 			},
+-			attributes: pointer(struct {
++			attributes: new(struct {
+ 				Bool   BoolValue   `tfsdk:"bool"`
+ 				String StringValue `tfsdk:"string"`
+ 			}{
+diff --git a/types/basetypes/pointer_test.go b/types/basetypes/pointer_test.go
+deleted file mode 100644
+index 92f7d7b..0000000
+--- a/types/basetypes/pointer_test.go
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// Copyright IBM Corp. 2021, 2026
+-// SPDX-License-Identifier: MPL-2.0
+-
+-package basetypes
+-
+-func pointer[T any](value T) *T {
+-	return &value
+-}
+diff --git a/types/basetypes/set_value_test.go b/types/basetypes/set_value_test.go
+index e5a9e3d..0c80fb8 100644
+--- a/types/basetypes/set_value_test.go
++++ b/types/basetypes/set_value_test.go
+@@ -409,8 +409,8 @@ func TestNewSetValueFrom(t *testing.T) {
+ 			elementType: StringType{},
+ 			elements: []*string{
+ 				nil,
+-				pointer("test1"),
+-				pointer("test2"),
++				new("test1"),
++				new("test2"),
+ 			},
+ 			expected: NewSetValueMust(
+ 				StringType{},
+diff --git a/types/basetypes/string_value_test.go b/types/basetypes/string_value_test.go
+index 0915644..0fb1830 100644
+--- a/types/basetypes/string_value_test.go
++++ b/types/basetypes/string_value_test.go
+@@ -279,7 +279,7 @@ func TestStringValueValueStringPointer(t *testing.T) {
+ 	}{
+ 		"known": {
+ 			input:    NewStringValue("test"),
+-			expected: pointer("test"),
++			expected: new("test"),
+ 		},
+ 		"null": {
+ 			input:    NewStringNull(),
+@@ -287,7 +287,7 @@ func TestStringValueValueStringPointer(t *testing.T) {
+ 		},
+ 		"unknown": {
+ 			input:    NewStringUnknown(),
+-			expected: pointer(""),
++			expected: new(""),
+ 		},
+ 	}
+ 
+@@ -316,7 +316,7 @@ func TestNewStringPointerValue(t *testing.T) {
+ 			expected: NewStringNull(),
+ 		},
+ 		"value": {
+-			value:    pointer("test"),
++			value:    new("test"),
+ 			expected: NewStringValue("test"),
+ 		},
+ 	}

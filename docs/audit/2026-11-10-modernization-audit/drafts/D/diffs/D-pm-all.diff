@@ -1,0 +1,1153 @@
+--- /dev/null	2026-10-23 04:17:44.166722291 +0000
++++ /home/user/terraform-plugin-framework/internal/fwplanmodifier/fwplanmodifier.go (draft)	2026-10-24 23:12:30.694680268 +0000
+@@ -0,0 +1,64 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++// Package fwplanmodifier contains logic shared by the typed
++// resource/schema/<type>planmodifier packages.
++package fwplanmodifier
++
++import (
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	"github.com/hashicorp/terraform-plugin-framework/attr"
++)
++
++// RequiresReplaceIfApplies reports whether a RequiresReplaceIf function
++// should be called: the resource is planned for update and the plan and
++// state values differ.
++func RequiresReplaceIfApplies(stateRaw, planRaw tftypes.Value, planValue, stateValue attr.Value) bool {
++	// Do not replace on resource creation.
++	if stateRaw.IsNull() {
++		return false
++	}
++
++	// Do not replace on resource destroy.
++	if planRaw.IsNull() {
++		return false
++	}
++
++	// Do not replace if the plan and state values are equal.
++	return !planValue.Equal(stateValue)
++}
++
++// UseStateForUnknownApplies reports whether the prior state value should be
++// copied into an unknown planned value.
++func UseStateForUnknownApplies(stateRaw tftypes.Value, planValue, configValue attr.Value) bool {
++	// Do nothing if there is no state (resource is being created).
++	if stateRaw.IsNull() {
++		return false
++	}
++
++	// Do nothing if there is a known planned value.
++	if !planValue.IsUnknown() {
++		return false
++	}
++
++	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
++	return !configValue.IsUnknown()
++}
++
++// UseNonNullStateForUnknownApplies reports whether a non-null prior state
++// value should be copied into an unknown planned value.
++func UseNonNullStateForUnknownApplies(stateValue, planValue, configValue attr.Value) bool {
++	// Do nothing if the state value is null.
++	if stateValue.IsNull() {
++		return false
++	}
++
++	// Do nothing if there is a known planned value.
++	if !planValue.IsUnknown() {
++		return false
++	}
++
++	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
++	return !configValue.IsUnknown()
++}
+--- /home/user/terraform-plugin-framework/resource/schema/boolplanmodifier/requires_replace_if.go	2026-10-24 21:30:10.740157399 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/boolplanmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:30.731808469 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyBool implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/boolplanmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.744606716 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/boolplanmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:30.732054962 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/boolplanmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.744606716 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/boolplanmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:30.731931266 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyBool implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyBool(_ context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/dynamicplanmodifier/requires_replace_if.go	2026-10-24 21:30:10.745643924 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/dynamicplanmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.898639409 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyDynamic implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyDynamic(ctx context.Context, req planmodifier.DynamicRequest, resp *planmodifier.DynamicResponse) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/float32planmodifier/requires_replace_if.go	2026-10-24 21:30:10.750714602 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/float32planmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:30.853687408 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyFloat32 implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyFloat32(ctx context.Context, req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/float32planmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.750714602 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/float32planmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:30.853916176 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyFloat32(ctx context.Context, req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/float32planmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.750714602 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/float32planmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:30.853820003 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyFloat32 implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyFloat32(_ context.Context, req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/float64planmodifier/requires_replace_if.go	2026-10-24 21:30:10.751597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/float64planmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:30.973043922 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyFloat64 implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyFloat64(ctx context.Context, req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/float64planmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.751597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/float64planmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:30.973224191 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyFloat64(ctx context.Context, req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/float64planmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.751597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/float64planmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:30.973149092 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyFloat64 implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyFloat64(_ context.Context, req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/int32planmodifier/requires_replace_if.go	2026-10-24 21:30:10.758659694 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/int32planmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.109589071 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyInt32 implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyInt32(ctx context.Context, req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/int32planmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.758659694 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/int32planmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:31.110096926 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyInt32(ctx context.Context, req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/int32planmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.758659694 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/int32planmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:31.109772327 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyInt32 implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyInt32(_ context.Context, req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/int64planmodifier/requires_replace_if.go	2026-10-24 21:30:10.758659694 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/int64planmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.199380499 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyInt64 implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyInt64(ctx context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/int64planmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.759597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/int64planmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:31.199604440 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyInt64(ctx context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/int64planmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.759597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/int64planmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:31.199515299 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyInt64 implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyInt64(_ context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/listplanmodifier/requires_replace_if.go	2026-10-24 21:30:10.763597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/listplanmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.314581922 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyList implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyList(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/listplanmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.763597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/listplanmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:31.314900246 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyList(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/listplanmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.763597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/listplanmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:31.314763901 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyList implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyList(_ context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/mapplanmodifier/requires_replace_if.go	2026-10-24 21:30:10.767597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/mapplanmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.424100811 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyMap implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyMap(ctx context.Context, req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/mapplanmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.767597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/mapplanmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:31.424289452 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyMap(ctx context.Context, req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/mapplanmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/mapplanmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:31.424209613 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyMap implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyMap(_ context.Context, req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/numberplanmodifier/requires_replace_if.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/numberplanmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.520696556 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyNumber implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyNumber(ctx context.Context, req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/numberplanmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/numberplanmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:31.520901632 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyNumber(ctx context.Context, req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/numberplanmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/numberplanmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:31.520814852 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyNumber implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyNumber(_ context.Context, req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/objectplanmodifier/requires_replace_if.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/objectplanmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.612120960 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyObject implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyObject(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/objectplanmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.775597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/objectplanmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:31.612318766 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyObject(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/objectplanmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.775597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/objectplanmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:31.612229173 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyObject implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyObject(_ context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/setplanmodifier/requires_replace_if.go	2026-10-24 21:30:10.783597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/setplanmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.712334120 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifySet implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifySet(ctx context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/setplanmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.783597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/setplanmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:31.712593980 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifySet(ctx context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/setplanmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.783597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/setplanmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:31.712447282 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifySet implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifySet(_ context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/stringplanmodifier/requires_replace_if.go	2026-10-24 21:30:10.787597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/stringplanmodifier/requires_replace_if.go (draft)	2026-10-24 23:12:31.796077916 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -49,18 +50,7 @@
+ 
+ // PlanModifyString implements the plan modification logic.
+ func (m requiresReplaceIfModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+-	// Do not replace on resource creation.
+-	if req.State.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace on resource destroy.
+-	if req.Plan.Raw.IsNull() {
+-		return
+-	}
+-
+-	// Do not replace if the plan and state values are equal.
+-	if req.PlanValue.Equal(req.StateValue) {
++	if !fwplanmodifier.RequiresReplaceIfApplies(req.State.Raw, req.Plan.Raw, req.PlanValue, req.StateValue) {
+ 		return
+ 	}
+ 
+--- /home/user/terraform-plugin-framework/resource/schema/stringplanmodifier/use_non_null_state_for_unknown.go	2026-10-24 21:30:10.792541372 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/stringplanmodifier/use_non_null_state_for_unknown.go (draft)	2026-10-24 23:12:31.796354901 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -35,20 +36,7 @@
+ }
+ 
+ func (m useNonNullStateForUnknown) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+-	// Do nothing if the state value is null.
+-	if req.StateValue.IsNull() {
+-		return
++	if fwplanmodifier.UseNonNullStateForUnknownApplies(req.StateValue, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }
+--- /home/user/terraform-plugin-framework/resource/schema/stringplanmodifier/use_state_for_unknown.go	2026-10-24 21:30:10.792541372 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/stringplanmodifier/use_state_for_unknown.go (draft)	2026-10-24 23:12:31.796251279 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwplanmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ )
+ 
+@@ -40,20 +41,7 @@
+ 
+ // PlanModifyString implements the plan modification logic.
+ func (m useStateForUnknownModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+-	// Do nothing if there is no state (resource is being created).
+-	if req.State.Raw.IsNull() {
+-		return
++	if fwplanmodifier.UseStateForUnknownApplies(req.State.Raw, req.PlanValue, req.ConfigValue) {
++		resp.PlanValue = req.StateValue
+ 	}
+-
+-	// Do nothing if there is a known planned value.
+-	if !req.PlanValue.IsUnknown() {
+-		return
+-	}
+-
+-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+-	if req.ConfigValue.IsUnknown() {
+-		return
+-	}
+-
+-	resp.PlanValue = req.StateValue
+ }

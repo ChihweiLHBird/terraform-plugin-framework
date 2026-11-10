@@ -1,0 +1,58 @@
+diff --git a/internal/privatestate/data_test.go b/internal/privatestate/data_test.go
+index a2106fd..24ac73a 100644
+--- a/internal/privatestate/data_test.go
++++ b/internal/privatestate/data_test.go
+@@ -46,7 +46,7 @@ func TestData_Bytes(t *testing.T) {
+ 		"framework-data-value-invalid-utf-8": {
+ 			data: &Data{
+ 				Framework: map[string][]byte{
+-					".frameworkKeyOne": []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
++					".frameworkKeyOne": fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
+ 				},
+ 			},
+ 			expectedDiags: diag.Diagnostics{
+@@ -111,7 +111,7 @@ func TestData_Bytes(t *testing.T) {
+ 			data: &Data{
+ 				Provider: &ProviderData{
+ 					data: map[string][]byte{
+-						"providerKeyOne": []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++						"providerKeyOne": fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 					},
+ 				},
+ 			},
+@@ -230,7 +230,7 @@ func TestNewData(t *testing.T) {
+ 	})
+ 
+ 	frameworkValueInvalidUTF8 := MustMarshalToJson(map[string][]byte{
+-		".frameworkKeyOne": []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
++		".frameworkKeyOne": fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
+ 		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+ 		"providerKeyOne":   []byte(`{"pKeyOne": {"k0": "zero", "k1": 1}}`),
+ 		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+@@ -260,7 +260,7 @@ func TestNewData(t *testing.T) {
+ 	providerValueInvalidUTF8 := MustMarshalToJson(map[string][]byte{
+ 		".frameworkKeyOne": []byte(`{"fwKeyOne": {"k0": "zero", "k1": 1}}`),
+ 		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+-		"providerKeyOne":   []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
++		"providerKeyOne":   fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
+ 		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+ 	})
+ 
+@@ -755,7 +755,7 @@ func TestProviderData_SetKey(t *testing.T) {
+ 		"value-utf8-invalid-data-uninitialized": {
+ 			providerData: &ProviderData{},
+ 			key:          "key",
+-			value:        []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++			value:        fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 			expected: &ProviderData{
+ 				data: map[string][]byte{},
+ 			},
+@@ -772,7 +772,7 @@ func TestProviderData_SetKey(t *testing.T) {
+ 				data: map[string][]byte{},
+ 			},
+ 			key:   "key",
+-			value: []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++			value: fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 			expected: &ProviderData{
+ 				data: map[string][]byte{},
+ 			},

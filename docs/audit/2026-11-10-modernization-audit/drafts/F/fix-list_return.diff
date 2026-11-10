@@ -1,0 +1,21 @@
+60,61d59
+< 	value := basetypes.NewListUnknown(r.ElementType)
+< 
+63c61,71
+< 		return NewResultData(value), nil
+---
+> 		return NewResultData(basetypes.NewListUnknown(r.ElementType)), nil
+> 	}
+> 
+> 	elementType := r.ElementType
+> 
+> 	// CustomType may be the only source of the element type, which the
+> 	// unknown value requires for conversion to the protocol.
+> 	if elementType == nil {
+> 		if typeWithElementType, ok := r.CustomType.(attr.TypeWithElementType); ok {
+> 			elementType = typeWithElementType.ElementType()
+> 		}
+66c74
+< 	valuable, diags := r.CustomType.ValueFromList(ctx, value)
+---
+> 	valuable, diags := r.CustomType.ValueFromList(ctx, basetypes.NewListUnknown(elementType))

@@ -1,0 +1,147 @@
+diff -ru /home/user/terraform-plugin-framework/internal/reflect/generic_attr_value.go internal/reflect/generic_attr_value.go
+--- /home/user/terraform-plugin-framework/internal/reflect/generic_attr_value.go	2026-10-24 21:30:10.588381323 +0000
++++ internal/reflect/generic_attr_value.go	2026-10-24 23:20:20.354104497 +0000
+@@ -11,5 +11,5 @@
+ )
+ 
+ func IsGenericAttrValue(ctx context.Context, target interface{}) bool {
+-	return reflect.TypeOf((*attr.Value)(nil)) == reflect.TypeOf(target)
++	return reflect.TypeFor[*attr.Value]() == reflect.TypeOf(target)
+ }
+diff -ru /home/user/terraform-plugin-framework/internal/reflect/helpers.go internal/reflect/helpers.go
+--- /home/user/terraform-plugin-framework/internal/reflect/helpers.go	2026-10-24 21:30:10.588381323 +0000
++++ internal/reflect/helpers.go	2026-10-24 23:20:20.354233135 +0000
+@@ -68,7 +68,7 @@
+ 		return nil, fmt.Errorf("%s: can't get struct tags of %s, is not a struct", path, typ)
+ 	}
+ 
+-	for i := 0; i < typ.NumField(); i++ {
++	for i := range typ.NumField() {
+ 		field := typ.Field(i)
+ 		if !field.IsExported() && !field.Anonymous {
+ 			// Skip unexported fields. Unexported embedded structs (anonymous fields) are allowed because they may
+diff -ru /home/user/terraform-plugin-framework/internal/reflect/into.go internal/reflect/into.go
+--- /home/user/terraform-plugin-framework/internal/reflect/into.go	2026-10-24 21:30:10.590939641 +0000
++++ internal/reflect/into.go	2026-10-24 23:20:20.353643049 +0000
+@@ -5,6 +5,7 @@
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"fmt"
+ 	"math/big"
+ 	"reflect"
+@@ -58,7 +59,7 @@
+ 	// if this isn't a valid reflect.Value, bail before we accidentally
+ 	// panic
+ 	if !target.IsValid() {
+-		err := fmt.Errorf("invalid target")
++		err := errors.New("invalid target")
+ 		diags.AddAttributeError(
+ 			path,
+ 			"Value Conversion Error",
+@@ -67,17 +68,17 @@
+ 		return target, diags
+ 	}
+ 	// if this is an attr.Value, build the type from that
+-	if target.Type().Implements(reflect.TypeOf((*attr.Value)(nil)).Elem()) {
++	if target.Type().Implements(reflect.TypeFor[attr.Value]()) {
+ 		return NewAttributeValue(ctx, typ, val, target, opts, path)
+ 	}
+ 	// if this tells tftypes how to build an instance of it out of a
+ 	// tftypes.Value, well, that's what we want, so do that instead of our
+ 	// default logic.
+-	if target.Type().Implements(reflect.TypeOf((*tftypes.ValueConverter)(nil)).Elem()) {
++	if target.Type().Implements(reflect.TypeFor[tftypes.ValueConverter]()) {
+ 		return NewValueConverter(ctx, typ, val, target, opts, path)
+ 	}
+ 	// if this can explicitly be set to unknown, do that
+-	if target.Type().Implements(reflect.TypeOf((*Unknownable)(nil)).Elem()) {
++	if target.Type().Implements(reflect.TypeFor[Unknownable]()) {
+ 		res, unknownableDiags := NewUnknownable(ctx, typ, val, target, opts, path)
+ 		diags.Append(unknownableDiags...)
+ 		if diags.HasError() {
+@@ -92,7 +93,7 @@
+ 		}
+ 	}
+ 	// if this can explicitly be set to null, do that
+-	if target.Type().Implements(reflect.TypeOf((*Nullable)(nil)).Elem()) {
++	if target.Type().Implements(reflect.TypeFor[Nullable]()) {
+ 		res, nullableDiags := NewNullable(ctx, typ, val, target, opts, path)
+ 		diags.Append(nullableDiags...)
+ 		if diags.HasError() {
+@@ -164,7 +165,7 @@
+ 
+ 	// *big.Float and *big.Int are technically pointers, but we want them
+ 	// handled as numbers
+-	if target.Type() == reflect.TypeOf(big.NewFloat(0)) || target.Type() == reflect.TypeOf(big.NewInt(0)) {
++	if target.Type() == reflect.TypeFor[*big.Float]() || target.Type() == reflect.TypeFor[*big.Int]() {
+ 		return Number(ctx, typ, val, target, opts, path)
+ 	}
+ 	switch target.Kind() {
+diff -ru /home/user/terraform-plugin-framework/internal/reflect/number.go internal/reflect/number.go
+--- /home/user/terraform-plugin-framework/internal/reflect/number.go	2026-10-24 21:30:10.590939641 +0000
++++ internal/reflect/number.go	2026-10-24 23:20:20.354005186 +0000
+@@ -48,9 +48,9 @@
+ 	)
+ 
+ 	switch target.Type() {
+-	case reflect.TypeOf(big.NewFloat(0)):
++	case reflect.TypeFor[*big.Float]():
+ 		return reflect.ValueOf(result), diags
+-	case reflect.TypeOf(big.NewInt(0)):
++	case reflect.TypeFor[*big.Int]():
+ 		intResult, acc := result.Int(nil)
+ 		if acc != big.Exact {
+ 			return reflect.ValueOf(result), append(diags, roundingErrorDiag)
+diff -ru /home/user/terraform-plugin-framework/internal/reflect/pointer.go internal/reflect/pointer.go
+--- /home/user/terraform-plugin-framework/internal/reflect/pointer.go	2026-10-24 21:30:10.590939641 +0000
++++ internal/reflect/pointer.go	2026-10-24 23:20:20.354339301 +0000
+@@ -65,7 +65,7 @@
+ 		pointers++
+ 	}
+ 	receiver := reflect.Zero(pointer)
+-	for i := 0; i < pointers; i++ {
++	for range pointers {
+ 		newReceiver := reflect.New(receiver.Type())
+ 		newReceiver.Elem().Set(receiver)
+ 		receiver = newReceiver
+diff -ru /home/user/terraform-plugin-framework/internal/reflect/slice.go internal/reflect/slice.go
+--- /home/user/terraform-plugin-framework/internal/reflect/slice.go	2026-10-24 21:30:10.595193040 +0000
++++ internal/reflect/slice.go	2026-10-24 23:20:20.354475849 +0000
+@@ -104,7 +104,7 @@
+ 		// we want an empty version of the slice
+ 		slice := reflect.MakeSlice(target.Type(), 0, len(values))
+ 
+-		if len(t.ElementTypes()) <= 0 {
++		if len(t.ElementTypes()) == 0 {
+ 			// If the tuple values are empty as well, we can just pass back an empty slice of the type we received.
+ 			if len(values) == 0 {
+ 				return slice, diags
+@@ -232,7 +232,7 @@
+ 	// List or Set
+ 	case attr.TypeWithElementType:
+ 		elemType := t.ElementType()
+-		for i := 0; i < val.Len(); i++ {
++		for i := range val.Len() {
+ 			// The underlying reflect.Slice is fetched by Index(). For set types,
+ 			// the path is value-based instead of index-based. Since there is only
+ 			// the index until the value is retrieved, this will pass the
+@@ -295,7 +295,7 @@
+ 	// parameter. All tuple elements in this variadic parameter will have the same element type. For use-cases where the variadic parameter is a dynamic type,
+ 	// all elements will have the same type of `DynamicType` and value of `DynamicValue`, with an underlying value that may be different.
+ 	case attr.TypeWithElementTypes:
+-		if len(t.ElementTypes()) <= 0 {
++		if len(t.ElementTypes()) == 0 {
+ 			// If the tuple values are empty as well, we can just pass back an empty slice of the type we received.
+ 			if val.Len() == 0 {
+ 				break
+@@ -331,7 +331,7 @@
+ 			return nil, diags
+ 		}
+ 
+-		for i := 0; i < val.Len(); i++ {
++		for i := range val.Len() {
+ 			valPath := path.AtTupleIndex(i)
+ 
+ 			// If the element implements xattr.ValidateableAttribute, or xattr.TypeWithValidate,

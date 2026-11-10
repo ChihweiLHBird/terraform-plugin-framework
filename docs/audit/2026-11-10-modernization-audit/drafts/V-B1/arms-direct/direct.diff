@@ -1,0 +1,116 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/snap-after-arms/attribute_plan_modification.go	2026-10-24 23:12:57.621694890 +0000
++++ arms-direct/attribute_plan_modification.go	2026-11-10 21:28:20.901135402 +0000
+@@ -132,9 +132,7 @@
+ 
+ 	nestedAttributeObject := nestedAttribute.GetNestedObject()
+ 
+-	nestedObjectPlanModify := func(ctx context.Context, req planmodifier.ObjectRequest, resp *ModifyAttributePlanResponse) {
+-		NestedAttributeObjectPlanModify(ctx, nestedAttributeObject, req, resp)
+-	}
++	nestedObjectPlanModify := nestedObjectPlanModifier{attributeObject: nestedAttributeObject}
+ 
+ 	nm := nestedAttribute.GetNestingMode()
+ 	switch nm {
+@@ -160,10 +158,24 @@
+ 
+ // nestedObjectPlanModifyFunc performs plan modification of one nested
+ // attribute object or nested block object.
+-type nestedObjectPlanModifyFunc func(context.Context, planmodifier.ObjectRequest, *ModifyAttributePlanResponse)
++type nestedObjectPlanModifier struct {
++	attributeObject fwschema.NestedAttributeObject
++	blockObject     fwschema.NestedBlockObject
++	isBlock         bool
++}
++
++func (m nestedObjectPlanModifier) planModify(ctx context.Context, req planmodifier.ObjectRequest, resp *ModifyAttributePlanResponse) {
++	if m.isBlock {
++		NestedBlockObjectPlanModify(ctx, m.blockObject, req, resp)
++
++		return
++	}
++
++	NestedAttributeObjectPlanModify(ctx, m.attributeObject, req, resp)
++}
+ 
+ // listNestedPlanModify performs plan modification of each object of a list nested attribute or block.
+-func listNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifyFunc, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++func listNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifier, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
+ 	configList, diags := coerceListValue(ctx, req.AttributePath, req.AttributeConfig)
+ 
+ 	resp.Diagnostics.Append(diags...)
+@@ -267,7 +279,7 @@
+ 			Private:       objectReq.Private,
+ 		}
+ 
+-		nestedObjectPlanModify(ctx, objectReq, objectResp)
++		nestedObjectPlanModify.planModify(ctx, objectReq, objectResp)
+ 
+ 		respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
+ 
+@@ -317,7 +329,7 @@
+ }
+ 
+ // setNestedPlanModify performs plan modification of each object of a set nested attribute or block.
+-func setNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifyFunc, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++func setNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifier, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
+ 	configSet, diags := coerceSetValue(ctx, req.AttributePath, req.AttributeConfig)
+ 
+ 	resp.Diagnostics.Append(diags...)
+@@ -421,7 +433,7 @@
+ 			Private:       objectReq.Private,
+ 		}
+ 
+-		nestedObjectPlanModify(ctx, objectReq, objectResp)
++		nestedObjectPlanModify.planModify(ctx, objectReq, objectResp)
+ 
+ 		respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
+ 
+@@ -471,7 +483,7 @@
+ }
+ 
+ // mapNestedPlanModify performs plan modification of each object of a map nested attribute.
+-func mapNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifyFunc, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++func mapNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifier, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
+ 	configMap, diags := coerceMapValue(ctx, req.AttributePath, req.AttributeConfig)
+ 
+ 	resp.Diagnostics.Append(diags...)
+@@ -575,7 +587,7 @@
+ 			Private:       objectReq.Private,
+ 		}
+ 
+-		nestedObjectPlanModify(ctx, objectReq, objectResp)
++		nestedObjectPlanModify.planModify(ctx, objectReq, objectResp)
+ 
+ 		respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
+ 
+@@ -625,7 +637,7 @@
+ }
+ 
+ // singleNestedPlanModify performs plan modification of the object of a single nested attribute or block.
+-func singleNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifyFunc, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++func singleNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifier, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
+ 	configObject, diags := coerceObjectValue(ctx, req.AttributePath, req.AttributeConfig)
+ 
+ 	resp.Diagnostics.Append(diags...)
+@@ -684,7 +696,7 @@
+ 		Private:       objectReq.Private,
+ 	}
+ 
+-	nestedObjectPlanModify(ctx, objectReq, objectResp)
++	nestedObjectPlanModify.planModify(ctx, objectReq, objectResp)
+ 
+ 	resp.Diagnostics.Append(objectResp.Diagnostics...)
+ 	resp.Private = objectResp.Private
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/snap-after-arms/block_plan_modification.go	2026-10-24 23:12:57.621747104 +0000
++++ arms-direct/block_plan_modification.go	2026-11-10 21:28:20.901247247 +0000
+@@ -46,9 +46,7 @@
+ 
+ 	nestedBlockObject := b.GetNestedObject()
+ 
+-	nestedObjectPlanModify := func(ctx context.Context, req planmodifier.ObjectRequest, resp *ModifyAttributePlanResponse) {
+-		NestedBlockObjectPlanModify(ctx, nestedBlockObject, req, resp)
+-	}
++	nestedObjectPlanModify := nestedObjectPlanModifier{blockObject: nestedBlockObject, isBlock: true}
+ 
+ 	nm := b.GetNestingMode()
+ 	switch nm {

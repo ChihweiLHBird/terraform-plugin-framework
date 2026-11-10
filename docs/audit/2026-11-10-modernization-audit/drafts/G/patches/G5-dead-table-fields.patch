@@ -1,0 +1,566 @@
+diff --git a/internal/fromproto5/closeephemeralresource_test.go b/internal/fromproto5/closeephemeralresource_test.go
+index a80583e..823d766 100644
+--- a/internal/fromproto5/closeephemeralresource_test.go
++++ b/internal/fromproto5/closeephemeralresource_test.go
+@@ -40,7 +40,6 @@ func TestCloseEphemeralResourceRequest(t *testing.T) {
+ 		input                   *tfprotov5.CloseEphemeralResourceRequest
+ 		ephemeralResourceSchema fwschema.Schema
+ 		ephemeralResource       ephemeral.EphemeralResource
+-		providerMetaSchema      fwschema.Schema
+ 		expected                *fwserver.CloseEphemeralResourceRequest
+ 		expectedDiagnostics     diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto5/invokeaction_test.go b/internal/fromproto5/invokeaction_test.go
+index 62d90c6..1bd99f0 100644
+--- a/internal/fromproto5/invokeaction_test.go
++++ b/internal/fromproto5/invokeaction_test.go
+@@ -51,7 +51,6 @@ func TestInvokeActionRequest(t *testing.T) {
+ 		input               *tfprotov5.InvokeActionRequest
+ 		actionSchema        fwschema.Schema
+ 		actionImpl          action.Action
+-		providerMetaSchema  fwschema.Schema
+ 		expected            *fwserver.InvokeActionRequest
+ 		expectedDiagnostics diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto5/openephemeralresource_test.go b/internal/fromproto5/openephemeralresource_test.go
+index b5f24eb..4a5096f 100644
+--- a/internal/fromproto5/openephemeralresource_test.go
++++ b/internal/fromproto5/openephemeralresource_test.go
+@@ -51,7 +51,6 @@ func TestOpenEphemeralResourceRequest(t *testing.T) {
+ 		input                   *tfprotov5.OpenEphemeralResourceRequest
+ 		ephemeralResourceSchema fwschema.Schema
+ 		ephemeralResource       ephemeral.EphemeralResource
+-		providerMetaSchema      fwschema.Schema
+ 		expected                *fwserver.OpenEphemeralResourceRequest
+ 		expectedDiagnostics     diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto5/planaction_test.go b/internal/fromproto5/planaction_test.go
+index e8bd486..95550fd 100644
+--- a/internal/fromproto5/planaction_test.go
++++ b/internal/fromproto5/planaction_test.go
+@@ -51,7 +51,6 @@ func TestPlanActionRequest(t *testing.T) {
+ 		input               *tfprotov5.PlanActionRequest
+ 		actionSchema        fwschema.Schema
+ 		actionImpl          action.Action
+-		providerMetaSchema  fwschema.Schema
+ 		expected            *fwserver.PlanActionRequest
+ 		expectedDiagnostics diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto5/renewephemeralresource_test.go b/internal/fromproto5/renewephemeralresource_test.go
+index 85648d6..cba8033 100644
+--- a/internal/fromproto5/renewephemeralresource_test.go
++++ b/internal/fromproto5/renewephemeralresource_test.go
+@@ -40,7 +40,6 @@ func TestRenewEphemeralResourceRequest(t *testing.T) {
+ 		input                   *tfprotov5.RenewEphemeralResourceRequest
+ 		ephemeralResourceSchema fwschema.Schema
+ 		ephemeralResource       ephemeral.EphemeralResource
+-		providerMetaSchema      fwschema.Schema
+ 		expected                *fwserver.RenewEphemeralResourceRequest
+ 		expectedDiagnostics     diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto6/closeephemeralresource_test.go b/internal/fromproto6/closeephemeralresource_test.go
+index fabbfa2..fbb7d6a 100644
+--- a/internal/fromproto6/closeephemeralresource_test.go
++++ b/internal/fromproto6/closeephemeralresource_test.go
+@@ -40,7 +40,6 @@ func TestCloseEphemeralResourceRequest(t *testing.T) {
+ 		input                   *tfprotov6.CloseEphemeralResourceRequest
+ 		ephemeralResourceSchema fwschema.Schema
+ 		ephemeralResource       ephemeral.EphemeralResource
+-		providerMetaSchema      fwschema.Schema
+ 		expected                *fwserver.CloseEphemeralResourceRequest
+ 		expectedDiagnostics     diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto6/invokeaction_test.go b/internal/fromproto6/invokeaction_test.go
+index 981aaa1..15ed172 100644
+--- a/internal/fromproto6/invokeaction_test.go
++++ b/internal/fromproto6/invokeaction_test.go
+@@ -51,7 +51,6 @@ func TestInvokeActionRequest(t *testing.T) {
+ 		input               *tfprotov6.InvokeActionRequest
+ 		actionSchema        fwschema.Schema
+ 		actionImpl          action.Action
+-		providerMetaSchema  fwschema.Schema
+ 		expected            *fwserver.InvokeActionRequest
+ 		expectedDiagnostics diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto6/openephemeralresource_test.go b/internal/fromproto6/openephemeralresource_test.go
+index aa66f89..bf409c9 100644
+--- a/internal/fromproto6/openephemeralresource_test.go
++++ b/internal/fromproto6/openephemeralresource_test.go
+@@ -51,7 +51,6 @@ func TestOpenEphemeralResourceRequest(t *testing.T) {
+ 		input                   *tfprotov6.OpenEphemeralResourceRequest
+ 		ephemeralResourceSchema fwschema.Schema
+ 		ephemeralResource       ephemeral.EphemeralResource
+-		providerMetaSchema      fwschema.Schema
+ 		expected                *fwserver.OpenEphemeralResourceRequest
+ 		expectedDiagnostics     diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto6/planaction_test.go b/internal/fromproto6/planaction_test.go
+index 3d10d5f..7c216c1 100644
+--- a/internal/fromproto6/planaction_test.go
++++ b/internal/fromproto6/planaction_test.go
+@@ -51,7 +51,6 @@ func TestPlanActionRequest(t *testing.T) {
+ 		input               *tfprotov6.PlanActionRequest
+ 		actionSchema        fwschema.Schema
+ 		actionImpl          action.Action
+-		providerMetaSchema  fwschema.Schema
+ 		expected            *fwserver.PlanActionRequest
+ 		expectedDiagnostics diag.Diagnostics
+ 	}{
+diff --git a/internal/fromproto6/renewephemeralresource_test.go b/internal/fromproto6/renewephemeralresource_test.go
+index f2cf159..e949ceb 100644
+--- a/internal/fromproto6/renewephemeralresource_test.go
++++ b/internal/fromproto6/renewephemeralresource_test.go
+@@ -40,7 +40,6 @@ func TestRenewEphemeralResourceRequest(t *testing.T) {
+ 		input                   *tfprotov6.RenewEphemeralResourceRequest
+ 		ephemeralResourceSchema fwschema.Schema
+ 		ephemeralResource       ephemeral.EphemeralResource
+-		providerMetaSchema      fwschema.Schema
+ 		expected                *fwserver.RenewEphemeralResourceRequest
+ 		expectedDiagnostics     diag.Diagnostics
+ 	}{
+diff --git a/internal/fwschemadata/tftypes_value_test.go b/internal/fwschemadata/tftypes_value_test.go
+index 87f3f02..5f0127c 100644
+--- a/internal/fwschemadata/tftypes_value_test.go
++++ b/internal/fwschemadata/tftypes_value_test.go
+@@ -179,7 +179,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 	t.Parallel()
+ 
+ 	testCases := map[string]struct {
+-		parentType    tftypes.Type
+ 		parentValue   tftypes.Value
+ 		childStep     path.PathStep
+ 		childValue    tftypes.Value
+@@ -187,9 +186,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 		expectedDiags diag.Diagnostics
+ 	}{
+ 		"List-empty-write-first": {
+-			parentType: tftypes.List{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.List{
+ 				ElementType: tftypes.String,
+ 			}, []tftypes.Value{}),
+@@ -202,9 +198,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"List-empty-write-length-error": {
+-			parentType: tftypes.List{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.List{
+ 				ElementType: tftypes.String,
+ 			}, []tftypes.Value{}),
+@@ -223,9 +216,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			},
+ 		},
+ 		"List-null-write-first": {
+-			parentType: tftypes.List{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.List{
+ 				ElementType: tftypes.String,
+ 			}, nil),
+@@ -238,9 +228,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"List-null-write-length-error": {
+-			parentType: tftypes.List{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.List{
+ 				ElementType: tftypes.String,
+ 			}, nil),
+@@ -259,9 +246,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			},
+ 		},
+ 		"List-value-overwrite": {
+-			parentType: tftypes.List{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.List{
+ 				ElementType: tftypes.String,
+ 			}, []tftypes.Value{
+@@ -276,9 +260,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"List-value-write-next": {
+-			parentType: tftypes.List{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.List{
+ 				ElementType: tftypes.String,
+ 			}, []tftypes.Value{
+@@ -294,9 +275,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"List-value-write-length-error": {
+-			parentType: tftypes.List{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.List{
+ 				ElementType: tftypes.String,
+ 			}, []tftypes.Value{
+@@ -319,9 +297,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			},
+ 		},
+ 		"Map-empty": {
+-			parentType: tftypes.Map{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Map{
+ 				ElementType: tftypes.String,
+ 			}, map[string]tftypes.Value{}),
+@@ -334,9 +309,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"Map-null": {
+-			parentType: tftypes.Map{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Map{
+ 				ElementType: tftypes.String,
+ 			}, nil),
+@@ -349,9 +321,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"Map-value-overwrite": {
+-			parentType: tftypes.Map{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Map{
+ 				ElementType: tftypes.String,
+ 			}, map[string]tftypes.Value{
+@@ -366,9 +335,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"Map-value-write": {
+-			parentType: tftypes.Map{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Map{
+ 				ElementType: tftypes.String,
+ 			}, map[string]tftypes.Value{
+@@ -384,12 +350,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"Object-overwrite": {
+-			parentType: tftypes.Object{
+-				AttributeTypes: map[string]tftypes.Type{
+-					"attrone": tftypes.String,
+-					"attrtwo": tftypes.String,
+-				},
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Object{
+ 				AttributeTypes: map[string]tftypes.Type{
+ 					"attrone": tftypes.String,
+@@ -412,12 +372,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"Object-write": {
+-			parentType: tftypes.Object{
+-				AttributeTypes: map[string]tftypes.Type{
+-					"attrone": tftypes.String,
+-					"attrtwo": tftypes.String,
+-				},
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Object{
+ 				AttributeTypes: map[string]tftypes.Type{
+ 					"attrone": tftypes.String,
+@@ -440,9 +394,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"Set-empty": {
+-			parentType: tftypes.Set{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Set{
+ 				ElementType: tftypes.String,
+ 			}, nil),
+@@ -455,9 +406,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"Set-overwrite-value": {
+-			parentType: tftypes.Set{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Set{
+ 				ElementType: tftypes.String,
+ 			}, []tftypes.Value{
+@@ -472,9 +420,6 @@ func TestUpsertChildTerraformValue(t *testing.T) {
+ 			}),
+ 		},
+ 		"Set-write-value": {
+-			parentType: tftypes.Set{
+-				ElementType: tftypes.String,
+-			},
+ 			parentValue: tftypes.NewValue(tftypes.Set{
+ 				ElementType: tftypes.String,
+ 			}, []tftypes.Value{
+diff --git a/internal/fwserver/server_generateresourceconfig_test.go b/internal/fwserver/server_generateresourceconfig_test.go
+index 22206ce..3b85688 100644
+--- a/internal/fwserver/server_generateresourceconfig_test.go
++++ b/internal/fwserver/server_generateresourceconfig_test.go
+@@ -13,7 +13,6 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/privatestate"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+-	"github.com/hashicorp/terraform-plugin-framework/provider"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+ 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+ 	"github.com/hashicorp/terraform-plugin-framework/types"
+@@ -85,10 +84,9 @@ func TestServerGenerateResourceConfig(t *testing.T) {
+ 	}
+ 
+ 	testCases := map[string]struct {
+-		server               *fwserver.Server
+-		request              *fwserver.GenerateResourceConfigRequest
+-		expectedResponse     *fwserver.GenerateResourceConfigResponse
+-		configureProviderReq *provider.ConfigureRequest
++		server           *fwserver.Server
++		request          *fwserver.GenerateResourceConfigRequest
++		expectedResponse *fwserver.GenerateResourceConfigResponse
+ 	}{
+ 		"nil": {
+ 			server: &fwserver.Server{
+diff --git a/internal/fwserver/server_listresource_test.go b/internal/fwserver/server_listresource_test.go
+index 1c4349c..fe6ff70 100644
+--- a/internal/fwserver/server_listresource_test.go
++++ b/internal/fwserver/server_listresource_test.go
+@@ -75,7 +75,6 @@ func TestServerListResource(t *testing.T) {
+ 		server               *fwserver.Server
+ 		request              *fwserver.ListRequest
+ 		expectedStreamEvents []fwserver.ListResult
+-		expectedError        string
+ 	}{
+ 		"success-with-zero-results": {
+ 			server: &fwserver.Server{
+@@ -182,7 +181,6 @@ func TestServerListResource(t *testing.T) {
+ 				},
+ 			},
+ 			expectedStreamEvents: []fwserver.ListResult{},
+-			expectedError:        "config cannot be nil",
+ 		},
+ 		"zero-results-with-warning-diagnostic": {
+ 			server: &fwserver.Server{
+diff --git a/internal/proto5server/server_getfunctions_test.go b/internal/proto5server/server_getfunctions_test.go
+index ab8de41..227a613 100644
+--- a/internal/proto5server/server_getfunctions_test.go
++++ b/internal/proto5server/server_getfunctions_test.go
+@@ -163,7 +163,7 @@ func TestServerGetFunctions(t *testing.T) {
+ 		t.Run(name, func(t *testing.T) {
+ 			t.Parallel()
+ 
+-			got, err := testCase.server.GetFunctions(context.Background(), new(tfprotov5.GetFunctionsRequest))
++			got, err := testCase.server.GetFunctions(context.Background(), testCase.request)
+ 
+ 			if diff := cmp.Diff(testCase.expectedError, err); diff != "" {
+ 				t.Errorf("unexpected error difference: %s", diff)
+diff --git a/internal/proto5server/server_getmetadata_test.go b/internal/proto5server/server_getmetadata_test.go
+index 6000ae9..fd651b4 100644
+--- a/internal/proto5server/server_getmetadata_test.go
++++ b/internal/proto5server/server_getmetadata_test.go
+@@ -342,7 +342,7 @@ func TestServerGetMetadata(t *testing.T) {
+ 		t.Run(name, func(t *testing.T) {
+ 			t.Parallel()
+ 
+-			got, err := testCase.server.GetMetadata(context.Background(), new(tfprotov5.GetMetadataRequest))
++			got, err := testCase.server.GetMetadata(context.Background(), testCase.request)
+ 
+ 			if diff := cmp.Diff(testCase.expectedError, err); diff != "" {
+ 				t.Errorf("unexpected error difference: %s", diff)
+diff --git a/internal/proto5server/server_getproviderschema_test.go b/internal/proto5server/server_getproviderschema_test.go
+index 9d2bce0..a448416 100644
+--- a/internal/proto5server/server_getproviderschema_test.go
++++ b/internal/proto5server/server_getproviderschema_test.go
+@@ -684,7 +684,7 @@ func TestServerGetProviderSchema(t *testing.T) {
+ 		t.Run(name, func(t *testing.T) {
+ 			t.Parallel()
+ 
+-			got, err := testCase.server.GetProviderSchema(context.Background(), new(tfprotov5.GetProviderSchemaRequest))
++			got, err := testCase.server.GetProviderSchema(context.Background(), testCase.request)
+ 
+ 			if diff := cmp.Diff(testCase.expectedError, err); diff != "" {
+ 				t.Errorf("unexpected error difference: %s", diff)
+diff --git a/internal/proto5server/server_getresourceidentityschemas_test.go b/internal/proto5server/server_getresourceidentityschemas_test.go
+index 598627a..8406ae6 100644
+--- a/internal/proto5server/server_getresourceidentityschemas_test.go
++++ b/internal/proto5server/server_getresourceidentityschemas_test.go
+@@ -105,7 +105,7 @@ func TestServerGetResourceIdentitySchemas(t *testing.T) {
+ 		t.Run(name, func(t *testing.T) {
+ 			t.Parallel()
+ 
+-			got, err := testCase.server.GetResourceIdentitySchemas(context.Background(), new(tfprotov5.GetResourceIdentitySchemasRequest))
++			got, err := testCase.server.GetResourceIdentitySchemas(context.Background(), testCase.request)
+ 
+ 			if diff := cmp.Diff(testCase.expectedError, err); diff != "" {
+ 				t.Errorf("unexpected error difference: %s", diff)
+diff --git a/internal/proto5server/server_listresource_test.go b/internal/proto5server/server_listresource_test.go
+index c56508d..f87af54 100644
+--- a/internal/proto5server/server_listresource_test.go
++++ b/internal/proto5server/server_listresource_test.go
+@@ -171,11 +171,10 @@ func TestServerListResource(t *testing.T) {
+ 	happyServer := server(listResource, managedResource)
+ 
+ 	testCases := map[string]struct {
+-		server              *Server
+-		request             *tfprotov5.ListResourceRequest
+-		expectedError       error
+-		expectedDiagnostics diag.Diagnostics
+-		expectedResults     []tfprotov5.ListResourceResult
++		server          *Server
++		request         *tfprotov5.ListResourceRequest
++		expectedError   error
++		expectedResults []tfprotov5.ListResourceResult
+ 	}{
+ 		"error-on-unknown-list-resource-type": {
+ 			server: &Server{
+@@ -191,7 +190,6 @@ func TestServerListResource(t *testing.T) {
+ 				TypeName: "test_resource",
+ 				Config:   plat,
+ 			},
+-			expectedDiagnostics: diag.Diagnostics{},
+ 			expectedResults: []tfprotov5.ListResourceResult{
+ 				{
+ 					Diagnostics: []*tfprotov5.Diagnostic{
+@@ -209,8 +207,7 @@ func TestServerListResource(t *testing.T) {
+ 				TypeName: "test_resource",
+ 				Config:   plat,
+ 			},
+-			expectedError:       nil,
+-			expectedDiagnostics: diag.Diagnostics{},
++			expectedError: nil,
+ 			expectedResults: []tfprotov5.ListResourceResult{
+ 				{
+ 					DisplayName: "plateau",
+@@ -233,8 +230,7 @@ func TestServerListResource(t *testing.T) {
+ 				Config:          plateau,
+ 				IncludeResource: true,
+ 			},
+-			expectedError:       nil,
+-			expectedDiagnostics: diag.Diagnostics{},
++			expectedError: nil,
+ 			expectedResults: []tfprotov5.ListResourceResult{
+ 				{
+ 					DisplayName: "plateau",
+diff --git a/internal/proto6server/server_getfunctions_test.go b/internal/proto6server/server_getfunctions_test.go
+index 2d8ef17..adc23ed 100644
+--- a/internal/proto6server/server_getfunctions_test.go
++++ b/internal/proto6server/server_getfunctions_test.go
+@@ -163,7 +163,7 @@ func TestServerGetFunctions(t *testing.T) {
+ 		t.Run(name, func(t *testing.T) {
+ 			t.Parallel()
+ 
+-			got, err := testCase.server.GetFunctions(context.Background(), new(tfprotov6.GetFunctionsRequest))
++			got, err := testCase.server.GetFunctions(context.Background(), testCase.request)
+ 
+ 			if diff := cmp.Diff(testCase.expectedError, err); diff != "" {
+ 				t.Errorf("unexpected error difference: %s", diff)
+diff --git a/internal/proto6server/server_getmetadata_test.go b/internal/proto6server/server_getmetadata_test.go
+index ab6fdd9..089d1e0 100644
+--- a/internal/proto6server/server_getmetadata_test.go
++++ b/internal/proto6server/server_getmetadata_test.go
+@@ -397,7 +397,7 @@ func TestServerGetMetadata(t *testing.T) {
+ 		t.Run(name, func(t *testing.T) {
+ 			t.Parallel()
+ 
+-			got, err := testCase.server.GetMetadata(context.Background(), new(tfprotov6.GetMetadataRequest))
++			got, err := testCase.server.GetMetadata(context.Background(), testCase.request)
+ 
+ 			if diff := cmp.Diff(testCase.expectedError, err); diff != "" {
+ 				t.Errorf("unexpected error difference: %s", diff)
+diff --git a/internal/proto6server/server_getproviderschema_test.go b/internal/proto6server/server_getproviderschema_test.go
+index c1f6088..06f915a 100644
+--- a/internal/proto6server/server_getproviderschema_test.go
++++ b/internal/proto6server/server_getproviderschema_test.go
+@@ -779,7 +779,7 @@ func TestServerGetProviderSchema(t *testing.T) {
+ 		t.Run(name, func(t *testing.T) {
+ 			t.Parallel()
+ 
+-			got, err := testCase.server.GetProviderSchema(context.Background(), new(tfprotov6.GetProviderSchemaRequest))
++			got, err := testCase.server.GetProviderSchema(context.Background(), testCase.request)
+ 
+ 			if diff := cmp.Diff(testCase.expectedError, err); diff != "" {
+ 				t.Errorf("unexpected error difference: %s", diff)
+diff --git a/internal/proto6server/server_getresourceidentityschemas_test.go b/internal/proto6server/server_getresourceidentityschemas_test.go
+index 5029c25..7ba98fe 100644
+--- a/internal/proto6server/server_getresourceidentityschemas_test.go
++++ b/internal/proto6server/server_getresourceidentityschemas_test.go
+@@ -105,7 +105,7 @@ func TestServerGetResourceIdentitySchemas(t *testing.T) {
+ 		t.Run(name, func(t *testing.T) {
+ 			t.Parallel()
+ 
+-			got, err := testCase.server.GetResourceIdentitySchemas(context.Background(), new(tfprotov6.GetResourceIdentitySchemasRequest))
++			got, err := testCase.server.GetResourceIdentitySchemas(context.Background(), testCase.request)
+ 
+ 			if diff := cmp.Diff(testCase.expectedError, err); diff != "" {
+ 				t.Errorf("unexpected error difference: %s", diff)
+diff --git a/internal/proto6server/server_listresource_test.go b/internal/proto6server/server_listresource_test.go
+index 0448e36..b4c7e3d 100644
+--- a/internal/proto6server/server_listresource_test.go
++++ b/internal/proto6server/server_listresource_test.go
+@@ -191,11 +191,10 @@ func TestServerListResource(t *testing.T) {
+ 	happyServer := server(listResource, managedResource)
+ 
+ 	testCases := map[string]struct {
+-		server              *Server
+-		request             *tfprotov6.ListResourceRequest
+-		expectedError       error
+-		expectedDiagnostics diag.Diagnostics
+-		expectedResults     []tfprotov6.ListResourceResult
++		server          *Server
++		request         *tfprotov6.ListResourceRequest
++		expectedError   error
++		expectedResults []tfprotov6.ListResourceResult
+ 	}{
+ 		"error-on-unknown-list-resource-type": {
+ 			server: &Server{
+@@ -211,7 +210,6 @@ func TestServerListResource(t *testing.T) {
+ 				TypeName: "test_resource",
+ 				Config:   plat,
+ 			},
+-			expectedDiagnostics: diag.Diagnostics{},
+ 			expectedResults: []tfprotov6.ListResourceResult{
+ 				{
+ 					Diagnostics: []*tfprotov6.Diagnostic{
+@@ -229,8 +227,7 @@ func TestServerListResource(t *testing.T) {
+ 				TypeName: "test_resource",
+ 				Config:   plat,
+ 			},
+-			expectedError:       nil,
+-			expectedDiagnostics: diag.Diagnostics{},
++			expectedError: nil,
+ 			expectedResults: []tfprotov6.ListResourceResult{
+ 				{
+ 					DisplayName: "plateau",
+@@ -253,8 +250,7 @@ func TestServerListResource(t *testing.T) {
+ 				Config:          plateau,
+ 				IncludeResource: true,
+ 			},
+-			expectedError:       nil,
+-			expectedDiagnostics: diag.Diagnostics{},
++			expectedError: nil,
+ 			expectedResults: []tfprotov6.ListResourceResult{
+ 				{
+ 					DisplayName: "plateau",
+@@ -270,8 +266,7 @@ func TestServerListResource(t *testing.T) {
+ 				Config:          plateau,
+ 				IncludeResource: true,
+ 			},
+-			expectedError:       nil,
+-			expectedDiagnostics: diag.Diagnostics{},
++			expectedError: nil,
+ 			expectedResults: []tfprotov6.ListResourceResult{
+ 				{
+ 					DisplayName: "plateau",
+diff --git a/internal/reflect/struct_test.go b/internal/reflect/struct_test.go
+index 53719a6..23568bf 100644
+--- a/internal/reflect/struct_test.go
++++ b/internal/reflect/struct_test.go
+@@ -48,7 +48,6 @@ func TestNewStruct_errors(t *testing.T) {
+ 		objVal        tftypes.Value
+ 		targetVal     reflect.Value
+ 		expectedError error
+-		expectedDiags diag.Diagnostics
+ 	}{
+ 		"not-an-object": {
+ 			typ:           types.StringType,

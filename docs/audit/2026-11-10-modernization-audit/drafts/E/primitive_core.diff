@@ -1,0 +1,420 @@
+diff -ruN repo/types/basetypes/bool_value.go draft/types/basetypes/bool_value.go
+--- repo/types/basetypes/bool_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft/types/basetypes/bool_value.go	2026-10-24 23:01:44.911462287 +0000
+@@ -93,39 +93,14 @@
+ 
+ // ToTerraformValue returns the data contained in the Bool as a tftypes.Value.
+ func (b BoolValue) ToTerraformValue(_ context.Context) (tftypes.Value, error) {
+-	switch b.state {
+-	case attr.ValueStateKnown:
+-		if err := tftypes.ValidateValue(tftypes.Bool, b.value); err != nil {
+-			return tftypes.NewValue(tftypes.Bool, tftypes.UnknownValue), err
+-		}
+-
+-		return tftypes.NewValue(tftypes.Bool, b.value), nil
+-	case attr.ValueStateNull:
+-		return tftypes.NewValue(tftypes.Bool, nil), nil
+-	case attr.ValueStateUnknown:
+-		return tftypes.NewValue(tftypes.Bool, tftypes.UnknownValue), nil
+-	default:
+-		panic(fmt.Sprintf("unhandled Bool state in ToTerraformValue: %s", b.state))
+-	}
++	return primitiveToTerraformValue(tftypes.Bool, "Bool", b.state, b.value)
+ }
+ 
+ // Equal returns true if `other` is a *Bool and has the same value as `b`.
+ func (b BoolValue) Equal(other attr.Value) bool {
+ 	o, ok := other.(BoolValue)
+ 
+-	if !ok {
+-		return false
+-	}
+-
+-	if b.state != o.state {
+-		return false
+-	}
+-
+-	if b.state != attr.ValueStateKnown {
+-		return true
+-	}
+-
+-	return b.value == o.value
++	return ok && primitiveEqual(b.state, b.value, o.state, o.value)
+ }
+ 
+ // IsNull returns true if the Bool represents a null value.
+@@ -142,15 +117,7 @@
+ // The string returned here is not protected by any compatibility guarantees,
+ // and is intended for logging and error reporting.
+ func (b BoolValue) String() string {
+-	if b.IsUnknown() {
+-		return attr.UnknownValueString
+-	}
+-
+-	if b.IsNull() {
+-		return attr.NullValueString
+-	}
+-
+-	return fmt.Sprintf("%t", b.value)
++	return primitiveString(b.state, func() string { return fmt.Sprintf("%t", b.value) })
+ }
+ 
+ // ValueBool returns the known bool value. If Bool is null or unknown, returns
+@@ -162,11 +129,7 @@
+ // ValueBoolPointer returns a pointer to the known bool value, nil for a null
+ // value, or a pointer to false for an unknown value.
+ func (b BoolValue) ValueBoolPointer() *bool {
+-	if b.IsNull() {
+-		return nil
+-	}
+-
+-	return &b.value
++	return primitiveValuePointer(b.state, b.value)
+ }
+ 
+ // ToBoolValue returns Bool.
+diff -ruN repo/types/basetypes/float32_value.go draft/types/basetypes/float32_value.go
+--- repo/types/basetypes/float32_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft/types/basetypes/float32_value.go	2026-10-24 23:01:44.914943406 +0000
+@@ -137,20 +137,7 @@
+ 
+ // ToTerraformValue returns the data contained in the Float32 as a tftypes.Value.
+ func (f Float32Value) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+-	switch f.state {
+-	case attr.ValueStateKnown:
+-		if err := tftypes.ValidateValue(tftypes.Number, f.value); err != nil {
+-			return tftypes.NewValue(tftypes.Number, tftypes.UnknownValue), err
+-		}
+-
+-		return tftypes.NewValue(tftypes.Number, f.value), nil
+-	case attr.ValueStateNull:
+-		return tftypes.NewValue(tftypes.Number, nil), nil
+-	case attr.ValueStateUnknown:
+-		return tftypes.NewValue(tftypes.Number, tftypes.UnknownValue), nil
+-	default:
+-		panic(fmt.Sprintf("unhandled Float32 state in ToTerraformValue: %s", f.state))
+-	}
++	return primitiveToTerraformValue(tftypes.Number, "Float32", f.state, f.value)
+ }
+ 
+ // Type returns a Float32Type.
+diff -ruN repo/types/basetypes/float64_value.go draft/types/basetypes/float64_value.go
+--- repo/types/basetypes/float64_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft/types/basetypes/float64_value.go	2026-10-24 23:01:44.915403427 +0000
+@@ -143,20 +143,7 @@
+ 
+ // ToTerraformValue returns the data contained in the Float64 as a tftypes.Value.
+ func (f Float64Value) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+-	switch f.state {
+-	case attr.ValueStateKnown:
+-		if err := tftypes.ValidateValue(tftypes.Number, f.value); err != nil {
+-			return tftypes.NewValue(tftypes.Number, tftypes.UnknownValue), err
+-		}
+-
+-		return tftypes.NewValue(tftypes.Number, f.value), nil
+-	case attr.ValueStateNull:
+-		return tftypes.NewValue(tftypes.Number, nil), nil
+-	case attr.ValueStateUnknown:
+-		return tftypes.NewValue(tftypes.Number, tftypes.UnknownValue), nil
+-	default:
+-		panic(fmt.Sprintf("unhandled Float64 state in ToTerraformValue: %s", f.state))
+-	}
++	return primitiveToTerraformValue(tftypes.Number, "Float64", f.state, f.value)
+ }
+ 
+ // Type returns a Float64Type.
+diff -ruN repo/types/basetypes/int32_value.go draft/types/basetypes/int32_value.go
+--- repo/types/basetypes/int32_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft/types/basetypes/int32_value.go	2026-10-24 23:01:44.912524265 +0000
+@@ -90,37 +90,12 @@
+ func (i Int32Value) Equal(other attr.Value) bool {
+ 	o, ok := other.(Int32Value)
+ 
+-	if !ok {
+-		return false
+-	}
+-
+-	if i.state != o.state {
+-		return false
+-	}
+-
+-	if i.state != attr.ValueStateKnown {
+-		return true
+-	}
+-
+-	return i.value == o.value
++	return ok && primitiveEqual(i.state, i.value, o.state, o.value)
+ }
+ 
+ // ToTerraformValue returns the data contained in the Int32 as a tftypes.Value.
+ func (i Int32Value) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+-	switch i.state {
+-	case attr.ValueStateKnown:
+-		if err := tftypes.ValidateValue(tftypes.Number, i.value); err != nil {
+-			return tftypes.NewValue(tftypes.Number, tftypes.UnknownValue), err
+-		}
+-
+-		return tftypes.NewValue(tftypes.Number, i.value), nil
+-	case attr.ValueStateNull:
+-		return tftypes.NewValue(tftypes.Number, nil), nil
+-	case attr.ValueStateUnknown:
+-		return tftypes.NewValue(tftypes.Number, tftypes.UnknownValue), nil
+-	default:
+-		panic(fmt.Sprintf("unhandled Int32 state in ToTerraformValue: %s", i.state))
+-	}
++	return primitiveToTerraformValue(tftypes.Number, "Int32", i.state, i.value)
+ }
+ 
+ // Type returns a Int32Type.
+@@ -142,15 +117,7 @@
+ // The string returned here is not protected by any compatibility guarantees,
+ // and is intended for logging and error reporting.
+ func (i Int32Value) String() string {
+-	if i.IsUnknown() {
+-		return attr.UnknownValueString
+-	}
+-
+-	if i.IsNull() {
+-		return attr.NullValueString
+-	}
+-
+-	return fmt.Sprintf("%d", i.value)
++	return primitiveString(i.state, func() string { return fmt.Sprintf("%d", i.value) })
+ }
+ 
+ // ValueInt32 returns the known int32 value. If Int32 is null or unknown, returns
+@@ -162,11 +129,7 @@
+ // ValueInt32Pointer returns a pointer to the known int32 value, nil for a
+ // null value, or a pointer to 0 for an unknown value.
+ func (i Int32Value) ValueInt32Pointer() *int32 {
+-	if i.IsNull() {
+-		return nil
+-	}
+-
+-	return &i.value
++	return primitiveValuePointer(i.state, i.value)
+ }
+ 
+ // ToInt32Value returns Int32.
+diff -ruN repo/types/basetypes/int64_value.go draft/types/basetypes/int64_value.go
+--- repo/types/basetypes/int64_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft/types/basetypes/int64_value.go	2026-10-24 23:01:44.913434918 +0000
+@@ -90,37 +90,12 @@
+ func (i Int64Value) Equal(other attr.Value) bool {
+ 	o, ok := other.(Int64Value)
+ 
+-	if !ok {
+-		return false
+-	}
+-
+-	if i.state != o.state {
+-		return false
+-	}
+-
+-	if i.state != attr.ValueStateKnown {
+-		return true
+-	}
+-
+-	return i.value == o.value
++	return ok && primitiveEqual(i.state, i.value, o.state, o.value)
+ }
+ 
+ // ToTerraformValue returns the data contained in the Int64 as a tftypes.Value.
+ func (i Int64Value) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+-	switch i.state {
+-	case attr.ValueStateKnown:
+-		if err := tftypes.ValidateValue(tftypes.Number, i.value); err != nil {
+-			return tftypes.NewValue(tftypes.Number, tftypes.UnknownValue), err
+-		}
+-
+-		return tftypes.NewValue(tftypes.Number, i.value), nil
+-	case attr.ValueStateNull:
+-		return tftypes.NewValue(tftypes.Number, nil), nil
+-	case attr.ValueStateUnknown:
+-		return tftypes.NewValue(tftypes.Number, tftypes.UnknownValue), nil
+-	default:
+-		panic(fmt.Sprintf("unhandled Int64 state in ToTerraformValue: %s", i.state))
+-	}
++	return primitiveToTerraformValue(tftypes.Number, "Int64", i.state, i.value)
+ }
+ 
+ // Type returns a Int64Type.
+@@ -142,15 +117,7 @@
+ // The string returned here is not protected by any compatibility guarantees,
+ // and is intended for logging and error reporting.
+ func (i Int64Value) String() string {
+-	if i.IsUnknown() {
+-		return attr.UnknownValueString
+-	}
+-
+-	if i.IsNull() {
+-		return attr.NullValueString
+-	}
+-
+-	return fmt.Sprintf("%d", i.value)
++	return primitiveString(i.state, func() string { return fmt.Sprintf("%d", i.value) })
+ }
+ 
+ // ValueInt64 returns the known int64 value. If Int64 is null or unknown, returns
+@@ -162,11 +129,7 @@
+ // ValueInt64Pointer returns a pointer to the known int64 value, nil for a
+ // null value, or a pointer to 0 for an unknown value.
+ func (i Int64Value) ValueInt64Pointer() *int64 {
+-	if i.IsNull() {
+-		return nil
+-	}
+-
+-	return &i.value
++	return primitiveValuePointer(i.state, i.value)
+ }
+ 
+ // ToInt64Value returns Int64.
+diff -ruN repo/types/basetypes/primitive_value.go draft/types/basetypes/primitive_value.go
+--- repo/types/basetypes/primitive_value.go	1970-01-01 00:00:00.000000000 +0000
++++ draft/types/basetypes/primitive_value.go	2026-10-24 23:01:44.887227784 +0000
+@@ -0,0 +1,70 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package basetypes
++
++import (
++	"fmt"
++
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	"github.com/hashicorp/terraform-plugin-framework/attr"
++)
++
++// primitiveToTerraformValue implements ToTerraformValue for the primitive
++// value types. The name is used in the panic message for an unhandled state.
++func primitiveToTerraformValue(typ tftypes.Type, name string, state attr.ValueState, value any) (tftypes.Value, error) {
++	switch state {
++	case attr.ValueStateKnown:
++		if err := tftypes.ValidateValue(typ, value); err != nil {
++			return tftypes.NewValue(typ, tftypes.UnknownValue), err
++		}
++
++		return tftypes.NewValue(typ, value), nil
++	case attr.ValueStateNull:
++		return tftypes.NewValue(typ, nil), nil
++	case attr.ValueStateUnknown:
++		return tftypes.NewValue(typ, tftypes.UnknownValue), nil
++	default:
++		panic(fmt.Sprintf("unhandled %s state in ToTerraformValue: %s", name, state))
++	}
++}
++
++// primitiveEqual implements the state and value comparison of Equal for the
++// primitive value types whose Go value is comparable.
++func primitiveEqual[T comparable](state attr.ValueState, value T, otherState attr.ValueState, otherValue T) bool {
++	if state != otherState {
++		return false
++	}
++
++	if state != attr.ValueStateKnown {
++		return true
++	}
++
++	return value == otherValue
++}
++
++// primitiveString implements String for the primitive value types. The known
++// function is only called for a known value.
++func primitiveString(state attr.ValueState, known func() string) string {
++	if state == attr.ValueStateUnknown {
++		return attr.UnknownValueString
++	}
++
++	if state == attr.ValueStateNull {
++		return attr.NullValueString
++	}
++
++	return known()
++}
++
++// primitiveValuePointer implements Value<T>Pointer for the primitive value
++// types whose Go value is held directly: nil for a null value, otherwise a
++// pointer to a copy of the value (the zero value when unknown).
++func primitiveValuePointer[T any](state attr.ValueState, value T) *T {
++	if state == attr.ValueStateNull {
++		return nil
++	}
++
++	return &value
++}
+diff -ruN repo/types/basetypes/string_value.go draft/types/basetypes/string_value.go
+--- repo/types/basetypes/string_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft/types/basetypes/string_value.go	2026-10-24 23:01:44.914398991 +0000
+@@ -103,39 +103,14 @@
+ 
+ // ToTerraformValue returns the data contained in the *String as a tftypes.Value.
+ func (s StringValue) ToTerraformValue(_ context.Context) (tftypes.Value, error) {
+-	switch s.state {
+-	case attr.ValueStateKnown:
+-		if err := tftypes.ValidateValue(tftypes.String, s.value); err != nil {
+-			return tftypes.NewValue(tftypes.String, tftypes.UnknownValue), err
+-		}
+-
+-		return tftypes.NewValue(tftypes.String, s.value), nil
+-	case attr.ValueStateNull:
+-		return tftypes.NewValue(tftypes.String, nil), nil
+-	case attr.ValueStateUnknown:
+-		return tftypes.NewValue(tftypes.String, tftypes.UnknownValue), nil
+-	default:
+-		panic(fmt.Sprintf("unhandled String state in ToTerraformValue: %s", s.state))
+-	}
++	return primitiveToTerraformValue(tftypes.String, "String", s.state, s.value)
+ }
+ 
+ // Equal returns true if `other` is a String and has the same value as `s`.
+ func (s StringValue) Equal(other attr.Value) bool {
+ 	o, ok := other.(StringValue)
+ 
+-	if !ok {
+-		return false
+-	}
+-
+-	if s.state != o.state {
+-		return false
+-	}
+-
+-	if s.state != attr.ValueStateKnown {
+-		return true
+-	}
+-
+-	return s.value == o.value
++	return ok && primitiveEqual(s.state, s.value, o.state, o.value)
+ }
+ 
+ // IsNull returns true if the String represents a null value.
+@@ -154,15 +129,7 @@
+ // The string returned here is not protected by any compatibility guarantees,
+ // and is intended for logging and error reporting.
+ func (s StringValue) String() string {
+-	if s.IsUnknown() {
+-		return attr.UnknownValueString
+-	}
+-
+-	if s.IsNull() {
+-		return attr.NullValueString
+-	}
+-
+-	return fmt.Sprintf("%q", s.value)
++	return primitiveString(s.state, func() string { return fmt.Sprintf("%q", s.value) })
+ }
+ 
+ // ValueString returns the known string value. If String is null or unknown, returns
+@@ -174,11 +141,7 @@
+ // ValueStringPointer returns a pointer to the known string value, nil for a
+ // null value, or a pointer to "" for an unknown value.
+ func (s StringValue) ValueStringPointer() *string {
+-	if s.IsNull() {
+-		return nil
+-	}
+-
+-	return &s.value
++	return primitiveValuePointer(s.state, s.value)
+ }
+ 
+ // ToStringValue returns String.

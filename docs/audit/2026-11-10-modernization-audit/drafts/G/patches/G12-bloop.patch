@@ -1,0 +1,59 @@
+diff --git a/types/basetypes/object_value_test.go b/types/basetypes/object_value_test.go
+index 7ccbd48..5fd57fc 100644
+--- a/types/basetypes/object_value_test.go
++++ b/types/basetypes/object_value_test.go
+@@ -21,6 +21,8 @@ func BenchmarkObjectValueToTerraformValue1000(b *testing.B) {
+ }
+ 
+ func benchmarkObjectValueToTerraformValue(b *testing.B, attributes int) {
++	b.Helper()
++
+ 	attributeTypes := make(map[string]attr.Type, attributes)
+ 	attributeValues := make(map[string]attr.Value, attributes)
+ 	ctx := context.Background()
+@@ -36,7 +38,7 @@ func benchmarkObjectValueToTerraformValue(b *testing.B, attributes int) {
+ 		attributeValues,
+ 	)
+ 
+-	for n := 0; n < b.N; n++ {
++	for b.Loop() {
+ 		_, err := value.ToTerraformValue(ctx)
+ 
+ 		if err != nil {
+diff --git a/types/basetypes/set_value_test.go b/types/basetypes/set_value_test.go
+index e5a9e3d..f21f63f 100644
+--- a/types/basetypes/set_value_test.go
++++ b/types/basetypes/set_value_test.go
+@@ -61,16 +61,15 @@ func TestSetElementsAs_attributeValueSlice(t *testing.T) {
+ 	}
+ }
+ 
+-var benchDiags diag.Diagnostics // Prevent compiler optimization
+-
+ func benchmarkSetTypeValidate(b *testing.B, elementCount int) {
++	b.Helper()
++
+ 	elements := make([]tftypes.Value, 0, elementCount)
+ 
+ 	for idx := range elements {
+ 		elements[idx] = tftypes.NewValue(tftypes.String, strconv.Itoa(idx))
+ 	}
+ 
+-	var diags diag.Diagnostics // Prevent compiler optimization
+ 	ctx := context.Background()
+ 	in := tftypes.NewValue(
+ 		tftypes.Set{
+@@ -81,11 +80,9 @@ func benchmarkSetTypeValidate(b *testing.B, elementCount int) {
+ 	path := path.Root("test")
+ 	set := SetType{}
+ 
+-	for n := 0; n < b.N; n++ {
+-		diags = set.Validate(ctx, in, path)
++	for b.Loop() {
++		set.Validate(ctx, in, path)
+ 	}
+-
+-	benchDiags = diags
+ }
+ 
+ func BenchmarkSetTypeValidate10(b *testing.B) {

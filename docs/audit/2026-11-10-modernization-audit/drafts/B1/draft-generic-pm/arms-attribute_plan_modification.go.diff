@@ -1,0 +1,886 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/snap-after-generic/attribute_plan_modification.go	2026-10-24 23:11:14.383959903 +0000
++++ internal/fwserver/attribute_plan_modification.go	2026-10-24 23:12:08.213559592 +0000
+@@ -132,140 +132,86 @@
+ 
+ 	nestedAttributeObject := nestedAttribute.GetNestedObject()
+ 
++	nestedObjectPlanModify := func(ctx context.Context, req planmodifier.ObjectRequest, resp *ModifyAttributePlanResponse) {
++		NestedAttributeObjectPlanModify(ctx, nestedAttributeObject, req, resp)
++	}
++
+ 	nm := nestedAttribute.GetNestingMode()
+ 	switch nm {
+ 	case fwschema.NestingModeList:
+-		configList, diags := coerceListValue(ctx, req.AttributePath, req.AttributeConfig)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
+-
+-		// Use response as the planned value may have been modified with list
+-		// plan modifiers.
+-		planListValuable, diags := coerceListValuable(ctx, req.AttributePath, resp.AttributePlan)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
+-
+-		typable, diags := coerceListTypable(ctx, req.AttributePath, planListValuable)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
+-
+-		planList, diags := planListValuable.ToListValue(ctx)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
+-
+-		stateList, diags := coerceListValue(ctx, req.AttributePath, req.AttributeState)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
+-
+-		planElements := planList.Elements()
+-
+-		for idx, planElem := range planElements {
+-			attrPath := req.AttributePath.AtListIndex(idx)
+-
+-			configObject, diags := listElemObject(ctx, attrPath, configList, idx, fwschemadata.DataDescriptionConfiguration)
+-
+-			resp.Diagnostics.Append(diags...)
+-
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
+-
+-			planObject, diags := coerceObjectValue(ctx, attrPath, planElem)
+-
+-			resp.Diagnostics.Append(diags...)
++		listNestedPlanModify(ctx, nestedObjectPlanModify, req, resp)
++	case fwschema.NestingModeSet:
++		setNestedPlanModify(ctx, nestedObjectPlanModify, req, resp)
++	case fwschema.NestingModeMap:
++		mapNestedPlanModify(ctx, nestedObjectPlanModify, req, resp)
++	case fwschema.NestingModeSingle:
++		singleNestedPlanModify(ctx, nestedObjectPlanModify, req, resp)
++	default:
++		err := fmt.Errorf("unknown attribute nesting mode (%T: %v) at path: %s", nm, nm, req.AttributePath)
++		resp.Diagnostics.AddAttributeError(
++			req.AttributePath,
++			"Attribute Plan Modification Error",
++			"Attribute plan modifier cannot walk schema. Report this to the provider developer:\n\n"+err.Error(),
++		)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++		return
++	}
++}
+ 
+-			planObjectValuable, diags := coerceObjectValuable(ctx, attrPath, planElem)
++// nestedObjectPlanModifyFunc performs plan modification of one nested
++// attribute object or nested block object.
++type nestedObjectPlanModifyFunc func(context.Context, planmodifier.ObjectRequest, *ModifyAttributePlanResponse)
+ 
+-			resp.Diagnostics.Append(diags...)
++// listNestedPlanModify performs plan modification of each object of a list nested attribute or block.
++func listNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifyFunc, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++	configList, diags := coerceListValue(ctx, req.AttributePath, req.AttributeConfig)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	resp.Diagnostics.Append(diags...)
+ 
+-			typable, diags := coerceObjectTypable(ctx, attrPath, planObjectValuable)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			resp.Diagnostics.Append(diags...)
++	// Use response as the planned value may have been modified with list
++	// plan modifiers.
++	planListValuable, diags := coerceListValuable(ctx, req.AttributePath, resp.AttributePlan)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	resp.Diagnostics.Append(diags...)
+ 
+-			stateObject, diags := listElemObject(ctx, attrPath, stateList, idx, fwschemadata.DataDescriptionState)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			resp.Diagnostics.Append(diags...)
++	typable, diags := coerceListTypable(ctx, req.AttributePath, planListValuable)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	resp.Diagnostics.Append(diags...)
+ 
+-			objectReq := planmodifier.ObjectRequest{
+-				Config:         req.Config,
+-				ConfigValue:    configObject,
+-				Path:           attrPath,
+-				PathExpression: attrPath.Expression(),
+-				Plan:           req.Plan,
+-				PlanValue:      planObject,
+-				Private:        resp.Private,
+-				State:          req.State,
+-				StateValue:     stateObject,
+-			}
+-			objectResp := &ModifyAttributePlanResponse{
+-				AttributePlan: objectReq.PlanValue,
+-				Private:       objectReq.Private,
+-			}
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			NestedAttributeObjectPlanModify(ctx, nestedAttributeObject, objectReq, objectResp)
++	planList, diags := planListValuable.ToListValue(ctx)
+ 
+-			respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
++	resp.Diagnostics.Append(diags...)
+ 
+-			resp.Diagnostics.Append(diags...)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	stateList, diags := coerceListValue(ctx, req.AttributePath, req.AttributeState)
+ 
+-			// A custom value type must be returned in the final response to prevent
+-			// later correctness errors.
+-			// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/821
+-			respValuable, diags := typable.ValueFromObject(ctx, respValue)
++	resp.Diagnostics.Append(diags...)
+ 
+-			resp.Diagnostics.Append(diags...)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	planElements := planList.Elements()
+ 
+-			planElements[idx] = respValuable
+-			resp.Diagnostics.Append(objectResp.Diagnostics...)
+-			resp.Private = objectResp.Private
+-			resp.RequiresReplace.Append(objectResp.RequiresReplace...)
+-		}
++	for idx, planElem := range planElements {
++		attrPath := req.AttributePath.AtListIndex(idx)
+ 
+-		respValue, diags := types.ListValue(planList.ElementType(ctx), planElements)
++		configObject, diags := listElemObject(ctx, attrPath, configList, idx, fwschemadata.DataDescriptionConfiguration)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -273,10 +219,7 @@
+ 			return
+ 		}
+ 
+-		// A custom value type must be returned in the final response to prevent
+-		// later correctness errors.
+-		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/754
+-		respValuable, diags := typable.ValueFromList(ctx, respValue)
++		planObject, diags := coerceObjectValue(ctx, attrPath, planElem)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -284,9 +227,7 @@
+ 			return
+ 		}
+ 
+-		resp.AttributePlan = respValuable
+-	case fwschema.NestingModeSet:
+-		configSet, diags := coerceSetValue(ctx, req.AttributePath, req.AttributeConfig)
++		planObjectValuable, diags := coerceObjectValuable(ctx, attrPath, planElem)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -294,9 +235,7 @@
+ 			return
+ 		}
+ 
+-		// Use response as the planned value may have been modified with set
+-		// plan modifiers.
+-		planSetValuable, diags := coerceSetValuable(ctx, req.AttributePath, resp.AttributePlan)
++		typable, diags := coerceObjectTypable(ctx, attrPath, planObjectValuable)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -304,7 +243,7 @@
+ 			return
+ 		}
+ 
+-		typable, diags := coerceSetTypable(ctx, req.AttributePath, planSetValuable)
++		stateObject, diags := listElemObject(ctx, attrPath, stateList, idx, fwschemadata.DataDescriptionState)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -312,7 +251,25 @@
+ 			return
+ 		}
+ 
+-		planSet, diags := planSetValuable.ToSetValue(ctx)
++		objectReq := planmodifier.ObjectRequest{
++			Config:         req.Config,
++			ConfigValue:    configObject,
++			Path:           attrPath,
++			PathExpression: attrPath.Expression(),
++			Plan:           req.Plan,
++			PlanValue:      planObject,
++			Private:        resp.Private,
++			State:          req.State,
++			StateValue:     stateObject,
++		}
++		objectResp := &ModifyAttributePlanResponse{
++			AttributePlan: objectReq.PlanValue,
++			Private:       objectReq.Private,
++		}
++
++		nestedObjectPlanModify(ctx, objectReq, objectResp)
++
++		respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -320,7 +277,10 @@
+ 			return
+ 		}
+ 
+-		stateSet, diags := coerceSetValue(ctx, req.AttributePath, req.AttributeState)
++		// A custom value type must be returned in the final response to prevent
++		// later correctness errors.
++		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/821
++		respValuable, diags := typable.ValueFromObject(ctx, respValue)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -328,95 +288,84 @@
+ 			return
+ 		}
+ 
+-		planElements := planSet.Elements()
+-
+-		for idx, planElem := range planElements {
+-			attrPath := req.AttributePath.AtSetValue(planElem)
++		planElements[idx] = respValuable
++		resp.Diagnostics.Append(objectResp.Diagnostics...)
++		resp.Private = objectResp.Private
++		resp.RequiresReplace.Append(objectResp.RequiresReplace...)
++	}
+ 
+-			configObject, diags := setElemObject(ctx, attrPath, configSet, idx, fwschemadata.DataDescriptionConfiguration)
++	respValue, diags := types.ListValue(planList.ElementType(ctx), planElements)
+ 
+-			resp.Diagnostics.Append(diags...)
++	resp.Diagnostics.Append(diags...)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			planObject, diags := coerceObjectValue(ctx, attrPath, planElem)
++	// A custom value type must be returned in the final response to prevent
++	// later correctness errors.
++	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/754
++	respValuable, diags := typable.ValueFromList(ctx, respValue)
+ 
+-			resp.Diagnostics.Append(diags...)
++	resp.Diagnostics.Append(diags...)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			planObjectValuable, diags := coerceObjectValuable(ctx, attrPath, planElem)
++	resp.AttributePlan = respValuable
++}
+ 
+-			resp.Diagnostics.Append(diags...)
++// setNestedPlanModify performs plan modification of each object of a set nested attribute or block.
++func setNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifyFunc, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++	configSet, diags := coerceSetValue(ctx, req.AttributePath, req.AttributeConfig)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	resp.Diagnostics.Append(diags...)
+ 
+-			typable, diags := coerceObjectTypable(ctx, attrPath, planObjectValuable)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			resp.Diagnostics.Append(diags...)
++	// Use response as the planned value may have been modified with set
++	// plan modifiers.
++	planSetValuable, diags := coerceSetValuable(ctx, req.AttributePath, resp.AttributePlan)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	resp.Diagnostics.Append(diags...)
+ 
+-			stateObject, diags := setElemObject(ctx, attrPath, stateSet, idx, fwschemadata.DataDescriptionState)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			resp.Diagnostics.Append(diags...)
++	typable, diags := coerceSetTypable(ctx, req.AttributePath, planSetValuable)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	resp.Diagnostics.Append(diags...)
+ 
+-			objectReq := planmodifier.ObjectRequest{
+-				Config:         req.Config,
+-				ConfigValue:    configObject,
+-				Path:           attrPath,
+-				PathExpression: attrPath.Expression(),
+-				Plan:           req.Plan,
+-				PlanValue:      planObject,
+-				Private:        resp.Private,
+-				State:          req.State,
+-				StateValue:     stateObject,
+-			}
+-			objectResp := &ModifyAttributePlanResponse{
+-				AttributePlan: objectReq.PlanValue,
+-				Private:       objectReq.Private,
+-			}
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			NestedAttributeObjectPlanModify(ctx, nestedAttributeObject, objectReq, objectResp)
++	planSet, diags := planSetValuable.ToSetValue(ctx)
+ 
+-			respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
++	resp.Diagnostics.Append(diags...)
+ 
+-			resp.Diagnostics.Append(diags...)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	stateSet, diags := coerceSetValue(ctx, req.AttributePath, req.AttributeState)
+ 
+-			// A custom value type must be returned in the final response to prevent
+-			// later correctness errors.
+-			// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/821
+-			respValuable, diags := typable.ValueFromObject(ctx, respValue)
++	resp.Diagnostics.Append(diags...)
+ 
+-			resp.Diagnostics.Append(diags...)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	planElements := planSet.Elements()
+ 
+-			planElements[idx] = respValuable
+-			resp.Diagnostics.Append(objectResp.Diagnostics...)
+-			resp.Private = objectResp.Private
+-			resp.RequiresReplace.Append(objectResp.RequiresReplace...)
+-		}
++	for idx, planElem := range planElements {
++		attrPath := req.AttributePath.AtSetValue(planElem)
+ 
+-		respValue, diags := types.SetValue(planSet.ElementType(ctx), planElements)
++		configObject, diags := setElemObject(ctx, attrPath, configSet, idx, fwschemadata.DataDescriptionConfiguration)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -424,10 +373,7 @@
+ 			return
+ 		}
+ 
+-		// A custom value type must be returned in the final response to prevent
+-		// later correctness errors.
+-		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/754
+-		respValuable, diags := typable.ValueFromSet(ctx, respValue)
++		planObject, diags := coerceObjectValue(ctx, attrPath, planElem)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -435,9 +381,7 @@
+ 			return
+ 		}
+ 
+-		resp.AttributePlan = respValuable
+-	case fwschema.NestingModeMap:
+-		configMap, diags := coerceMapValue(ctx, req.AttributePath, req.AttributeConfig)
++		planObjectValuable, diags := coerceObjectValuable(ctx, attrPath, planElem)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -445,9 +389,7 @@
+ 			return
+ 		}
+ 
+-		// Use response as the planned value may have been modified with map
+-		// plan modifiers.
+-		planMapValuable, diags := coerceMapValuable(ctx, req.AttributePath, resp.AttributePlan)
++		typable, diags := coerceObjectTypable(ctx, attrPath, planObjectValuable)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -455,7 +397,7 @@
+ 			return
+ 		}
+ 
+-		typable, diags := coerceMapTypable(ctx, req.AttributePath, planMapValuable)
++		stateObject, diags := setElemObject(ctx, attrPath, stateSet, idx, fwschemadata.DataDescriptionState)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -463,7 +405,25 @@
+ 			return
+ 		}
+ 
+-		planMap, diags := planMapValuable.ToMapValue(ctx)
++		objectReq := planmodifier.ObjectRequest{
++			Config:         req.Config,
++			ConfigValue:    configObject,
++			Path:           attrPath,
++			PathExpression: attrPath.Expression(),
++			Plan:           req.Plan,
++			PlanValue:      planObject,
++			Private:        resp.Private,
++			State:          req.State,
++			StateValue:     stateObject,
++		}
++		objectResp := &ModifyAttributePlanResponse{
++			AttributePlan: objectReq.PlanValue,
++			Private:       objectReq.Private,
++		}
++
++		nestedObjectPlanModify(ctx, objectReq, objectResp)
++
++		respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -471,7 +431,10 @@
+ 			return
+ 		}
+ 
+-		stateMap, diags := coerceMapValue(ctx, req.AttributePath, req.AttributeState)
++		// A custom value type must be returned in the final response to prevent
++		// later correctness errors.
++		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/821
++		respValuable, diags := typable.ValueFromObject(ctx, respValue)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -479,116 +442,84 @@
+ 			return
+ 		}
+ 
+-		planElements := planMap.Elements()
+-
+-		for key, planElem := range planElements {
+-			attrPath := req.AttributePath.AtMapKey(key)
+-
+-			configObject, diags := mapElemObject(ctx, attrPath, configMap, key, fwschemadata.DataDescriptionConfiguration)
+-
+-			resp.Diagnostics.Append(diags...)
+-
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
+-
+-			planObject, diags := coerceObjectValue(ctx, attrPath, planElem)
+-
+-			resp.Diagnostics.Append(diags...)
+-
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++		planElements[idx] = respValuable
++		resp.Diagnostics.Append(objectResp.Diagnostics...)
++		resp.Private = objectResp.Private
++		resp.RequiresReplace.Append(objectResp.RequiresReplace...)
++	}
+ 
+-			planObjectValuable, diags := coerceObjectValuable(ctx, attrPath, planElem)
++	respValue, diags := types.SetValue(planSet.ElementType(ctx), planElements)
+ 
+-			resp.Diagnostics.Append(diags...)
++	resp.Diagnostics.Append(diags...)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			typable, diags := coerceObjectTypable(ctx, attrPath, planObjectValuable)
++	// A custom value type must be returned in the final response to prevent
++	// later correctness errors.
++	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/754
++	respValuable, diags := typable.ValueFromSet(ctx, respValue)
+ 
+-			resp.Diagnostics.Append(diags...)
++	resp.Diagnostics.Append(diags...)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			stateObject, diags := mapElemObject(ctx, attrPath, stateMap, key, fwschemadata.DataDescriptionState)
++	resp.AttributePlan = respValuable
++}
+ 
+-			resp.Diagnostics.Append(diags...)
++// mapNestedPlanModify performs plan modification of each object of a map nested attribute.
++func mapNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifyFunc, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++	configMap, diags := coerceMapValue(ctx, req.AttributePath, req.AttributeConfig)
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	resp.Diagnostics.Append(diags...)
+ 
+-			objectReq := planmodifier.ObjectRequest{
+-				Config:         req.Config,
+-				ConfigValue:    configObject,
+-				Path:           attrPath,
+-				PathExpression: attrPath.Expression(),
+-				Plan:           req.Plan,
+-				PlanValue:      planObject,
+-				Private:        resp.Private,
+-				State:          req.State,
+-				StateValue:     stateObject,
+-			}
+-			objectResp := &ModifyAttributePlanResponse{
+-				AttributePlan: objectReq.PlanValue,
+-				Private:       objectReq.Private,
+-			}
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			NestedAttributeObjectPlanModify(ctx, nestedAttributeObject, objectReq, objectResp)
++	// Use response as the planned value may have been modified with map
++	// plan modifiers.
++	planMapValuable, diags := coerceMapValuable(ctx, req.AttributePath, resp.AttributePlan)
+ 
+-			respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
++	resp.Diagnostics.Append(diags...)
+ 
+-			resp.Diagnostics.Append(diags...)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	typable, diags := coerceMapTypable(ctx, req.AttributePath, planMapValuable)
+ 
+-			// A custom value type must be returned in the final response to prevent
+-			// later correctness errors.
+-			// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/821
+-			respValuable, diags := typable.ValueFromObject(ctx, respValue)
++	resp.Diagnostics.Append(diags...)
+ 
+-			resp.Diagnostics.Append(diags...)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-			if resp.Diagnostics.HasError() {
+-				return
+-			}
++	planMap, diags := planMapValuable.ToMapValue(ctx)
+ 
+-			planElements[key] = respValuable
+-			resp.Diagnostics.Append(objectResp.Diagnostics...)
+-			resp.Private = objectResp.Private
+-			resp.RequiresReplace.Append(objectResp.RequiresReplace...)
+-		}
++	resp.Diagnostics.Append(diags...)
+ 
+-		respValue, diags := types.MapValue(planMap.ElementType(ctx), planElements)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-		resp.Diagnostics.Append(diags...)
++	stateMap, diags := coerceMapValue(ctx, req.AttributePath, req.AttributeState)
+ 
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
++	resp.Diagnostics.Append(diags...)
+ 
+-		// A custom value type must be returned in the final response to prevent
+-		// later correctness errors.
+-		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/754
+-		respValuable, diags := typable.ValueFromMap(ctx, respValue)
++	if resp.Diagnostics.HasError() {
++		return
++	}
+ 
+-		resp.Diagnostics.Append(diags...)
++	planElements := planMap.Elements()
+ 
+-		if resp.Diagnostics.HasError() {
+-			return
+-		}
++	for key, planElem := range planElements {
++		attrPath := req.AttributePath.AtMapKey(key)
+ 
+-		resp.AttributePlan = respValuable
+-	case fwschema.NestingModeSingle:
+-		configObject, diags := coerceObjectValue(ctx, req.AttributePath, req.AttributeConfig)
++		configObject, diags := mapElemObject(ctx, attrPath, configMap, key, fwschemadata.DataDescriptionConfiguration)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -596,9 +527,7 @@
+ 			return
+ 		}
+ 
+-		// Use response as the planned value may have been modified with object
+-		// plan modifiers.
+-		planObjectValuable, diags := coerceObjectValuable(ctx, req.AttributePath, resp.AttributePlan)
++		planObject, diags := coerceObjectValue(ctx, attrPath, planElem)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -606,7 +535,7 @@
+ 			return
+ 		}
+ 
+-		typable, diags := coerceObjectTypable(ctx, req.AttributePath, planObjectValuable)
++		planObjectValuable, diags := coerceObjectValuable(ctx, attrPath, planElem)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -614,7 +543,7 @@
+ 			return
+ 		}
+ 
+-		planObject, diags := planObjectValuable.ToObjectValue(ctx)
++		typable, diags := coerceObjectTypable(ctx, attrPath, planObjectValuable)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -622,7 +551,7 @@
+ 			return
+ 		}
+ 
+-		stateObject, diags := coerceObjectValue(ctx, req.AttributePath, req.AttributeState)
++		stateObject, diags := mapElemObject(ctx, attrPath, stateMap, key, fwschemadata.DataDescriptionState)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -633,8 +562,8 @@
+ 		objectReq := planmodifier.ObjectRequest{
+ 			Config:         req.Config,
+ 			ConfigValue:    configObject,
+-			Path:           req.AttributePath,
+-			PathExpression: req.AttributePathExpression,
++			Path:           attrPath,
++			PathExpression: attrPath.Expression(),
+ 			Plan:           req.Plan,
+ 			PlanValue:      planObject,
+ 			Private:        resp.Private,
+@@ -646,13 +575,9 @@
+ 			Private:       objectReq.Private,
+ 		}
+ 
+-		NestedAttributeObjectPlanModify(ctx, nestedAttributeObject, objectReq, objectResp)
++		nestedObjectPlanModify(ctx, objectReq, objectResp)
+ 
+-		resp.Diagnostics.Append(objectResp.Diagnostics...)
+-		resp.Private = objectResp.Private
+-		resp.RequiresReplace.Append(objectResp.RequiresReplace...)
+-
+-		respValue, diags := coerceObjectValue(ctx, req.AttributePath, objectResp.AttributePlan)
++		respValue, diags := coerceObjectValue(ctx, attrPath, objectResp.AttributePlan)
+ 
+ 		resp.Diagnostics.Append(diags...)
+ 
+@@ -662,7 +587,7 @@
+ 
+ 		// A custom value type must be returned in the final response to prevent
+ 		// later correctness errors.
+-		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/754
++		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/821
+ 		respValuable, diags := typable.ValueFromObject(ctx, respValue)
+ 
+ 		resp.Diagnostics.Append(diags...)
+@@ -671,17 +596,120 @@
+ 			return
+ 		}
+ 
+-		resp.AttributePlan = respValuable
+-	default:
+-		err := fmt.Errorf("unknown attribute nesting mode (%T: %v) at path: %s", nm, nm, req.AttributePath)
+-		resp.Diagnostics.AddAttributeError(
+-			req.AttributePath,
+-			"Attribute Plan Modification Error",
+-			"Attribute plan modifier cannot walk schema. Report this to the provider developer:\n\n"+err.Error(),
+-		)
++		planElements[key] = respValuable
++		resp.Diagnostics.Append(objectResp.Diagnostics...)
++		resp.Private = objectResp.Private
++		resp.RequiresReplace.Append(objectResp.RequiresReplace...)
++	}
++
++	respValue, diags := types.MapValue(planMap.ElementType(ctx), planElements)
++
++	resp.Diagnostics.Append(diags...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	// A custom value type must be returned in the final response to prevent
++	// later correctness errors.
++	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/754
++	respValuable, diags := typable.ValueFromMap(ctx, respValue)
++
++	resp.Diagnostics.Append(diags...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	resp.AttributePlan = respValuable
++}
++
++// singleNestedPlanModify performs plan modification of the object of a single nested attribute or block.
++func singleNestedPlanModify(ctx context.Context, nestedObjectPlanModify nestedObjectPlanModifyFunc, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++	configObject, diags := coerceObjectValue(ctx, req.AttributePath, req.AttributeConfig)
++
++	resp.Diagnostics.Append(diags...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	// Use response as the planned value may have been modified with object
++	// plan modifiers.
++	planObjectValuable, diags := coerceObjectValuable(ctx, req.AttributePath, resp.AttributePlan)
++
++	resp.Diagnostics.Append(diags...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	typable, diags := coerceObjectTypable(ctx, req.AttributePath, planObjectValuable)
++
++	resp.Diagnostics.Append(diags...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	planObject, diags := planObjectValuable.ToObjectValue(ctx)
++
++	resp.Diagnostics.Append(diags...)
+ 
++	if resp.Diagnostics.HasError() {
+ 		return
+ 	}
++
++	stateObject, diags := coerceObjectValue(ctx, req.AttributePath, req.AttributeState)
++
++	resp.Diagnostics.Append(diags...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	objectReq := planmodifier.ObjectRequest{
++		Config:         req.Config,
++		ConfigValue:    configObject,
++		Path:           req.AttributePath,
++		PathExpression: req.AttributePathExpression,
++		Plan:           req.Plan,
++		PlanValue:      planObject,
++		Private:        resp.Private,
++		State:          req.State,
++		StateValue:     stateObject,
++	}
++	objectResp := &ModifyAttributePlanResponse{
++		AttributePlan: objectReq.PlanValue,
++		Private:       objectReq.Private,
++	}
++
++	nestedObjectPlanModify(ctx, objectReq, objectResp)
++
++	resp.Diagnostics.Append(objectResp.Diagnostics...)
++	resp.Private = objectResp.Private
++	resp.RequiresReplace.Append(objectResp.RequiresReplace...)
++
++	respValue, diags := coerceObjectValue(ctx, req.AttributePath, objectResp.AttributePlan)
++
++	resp.Diagnostics.Append(diags...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	// A custom value type must be returned in the final response to prevent
++	// later correctness errors.
++	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/754
++	respValuable, diags := typable.ValueFromObject(ctx, respValue)
++
++	resp.Diagnostics.Append(diags...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	resp.AttributePlan = respValuable
+ }
+ 
+ // AttributePlanModifyBool performs all types.Bool plan modification.

@@ -1,0 +1,48 @@
+diff --git a/internal/proto5server/serve_test.go b/internal/proto5server/serve_test.go
+index 98ce6d1..4e24216 100644
+--- a/internal/proto5server/serve_test.go
++++ b/internal/proto5server/serve_test.go
+@@ -27,9 +27,7 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 	s := &Server{}
+ 	testCtx := context.Background()
+ 	for range 10 {
+-		wg.Add(1)
+-		go func() {
+-			defer wg.Done()
++		wg.Go(func() {
+ 			ctx := context.Background()
+ 			ctx = s.registerContext(ctx)
+ 			select {
+@@ -39,7 +37,7 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 			case <-ctx.Done():
+ 				return
+ 			}
+-		}()
++		})
+ 	}
+ 	// avoid any race conditions around canceling the contexts before
+ 	// they're all set up
+diff --git a/internal/proto6server/serve_test.go b/internal/proto6server/serve_test.go
+index c047566..3a3489f 100644
+--- a/internal/proto6server/serve_test.go
++++ b/internal/proto6server/serve_test.go
+@@ -26,9 +26,7 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 	s := &Server{}
+ 	testCtx := context.Background()
+ 	for range 10 {
+-		wg.Add(1)
+-		go func() {
+-			defer wg.Done()
++		wg.Go(func() {
+ 			ctx := context.Background()
+ 			ctx = s.registerContext(ctx)
+ 			select {
+@@ -38,7 +36,7 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 			case <-ctx.Done():
+ 				return
+ 			}
+-		}()
++		})
+ 	}
+ 	// avoid any race conditions around canceling the contexts before
+ 	// they're all set up

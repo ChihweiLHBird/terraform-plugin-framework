@@ -1,0 +1,107 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-G/copy/internal/privatestate/data_test.go (old)
++++ /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-G/copy/internal/privatestate/data_test.go (new)
+@@ -46,7 +46,7 @@
+ 		"framework-data-value-invalid-utf-8": {
+ 			data: &Data{
+ 				Framework: map[string][]byte{
+-					".frameworkKeyOne": []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
++					".frameworkKeyOne": fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
+ 				},
+ 			},
+ 			expectedDiags: diag.Diagnostics{
+@@ -111,7 +111,7 @@
+ 			data: &Data{
+ 				Provider: &ProviderData{
+ 					data: map[string][]byte{
+-						"providerKeyOne": []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++						"providerKeyOne": fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 					},
+ 				},
+ 			},
+@@ -230,37 +230,37 @@
+ 	})
+ 
+ 	frameworkValueInvalidUTF8 := MustMarshalToJson(map[string][]byte{
+-		".frameworkKeyOne": []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
+-		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+-		"providerKeyOne":   []byte(`{"pKeyOne": {"k0": "zero", "k1": 1}}`),
+-		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+-	})
+-
+-	frameworkInvalidJSON := MustMarshalToJson(map[string][]byte{
+-		".frameworkKeyOne": []byte(`{`),
+-		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+-		"providerKeyOne":   []byte(`{"pKeyOne": {"k0": "zero", "k1": 1}}`),
+-		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+-	})
+-
+-	frameworkValueInvalidJSON := MustMarshalToJson(map[string][]byte{
+-		".frameworkKeyOne": []byte(`{"fwKeyOne": { }`),
+-		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+-		"providerKeyOne":   []byte(`{"pKeyOne": {"k0": "zero", "k1": 1}}`),
+-		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+-	})
+-
+-	providerInvalidUTF8 := MustMarshalToJson(map[string][]byte{
+-		".frameworkKeyOne": []byte(`{"fwKeyOne": {"k0": "zero", "k1": 1}}`),
+-		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+-		"providerKeyOne":   []byte(transPixel),
+-		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+-	})
+-
+-	providerValueInvalidUTF8 := MustMarshalToJson(map[string][]byte{
+-		".frameworkKeyOne": []byte(`{"fwKeyOne": {"k0": "zero", "k1": 1}}`),
+-		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
+-		"providerKeyOne":   []byte(fmt.Sprintf(`{"fwKeyOne": "%s"}`, transPixel)),
++		".frameworkKeyOne": fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
++		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
++		"providerKeyOne":   []byte(`{"pKeyOne": {"k0": "zero", "k1": 1}}`),
++		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
++	})
++
++	frameworkInvalidJSON := MustMarshalToJson(map[string][]byte{
++		".frameworkKeyOne": []byte(`{`),
++		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
++		"providerKeyOne":   []byte(`{"pKeyOne": {"k0": "zero", "k1": 1}}`),
++		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
++	})
++
++	frameworkValueInvalidJSON := MustMarshalToJson(map[string][]byte{
++		".frameworkKeyOne": []byte(`{"fwKeyOne": { }`),
++		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
++		"providerKeyOne":   []byte(`{"pKeyOne": {"k0": "zero", "k1": 1}}`),
++		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
++	})
++
++	providerInvalidUTF8 := MustMarshalToJson(map[string][]byte{
++		".frameworkKeyOne": []byte(`{"fwKeyOne": {"k0": "zero", "k1": 1}}`),
++		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
++		"providerKeyOne":   []byte(transPixel),
++		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
++	})
++
++	providerValueInvalidUTF8 := MustMarshalToJson(map[string][]byte{
++		".frameworkKeyOne": []byte(`{"fwKeyOne": {"k0": "zero", "k1": 1}}`),
++		".frameworkKeyTwo": []byte(`{"fwKeyTwo": {"k2": "two", "k3": 3}}`),
++		"providerKeyOne":   fmt.Appendf(nil, `{"fwKeyOne": "%s"}`, transPixel),
+ 		"providerKeyTwo":   []byte(`{"pKeyTwo": {"k2": "two", "k3": 3}}`),
+ 	})
+ 
+@@ -755,7 +755,7 @@
+ 		"value-utf8-invalid-data-uninitialized": {
+ 			providerData: &ProviderData{},
+ 			key:          "key",
+-			value:        []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++			value:        fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 			expected: &ProviderData{
+ 				data: map[string][]byte{},
+ 			},
+@@ -772,7 +772,7 @@
+ 				data: map[string][]byte{},
+ 			},
+ 			key:   "key",
+-			value: []byte(fmt.Sprintf(`{"key": "%s"}`, transPixel)),
++			value: fmt.Appendf(nil, `{"key": "%s"}`, transPixel),
+ 			expected: &ProviderData{
+ 				data: map[string][]byte{},
+ 			},

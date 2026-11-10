@@ -1,0 +1,444 @@
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_bool.go	2026-10-24 21:30:10.503118708 +0000
++++ internal/fwschemadata/value_semantic_equality_bool.go	2026-10-24 22:59:40.543713691 +0000
+@@ -6,49 +6,13 @@
+ import (
+ 	"context"
+ 
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+ // ValueSemanticEqualityBool performs bool type semantic equality.
+ func ValueSemanticEqualityBool(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.BoolValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.BoolValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.BoolSemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if !usePriorValue {
+-		return
+-	}
+-
+-	resp.NewValue = priorValuable
++	valueSemanticEqualityScalar(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.BoolValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.BoolSemanticEquals(ctx, priorValuable)
++	})
+ }
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_float32.go	2026-10-24 21:30:10.503597580 +0000
++++ internal/fwschemadata/value_semantic_equality_float32.go	2026-10-24 22:59:40.548944257 +0000
+@@ -6,49 +6,13 @@
+ import (
+ 	"context"
+ 
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+ // ValueSemanticEqualityFloat32 performs float32 type semantic equality.
+ func ValueSemanticEqualityFloat32(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.Float32ValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.Float32ValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.Float32SemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if !usePriorValue {
+-		return
+-	}
+-
+-	resp.NewValue = priorValuable
++	valueSemanticEqualityScalar(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.Float32ValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.Float32SemanticEquals(ctx, priorValuable)
++	})
+ }
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_float64.go	2026-10-24 21:30:10.503597580 +0000
++++ internal/fwschemadata/value_semantic_equality_float64.go	2026-10-24 22:59:40.553576693 +0000
+@@ -6,49 +6,13 @@
+ import (
+ 	"context"
+ 
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+ // ValueSemanticEqualityFloat64 performs float64 type semantic equality.
+ func ValueSemanticEqualityFloat64(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.Float64ValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.Float64ValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.Float64SemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if !usePriorValue {
+-		return
+-	}
+-
+-	resp.NewValue = priorValuable
++	valueSemanticEqualityScalar(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.Float64ValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.Float64SemanticEquals(ctx, priorValuable)
++	})
+ }
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_int32.go	2026-10-24 21:30:10.508094224 +0000
++++ internal/fwschemadata/value_semantic_equality_int32.go	2026-10-24 22:59:40.561576693 +0000
+@@ -6,49 +6,13 @@
+ import (
+ 	"context"
+ 
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+ // ValueSemanticEqualityInt32 performs int32 type semantic equality.
+ func ValueSemanticEqualityInt32(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.Int32ValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.Int32ValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.Int32SemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if !usePriorValue {
+-		return
+-	}
+-
+-	resp.NewValue = priorValuable
++	valueSemanticEqualityScalar(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.Int32ValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.Int32SemanticEquals(ctx, priorValuable)
++	})
+ }
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_int64.go	2026-10-24 21:30:10.508094224 +0000
++++ internal/fwschemadata/value_semantic_equality_int64.go	2026-10-24 22:59:40.572928860 +0000
+@@ -6,49 +6,13 @@
+ import (
+ 	"context"
+ 
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+ // ValueSemanticEqualityInt64 performs int64 type semantic equality.
+ func ValueSemanticEqualityInt64(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.Int64ValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.Int64ValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.Int64SemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if !usePriorValue {
+-		return
+-	}
+-
+-	resp.NewValue = priorValuable
++	valueSemanticEqualityScalar(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.Int64ValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.Int64SemanticEquals(ctx, priorValuable)
++	})
+ }
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_number.go	2026-10-24 21:30:10.508094224 +0000
++++ internal/fwschemadata/value_semantic_equality_number.go	2026-10-24 22:59:40.579889172 +0000
+@@ -6,49 +6,13 @@
+ import (
+ 	"context"
+ 
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+ // ValueSemanticEqualityNumber performs number type semantic equality.
+ func ValueSemanticEqualityNumber(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.NumberValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.NumberValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.NumberSemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if !usePriorValue {
+-		return
+-	}
+-
+-	resp.NewValue = priorValuable
++	valueSemanticEqualityScalar(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.NumberValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.NumberSemanticEquals(ctx, priorValuable)
++	})
+ }
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality_string.go	2026-10-24 21:30:10.508094224 +0000
++++ internal/fwschemadata/value_semantic_equality_string.go	2026-10-24 22:59:40.584279874 +0000
+@@ -6,49 +6,13 @@
+ import (
+ 	"context"
+ 
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+ // ValueSemanticEqualityString performs string type semantic equality.
+ func ValueSemanticEqualityString(ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse) {
+-	priorValuable, ok := req.PriorValue.(basetypes.StringValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	proposedNewValuable, ok := req.ProposedNewValue.(basetypes.StringValuableWithSemanticEquals)
+-
+-	// No changes required if the interface is not implemented.
+-	if !ok {
+-		return
+-	}
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Calling provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	usePriorValue, diags := proposedNewValuable.StringSemanticEquals(ctx, priorValuable)
+-
+-	logging.FrameworkTrace(
+-		ctx,
+-		"Called provider defined type-based SemanticEquals",
+-		map[string]interface{}{
+-			logging.KeyValueType: proposedNewValuable.String(),
+-		},
+-	)
+-
+-	resp.Diagnostics.Append(diags...)
+-
+-	if !usePriorValue {
+-		return
+-	}
+-
+-	resp.NewValue = priorValuable
++	valueSemanticEqualityScalar(ctx, req, resp, func(ctx context.Context, proposedNewValuable, priorValuable basetypes.StringValuableWithSemanticEquals) (bool, diag.Diagnostics) {
++		return proposedNewValuable.StringSemanticEquals(ctx, priorValuable)
++	})
+ }
+--- /home/user/terraform-plugin-framework/internal/fwschemadata/value_semantic_equality.go	2026-10-24 21:30:10.503118708 +0000
++++ internal/fwschemadata/value_semantic_equality.go	2026-10-24 22:59:40.597443532 +0000
+@@ -91,3 +91,49 @@
+ 		logging.FrameworkDebug(ctx, "Value switched to prior value due to semantic equality logic")
+ 	}
+ }
++
++// valueSemanticEqualityScalar performs type-based semantic equality for a
++// value type without nested values. V is the
++// basetypes.<Type>ValuableWithSemanticEquals interface and semanticEquals
++// calls its <Type>SemanticEquals method.
++func valueSemanticEqualityScalar[V attr.Value](ctx context.Context, req ValueSemanticEqualityRequest, resp *ValueSemanticEqualityResponse, semanticEquals func(ctx context.Context, proposedNewValuable, priorValuable V) (bool, diag.Diagnostics)) {
++	priorValuable, ok := req.PriorValue.(V)
++
++	// No changes required if the interface is not implemented.
++	if !ok {
++		return
++	}
++
++	proposedNewValuable, ok := req.ProposedNewValue.(V)
++
++	// No changes required if the interface is not implemented.
++	if !ok {
++		return
++	}
++
++	logging.FrameworkTrace(
++		ctx,
++		"Calling provider defined type-based SemanticEquals",
++		map[string]interface{}{
++			logging.KeyValueType: proposedNewValuable.String(),
++		},
++	)
++
++	usePriorValue, diags := semanticEquals(ctx, proposedNewValuable, priorValuable)
++
++	logging.FrameworkTrace(
++		ctx,
++		"Called provider defined type-based SemanticEquals",
++		map[string]interface{}{
++			logging.KeyValueType: proposedNewValuable.String(),
++		},
++	)
++
++	resp.Diagnostics.Append(diags...)
++
++	if !usePriorValue {
++		return
++	}
++
++	resp.NewValue = priorValuable
++}

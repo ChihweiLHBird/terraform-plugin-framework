@@ -1,0 +1,147 @@
+diff -ruN repo/types/basetypes/diagnostics_panic.go draft6/types/basetypes/diagnostics_panic.go
+--- repo/types/basetypes/diagnostics_panic.go	1970-01-01 00:00:00.000000000 +0000
++++ draft6/types/basetypes/diagnostics_panic.go	2026-10-24 23:13:39.669868833 +0000
+@@ -0,0 +1,28 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package basetypes
++
++import (
++	"fmt"
++	"strings"
++
++	"github.com/hashicorp/terraform-plugin-framework/diag"
++)
++
++// diagnosticsPanicString formats diagnostics for the panic message of the
++// New*ValueMust functions, one "severity | summary | detail" line per
++// diagnostic.
++func diagnosticsPanicString(diags diag.Diagnostics) string {
++	diagsStrings := make([]string, 0, len(diags))
++
++	for _, diagnostic := range diags {
++		diagsStrings = append(diagsStrings, fmt.Sprintf(
++			"%s | %s | %s",
++			diagnostic.Severity(),
++			diagnostic.Summary(),
++			diagnostic.Detail()))
++	}
++
++	return strings.Join(diagsStrings, "\n")
++}
+diff -ruN repo/types/basetypes/list_value.go draft6/types/basetypes/list_value.go
+--- repo/types/basetypes/list_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft6/types/basetypes/list_value.go	2026-10-24 23:13:39.668919127 +0000
+@@ -133,18 +133,7 @@
+ 	list, diags := NewListValue(elementType, elements)
+ 
+ 	if diags.HasError() {
+-		// This could potentially be added to the diag package.
+-		diagsStrings := make([]string, 0, len(diags))
+-
+-		for _, diagnostic := range diags {
+-			diagsStrings = append(diagsStrings, fmt.Sprintf(
+-				"%s | %s | %s",
+-				diagnostic.Severity(),
+-				diagnostic.Summary(),
+-				diagnostic.Detail()))
+-		}
+-
+-		panic("NewListValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
++		panic("NewListValueMust received error(s): " + diagnosticsPanicString(diags))
+ 	}
+ 
+ 	return list
+diff -ruN repo/types/basetypes/map_value.go draft6/types/basetypes/map_value.go
+--- repo/types/basetypes/map_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft6/types/basetypes/map_value.go	2026-10-24 23:13:39.669193096 +0000
+@@ -138,18 +138,7 @@
+ 	m, diags := NewMapValue(elementType, elements)
+ 
+ 	if diags.HasError() {
+-		// This could potentially be added to the diag package.
+-		diagsStrings := make([]string, 0, len(diags))
+-
+-		for _, diagnostic := range diags {
+-			diagsStrings = append(diagsStrings, fmt.Sprintf(
+-				"%s | %s | %s",
+-				diagnostic.Severity(),
+-				diagnostic.Summary(),
+-				diagnostic.Detail()))
+-		}
+-
+-		panic("MapValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
++		panic("MapValueMust received error(s): " + diagnosticsPanicString(diags))
+ 	}
+ 
+ 	return m
+diff -ruN repo/types/basetypes/object_value.go draft6/types/basetypes/object_value.go
+--- repo/types/basetypes/object_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft6/types/basetypes/object_value.go	2026-10-24 23:13:39.669461048 +0000
+@@ -163,18 +163,7 @@
+ 	object, diags := NewObjectValue(attributeTypes, attributes)
+ 
+ 	if diags.HasError() {
+-		// This could potentially be added to the diag package.
+-		diagsStrings := make([]string, 0, len(diags))
+-
+-		for _, diagnostic := range diags {
+-			diagsStrings = append(diagsStrings, fmt.Sprintf(
+-				"%s | %s | %s",
+-				diagnostic.Severity(),
+-				diagnostic.Summary(),
+-				diagnostic.Detail()))
+-		}
+-
+-		panic("ObjectValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
++		panic("ObjectValueMust received error(s): " + diagnosticsPanicString(diags))
+ 	}
+ 
+ 	return object
+diff -ruN repo/types/basetypes/set_value.go draft6/types/basetypes/set_value.go
+--- repo/types/basetypes/set_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft6/types/basetypes/set_value.go	2026-10-24 23:13:39.669589440 +0000
+@@ -133,18 +133,7 @@
+ 	set, diags := NewSetValue(elementType, elements)
+ 
+ 	if diags.HasError() {
+-		// This could potentially be added to the diag package.
+-		diagsStrings := make([]string, 0, len(diags))
+-
+-		for _, diagnostic := range diags {
+-			diagsStrings = append(diagsStrings, fmt.Sprintf(
+-				"%s | %s | %s",
+-				diagnostic.Severity(),
+-				diagnostic.Summary(),
+-				diagnostic.Detail()))
+-		}
+-
+-		panic("SetValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
++		panic("SetValueMust received error(s): " + diagnosticsPanicString(diags))
+ 	}
+ 
+ 	return set
+diff -ruN repo/types/basetypes/tuple_value.go draft6/types/basetypes/tuple_value.go
+--- repo/types/basetypes/tuple_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft6/types/basetypes/tuple_value.go	2026-10-24 23:13:39.669695051 +0000
+@@ -90,18 +90,7 @@
+ 	tuple, diags := NewTupleValue(elementTypes, elements)
+ 
+ 	if diags.HasError() {
+-		// This could potentially be added to the diag package.
+-		diagsStrings := make([]string, 0, len(diags))
+-
+-		for _, diagnostic := range diags {
+-			diagsStrings = append(diagsStrings, fmt.Sprintf(
+-				"%s | %s | %s",
+-				diagnostic.Severity(),
+-				diagnostic.Summary(),
+-				diagnostic.Detail()))
+-		}
+-
+-		panic("NewTupleValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
++		panic("NewTupleValueMust received error(s): " + diagnosticsPanicString(diags))
+ 	}
+ 
+ 	return tuple

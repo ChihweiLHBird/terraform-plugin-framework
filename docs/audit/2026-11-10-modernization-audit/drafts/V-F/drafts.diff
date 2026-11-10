@@ -1,0 +1,112 @@
+--- function/list_return.go	2026-10-24 21:30:10.434927489 +0000
++++ function/list_return.go	2026-11-10 20:59:46.478059852 +0000
+@@ -63,6 +63,14 @@
+ 		return NewResultData(value), nil
+ 	}
+ 
++	// When only CustomType is set, it is the only source of the element
++	// type that the unknown value needs for conversion to the protocol.
++	if r.ElementType == nil {
++		if t, ok := r.CustomType.(attr.TypeWithElementType); ok {
++			value = basetypes.NewListUnknown(t.ElementType())
++		}
++	}
++
+ 	valuable, diags := r.CustomType.ValueFromList(ctx, value)
+ 
+ 	return NewResultData(valuable), FuncErrorFromDiags(ctx, diags)
+--- function/set_return.go	2026-10-24 21:30:10.439597581 +0000
++++ function/set_return.go	2026-11-10 20:59:46.478211750 +0000
+@@ -63,6 +63,14 @@
+ 		return NewResultData(value), nil
+ 	}
+ 
++	// When only CustomType is set, it is the only source of the element
++	// type that the unknown value needs for conversion to the protocol.
++	if r.ElementType == nil {
++		if t, ok := r.CustomType.(attr.TypeWithElementType); ok {
++			value = basetypes.NewSetUnknown(t.ElementType())
++		}
++	}
++
+ 	valuable, diags := r.CustomType.ValueFromSet(ctx, value)
+ 
+ 	return NewResultData(valuable), FuncErrorFromDiags(ctx, diags)
+--- function/map_return.go	2026-10-24 21:30:10.434927489 +0000
++++ function/map_return.go	2026-11-10 20:59:46.478274405 +0000
+@@ -63,6 +63,14 @@
+ 		return NewResultData(value), nil
+ 	}
+ 
++	// When only CustomType is set, it is the only source of the element
++	// type that the unknown value needs for conversion to the protocol.
++	if r.ElementType == nil {
++		if t, ok := r.CustomType.(attr.TypeWithElementType); ok {
++			value = basetypes.NewMapUnknown(t.ElementType())
++		}
++	}
++
+ 	valuable, diags := r.CustomType.ValueFromMap(ctx, value)
+ 
+ 	return NewResultData(valuable), FuncErrorFromDiags(ctx, diags)
+--- function/definition.go	2026-10-24 21:30:10.427593807 +0000
++++ function/definition.go	2026-11-10 21:08:45.514427387 +0000
+@@ -82,6 +82,15 @@
+ 	for pos, param := range d.Parameters {
+ 		parameterPosition := int64(pos)
+ 
++		if param.GetType() == nil {
++			diags.AddError(
++				"Invalid Function Definition",
++				"When validating the function definition, an implementation issue was found. "+
++					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
++					fmt.Sprintf("Function %q - Parameter at position %d data type is undefined", req.FuncName, pos),
++			)
++		}
++
+ 		if paramWithValidateImplementation, ok := param.(fwfunction.ParameterWithValidateImplementation); ok {
+ 			req := fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName:      req.FuncName,
+@@ -112,6 +121,15 @@
+ 	}
+ 
+ 	if d.VariadicParameter != nil {
++		if d.VariadicParameter.GetType() == nil {
++			diags.AddError(
++				"Invalid Function Definition",
++				"When validating the function definition, an implementation issue was found. "+
++					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
++					fmt.Sprintf("Function %q - Definition variadic parameter data type is undefined", req.FuncName),
++			)
++		}
++
+ 		if paramWithValidateImplementation, ok := d.VariadicParameter.(fwfunction.ParameterWithValidateImplementation); ok {
+ 			req := fwfunction.ValidateParameterImplementationRequest{
+ 				FunctionName: req.FuncName,
+--- statestore/lock_info.go	2026-10-24 21:30:10.799678047 +0000
++++ statestore/lock_info.go	2026-11-10 21:03:45.342889622 +0000
+@@ -4,8 +4,8 @@
+ package statestore
+ 
+ import (
++	"crypto/rand"
+ 	"fmt"
+-	"math/rand"
+ 	"os"
+ 	"os/user"
+ 	"time"
+@@ -85,12 +85,11 @@
+ 	)
+ }
+ 
+-var rngSource = rand.New(rand.NewSource(time.Now().UnixNano()))
+-
+ // generateLockID returns a random UUID string
+ func generateLockID() string {
+ 	buf := make([]byte, 16)
+-	rngSource.Read(buf)
++	// crypto/rand.Read never returns an error and always fills buf.
++	_, _ = rand.Read(buf)
+ 
+ 	// The only error returned from this function is if the byte length isn't 16, so we can ignore it
+ 	id, _ := uuid.FormatUUID(buf)

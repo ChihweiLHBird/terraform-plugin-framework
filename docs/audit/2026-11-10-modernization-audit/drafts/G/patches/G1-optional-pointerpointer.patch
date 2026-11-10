@@ -1,0 +1,112 @@
+diff --git a/tfsdk/value_as_test.go b/tfsdk/value_as_test.go
+index a101cf3..253f0ea 100644
+--- a/tfsdk/value_as_test.go
++++ b/tfsdk/value_as_test.go
+@@ -21,41 +21,11 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types"
+ )
+ 
+-func newBoolPointerPointer(in bool) **bool {
+-	boolPointer := &in
+-	return &boolPointer
+-}
+-
+-func newFloat32PointerPointer(in float32) **float32 {
+-	floatPointer := &in
+-	return &floatPointer
+-}
+-
+-func newFloat64PointerPointer(in float64) **float64 {
+-	floatPointer := &in
+-	return &floatPointer
+-}
+-
+-func newInt32PointerPointer(in int32) **int32 {
+-	intPointer := &in
+-	return &intPointer
+-}
+-
+-func newInt64PointerPointer(in int64) **int64 {
+-	intPointer := &in
+-	return &intPointer
+-}
+-
+ func newBigFloatPointerPointer(in uint64) **big.Float {
+ 	bf := new(big.Float).SetUint64(in)
+ 	return &bf
+ }
+ 
+-func newStringPointerPointer(in string) **string {
+-	stringPointer := &in
+-	return &stringPointer
+-}
+-
+ type personFrameworkTypes struct {
+ 	Name    types.String `tfsdk:"name"`
+ 	Age     types.Int64  `tfsdk:"age"`
+@@ -90,8 +60,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive bool pointer pointer": {
+ 			val:      types.BoolValue(true),
+-			target:   newBoolPointerPointer(false),
+-			expected: newBoolPointerPointer(true),
++			target:   new(new(false)),
++			expected: new(new(true)),
+ 		},
+ 		"primitive float32 pointer": {
+ 			val:      types.Float32Value(12.3),
+@@ -100,8 +70,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive float32 pointer pointer": {
+ 			val:      types.Float32Value(12.3),
+-			target:   newFloat32PointerPointer(0.0),
+-			expected: newFloat32PointerPointer(12.3),
++			target:   new(new(float32(0.0))),
++			expected: new(new(float32(12.3))),
+ 		},
+ 		"primitive float64 pointer": {
+ 			val:      types.Float64Value(12.3),
+@@ -110,8 +80,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive float64 pointer pointer": {
+ 			val:      types.Float64Value(12.3),
+-			target:   newFloat64PointerPointer(0.0),
+-			expected: newFloat64PointerPointer(12.3),
++			target:   new(new(0.0)),
++			expected: new(new(12.3)),
+ 		},
+ 		"primitive int32 pointer": {
+ 			val:      types.Int32Value(12),
+@@ -120,8 +90,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive int32 pointer pointer": {
+ 			val:      types.Int32Value(12),
+-			target:   newInt32PointerPointer(0),
+-			expected: newInt32PointerPointer(12),
++			target:   new(new(int32(0))),
++			expected: new(new(int32(12))),
+ 		},
+ 		"primitive int64 pointer": {
+ 			val:      types.Int64Value(12),
+@@ -130,8 +100,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive int64 pointer pointer": {
+ 			val:      types.Int64Value(12),
+-			target:   newInt64PointerPointer(0),
+-			expected: newInt64PointerPointer(12),
++			target:   new(new(int64(0))),
++			expected: new(new(int64(12))),
+ 		},
+ 		// Following test fails as target.Type() is big.Float not *bigFloat.
+ 		// See https://github.com/hashicorp/terraform-plugin-framework/blob/main/internal/reflect/into.go#L144
+@@ -155,8 +125,8 @@ func TestValueAs(t *testing.T) {
+ 		},
+ 		"primitive string pointer pointer": {
+ 			val:      types.StringValue("hello"),
+-			target:   newStringPointerPointer(""),
+-			expected: newStringPointerPointer("hello"),
++			target:   new(new("")),
++			expected: new(new("hello")),
+ 		},
+ 		"list": {
+ 			val: types.ListValueMust(

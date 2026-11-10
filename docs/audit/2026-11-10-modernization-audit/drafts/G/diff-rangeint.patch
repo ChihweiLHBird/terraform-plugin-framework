@@ -1,0 +1,65 @@
+diff --git a/internal/proto5server/serve_test.go b/internal/proto5server/serve_test.go
+index 8c9e9b4..98ce6d1 100644
+--- a/internal/proto5server/serve_test.go
++++ b/internal/proto5server/serve_test.go
+@@ -26,7 +26,7 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 	wg := new(sync.WaitGroup)
+ 	s := &Server{}
+ 	testCtx := context.Background()
+-	for i := 0; i < 10; i++ {
++	for range 10 {
+ 		wg.Add(1)
+ 		go func() {
+ 			defer wg.Done()
+diff --git a/internal/proto5server/server_invokeaction_test.go b/internal/proto5server/server_invokeaction_test.go
+index 291225b..279bd09 100644
+--- a/internal/proto5server/server_invokeaction_test.go
++++ b/internal/proto5server/server_invokeaction_test.go
+@@ -236,7 +236,7 @@ func TestServerInvokeAction(t *testing.T) {
+ 											resp.TypeName = "test_action"
+ 										},
+ 										InvokeMethod: func(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
+-											for i := 0; i < 5; i++ {
++											for i := range 5 {
+ 												resp.SendProgress(action.InvokeProgressEvent{Message: fmt.Sprintf("progress event %d", i+1)})
+ 											}
+ 
+diff --git a/internal/proto6server/serve_test.go b/internal/proto6server/serve_test.go
+index 645f4b2..c047566 100644
+--- a/internal/proto6server/serve_test.go
++++ b/internal/proto6server/serve_test.go
+@@ -25,7 +25,7 @@ func TestServerCancelInFlightContexts(t *testing.T) {
+ 	wg := new(sync.WaitGroup)
+ 	s := &Server{}
+ 	testCtx := context.Background()
+-	for i := 0; i < 10; i++ {
++	for range 10 {
+ 		wg.Add(1)
+ 		go func() {
+ 			defer wg.Done()
+diff --git a/internal/proto6server/server_invokeaction_test.go b/internal/proto6server/server_invokeaction_test.go
+index 0fbc348..4e98cf1 100644
+--- a/internal/proto6server/server_invokeaction_test.go
++++ b/internal/proto6server/server_invokeaction_test.go
+@@ -236,7 +236,7 @@ func TestServerInvokeAction(t *testing.T) {
+ 											resp.TypeName = "test_action"
+ 										},
+ 										InvokeMethod: func(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
+-											for i := 0; i < 5; i++ {
++											for i := range 5 {
+ 												resp.SendProgress(action.InvokeProgressEvent{Message: fmt.Sprintf("progress event %d", i+1)})
+ 											}
+ 
+diff --git a/types/basetypes/object_value_test.go b/types/basetypes/object_value_test.go
+index 0b0b572..c2c5556 100644
+--- a/types/basetypes/object_value_test.go
++++ b/types/basetypes/object_value_test.go
+@@ -25,7 +25,7 @@ func benchmarkObjectValueToTerraformValue(b *testing.B, attributes int) {
+ 	attributeValues := make(map[string]attr.Value, attributes)
+ 	ctx := context.Background()
+ 
+-	for i := 0; i < attributes; i++ {
++	for i := range attributes {
+ 		attributeName := "testattr" + strconv.Itoa(i)
+ 		attributeTypes[attributeName] = BoolType{}
+ 		attributeValues[attributeName] = NewBoolNull()

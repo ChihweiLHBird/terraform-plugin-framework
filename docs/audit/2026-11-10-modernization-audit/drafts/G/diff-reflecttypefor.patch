@@ -1,0 +1,251 @@
+diff --git a/internal/fwschemadata/data_get_at_path_test.go b/internal/fwschemadata/data_get_at_path_test.go
+index a4ff1e2..e8a3578 100644
+--- a/internal/fwschemadata/data_get_at_path_test.go
++++ b/internal/fwschemadata/data_get_at_path_test.go
+@@ -99,7 +99,7 @@ func TestDataGetAtPath(t *testing.T) {
+ 					path.Root("string"),
+ 					intreflect.DiagIntoIncompatibleType{
+ 						Val:        tftypes.NewValue(tftypes.String, "test"),
+-						TargetType: reflect.TypeOf(false),
++						TargetType: reflect.TypeFor[bool](),
+ 						Err:        fmt.Errorf("can't unmarshal %s into *bool, expected boolean", tftypes.String),
+ 					},
+ 				),
+@@ -133,8 +133,8 @@ func TestDataGetAtPath(t *testing.T) {
+ 				diag.WithPath(
+ 					path.Root("bool"),
+ 					intreflect.DiagNewAttributeValueIntoWrongType{
+-						ValType:    reflect.TypeOf(types.Bool{}),
+-						TargetType: reflect.TypeOf(types.String{}),
++						ValType:    reflect.TypeFor[types.Bool](),
++						TargetType: reflect.TypeFor[types.String](),
+ 						SchemaType: types.BoolType,
+ 					},
+ 				),
+diff --git a/internal/fwschemadata/data_get_test.go b/internal/fwschemadata/data_get_test.go
+index ebb0c08..c12616c 100644
+--- a/internal/fwschemadata/data_get_test.go
++++ b/internal/fwschemadata/data_get_test.go
+@@ -71,7 +71,7 @@ func TestDataGet(t *testing.T) {
+ 								"string": tftypes.NewValue(tftypes.String, "test"),
+ 							},
+ 						),
+-						TargetType: reflect.TypeOf(false),
++						TargetType: reflect.TypeFor[bool](),
+ 						Err: fmt.Errorf("can't unmarshal %s into *bool, expected boolean", tftypes.Object{
+ 							AttributeTypes: map[string]tftypes.Type{
+ 								"string": tftypes.String,
+@@ -114,8 +114,8 @@ func TestDataGet(t *testing.T) {
+ 				diag.WithPath(
+ 					path.Root("bool"),
+ 					intreflect.DiagNewAttributeValueIntoWrongType{
+-						ValType:    reflect.TypeOf(types.Bool{}),
+-						TargetType: reflect.TypeOf(types.String{}),
++						ValType:    reflect.TypeFor[types.Bool](),
++						TargetType: reflect.TypeFor[types.String](),
+ 						SchemaType: types.BoolType,
+ 					},
+ 				),
+diff --git a/internal/reflect/generic_attr_value.go b/internal/reflect/generic_attr_value.go
+index 214490e..99b3673 100644
+--- a/internal/reflect/generic_attr_value.go
++++ b/internal/reflect/generic_attr_value.go
+@@ -11,5 +11,5 @@ import (
+ )
+ 
+ func IsGenericAttrValue(ctx context.Context, target any) bool {
+-	return reflect.TypeOf((*attr.Value)(nil)) == reflect.TypeOf(target)
++	return reflect.TypeFor[*attr.Value]() == reflect.TypeOf(target)
+ }
+diff --git a/internal/reflect/into.go b/internal/reflect/into.go
+index a9e852d..fe2fa25 100644
+--- a/internal/reflect/into.go
++++ b/internal/reflect/into.go
+@@ -67,17 +67,17 @@ func BuildValue(ctx context.Context, typ attr.Type, val tftypes.Value, target re
+ 		return target, diags
+ 	}
+ 	// if this is an attr.Value, build the type from that
+-	if target.Type().Implements(reflect.TypeOf((*attr.Value)(nil)).Elem()) {
++	if target.Type().Implements(reflect.TypeFor[attr.Value]()) {
+ 		return NewAttributeValue(ctx, typ, val, target, opts, path)
+ 	}
+ 	// if this tells tftypes how to build an instance of it out of a
+ 	// tftypes.Value, well, that's what we want, so do that instead of our
+ 	// default logic.
+-	if target.Type().Implements(reflect.TypeOf((*tftypes.ValueConverter)(nil)).Elem()) {
++	if target.Type().Implements(reflect.TypeFor[tftypes.ValueConverter]()) {
+ 		return NewValueConverter(ctx, typ, val, target, opts, path)
+ 	}
+ 	// if this can explicitly be set to unknown, do that
+-	if target.Type().Implements(reflect.TypeOf((*Unknownable)(nil)).Elem()) {
++	if target.Type().Implements(reflect.TypeFor[Unknownable]()) {
+ 		res, unknownableDiags := NewUnknownable(ctx, typ, val, target, opts, path)
+ 		diags.Append(unknownableDiags...)
+ 		if diags.HasError() {
+@@ -92,7 +92,7 @@ func BuildValue(ctx context.Context, typ attr.Type, val tftypes.Value, target re
+ 		}
+ 	}
+ 	// if this can explicitly be set to null, do that
+-	if target.Type().Implements(reflect.TypeOf((*Nullable)(nil)).Elem()) {
++	if target.Type().Implements(reflect.TypeFor[Nullable]()) {
+ 		res, nullableDiags := NewNullable(ctx, typ, val, target, opts, path)
+ 		diags.Append(nullableDiags...)
+ 		if diags.HasError() {
+diff --git a/internal/reflect/into_test.go b/internal/reflect/into_test.go
+index 1499d1d..413a8e9 100644
+--- a/internal/reflect/into_test.go
++++ b/internal/reflect/into_test.go
+@@ -99,7 +99,7 @@ func TestInto_Slices(t *testing.T) {
+ 							tftypes.NewValue(tftypes.String, "hello"),
+ 							tftypes.NewValue(tftypes.String, "world"),
+ 						}),
+-						TargetType: reflect.TypeOf([]string{}),
++						TargetType: reflect.TypeFor[[]string](),
+ 						Err:        errors.New("cannot reflect tftypes.Tuple[tftypes.String, tftypes.String] using type information provided by basetypes.TupleType, tuple type contained no element types but received values"),
+ 					},
+ 				),
+@@ -127,7 +127,7 @@ func TestInto_Slices(t *testing.T) {
+ 							tftypes.NewValue(tftypes.String, "hello"),
+ 							tftypes.NewValue(tftypes.Bool, true),
+ 						}),
+-						TargetType: reflect.TypeOf([]string{}),
++						TargetType: reflect.TypeFor[[]string](),
+ 						Err:        errors.New("cannot reflect tftypes.Tuple[tftypes.String, tftypes.Bool] using type information provided by basetypes.TupleType, reflection support for tuples is limited to multiple elements of the same element type. Expected all element types to be basetypes.StringType"),
+ 					},
+ 				),
+@@ -143,7 +143,7 @@ func TestInto_Slices(t *testing.T) {
+ 					path.Empty(),
+ 					refl.DiagIntoIncompatibleType{
+ 						Val:        tftypes.NewValue(tftypes.String, "hello"),
+-						TargetType: reflect.TypeOf([]string{}),
++						TargetType: reflect.TypeFor[[]string](),
+ 						Err:        errors.New("can't unmarshal tftypes.String into *[]tftypes.Value expected []tftypes.Value"),
+ 					},
+ 				),
+diff --git a/internal/reflect/pointer_test.go b/internal/reflect/pointer_test.go
+index 48dbf0f..8b5b8e8 100644
+--- a/internal/reflect/pointer_test.go
++++ b/internal/reflect/pointer_test.go
+@@ -28,8 +28,8 @@ func TestPointer_notAPointer(t *testing.T) {
+ 	expectedDiags := diag.Diagnostics{
+ 		diag.WithPath(path.Empty(), refl.DiagIntoIncompatibleType{
+ 			Val:        tftypes.NewValue(tftypes.String, "hello"),
+-			TargetType: reflect.TypeOf(s),
+-			Err:        fmt.Errorf("cannot dereference pointer, not a pointer, is a %s (%s)", reflect.TypeOf(s), reflect.TypeOf(s).Kind()),
++			TargetType: reflect.TypeFor[string](),
++			Err:        fmt.Errorf("cannot dereference pointer, not a pointer, is a %s (%s)", reflect.TypeFor[string](), reflect.TypeFor[string]().Kind()),
+ 		}),
+ 	}
+ 
+diff --git a/tfsdk/config_test.go b/tfsdk/config_test.go
+index 1840933..9ed016d 100644
+--- a/tfsdk/config_test.go
++++ b/tfsdk/config_test.go
+@@ -95,8 +95,8 @@ func TestConfigGet(t *testing.T) {
+ 				diag.WithPath(
+ 					path.Root("bool"),
+ 					intreflect.DiagNewAttributeValueIntoWrongType{
+-						ValType:    reflect.TypeOf(types.Bool{}),
+-						TargetType: reflect.TypeOf(types.String{}),
++						ValType:    reflect.TypeFor[types.Bool](),
++						TargetType: reflect.TypeFor[types.String](),
+ 						SchemaType: types.BoolType,
+ 					},
+ 				),
+diff --git a/tfsdk/ephemeral_result_data_test.go b/tfsdk/ephemeral_result_data_test.go
+index 73cf9e5..f8112c0 100644
+--- a/tfsdk/ephemeral_result_data_test.go
++++ b/tfsdk/ephemeral_result_data_test.go
+@@ -95,8 +95,8 @@ func TestEphemeralResultDataGet(t *testing.T) {
+ 				diag.WithPath(
+ 					path.Root("bool"),
+ 					intreflect.DiagNewAttributeValueIntoWrongType{
+-						ValType:    reflect.TypeOf(types.Bool{}),
+-						TargetType: reflect.TypeOf(types.String{}),
++						ValType:    reflect.TypeFor[types.Bool](),
++						TargetType: reflect.TypeFor[types.String](),
+ 						SchemaType: types.BoolType,
+ 					},
+ 				),
+diff --git a/tfsdk/plan_test.go b/tfsdk/plan_test.go
+index 6d64186..1e41d35 100644
+--- a/tfsdk/plan_test.go
++++ b/tfsdk/plan_test.go
+@@ -95,8 +95,8 @@ func TestPlanGet(t *testing.T) {
+ 				diag.WithPath(
+ 					path.Root("bool"),
+ 					intreflect.DiagNewAttributeValueIntoWrongType{
+-						ValType:    reflect.TypeOf(types.Bool{}),
+-						TargetType: reflect.TypeOf(types.String{}),
++						ValType:    reflect.TypeFor[types.Bool](),
++						TargetType: reflect.TypeFor[types.String](),
+ 						SchemaType: types.BoolType,
+ 					},
+ 				),
+diff --git a/tfsdk/resource_identity_test.go b/tfsdk/resource_identity_test.go
+index 95eeb6e..93a2d2c 100644
+--- a/tfsdk/resource_identity_test.go
++++ b/tfsdk/resource_identity_test.go
+@@ -95,8 +95,8 @@ func TestResourceIdentityGet(t *testing.T) {
+ 				diag.WithPath(
+ 					path.Root("bool"),
+ 					intreflect.DiagNewAttributeValueIntoWrongType{
+-						ValType:    reflect.TypeOf(types.Bool{}),
+-						TargetType: reflect.TypeOf(types.String{}),
++						ValType:    reflect.TypeFor[types.Bool](),
++						TargetType: reflect.TypeFor[types.String](),
+ 						SchemaType: types.BoolType,
+ 					},
+ 				),
+diff --git a/tfsdk/resource_test.go b/tfsdk/resource_test.go
+index 3332c96..aa2ebc4 100644
+--- a/tfsdk/resource_test.go
++++ b/tfsdk/resource_test.go
+@@ -95,8 +95,8 @@ func TestResourceGet(t *testing.T) {
+ 				diag.WithPath(
+ 					path.Root("bool"),
+ 					intreflect.DiagNewAttributeValueIntoWrongType{
+-						ValType:    reflect.TypeOf(types.Bool{}),
+-						TargetType: reflect.TypeOf(types.String{}),
++						ValType:    reflect.TypeFor[types.Bool](),
++						TargetType: reflect.TypeFor[types.String](),
+ 						SchemaType: types.BoolType,
+ 					},
+ 				),
+diff --git a/tfsdk/state_test.go b/tfsdk/state_test.go
+index 79c1a63..e6aa995 100644
+--- a/tfsdk/state_test.go
++++ b/tfsdk/state_test.go
+@@ -95,8 +95,8 @@ func TestStateGet(t *testing.T) {
+ 				diag.WithPath(
+ 					path.Root("bool"),
+ 					intreflect.DiagNewAttributeValueIntoWrongType{
+-						ValType:    reflect.TypeOf(types.Bool{}),
+-						TargetType: reflect.TypeOf(types.String{}),
++						ValType:    reflect.TypeFor[types.Bool](),
++						TargetType: reflect.TypeFor[types.String](),
+ 						SchemaType: types.BoolType,
+ 					},
+ 				),
+diff --git a/tfsdk/value_as_test.go b/tfsdk/value_as_test.go
+index 295bf58..d821eab 100644
+--- a/tfsdk/value_as_test.go
++++ b/tfsdk/value_as_test.go
+@@ -330,7 +330,7 @@ func TestValueAs(t *testing.T) {
+ 					path.Empty(),
+ 					reflect.DiagIntoIncompatibleType{
+ 						Val:        tftypes.NewValue(tftypes.String, "hello"),
+-						TargetType: goreflect.TypeOf(int64(0)),
++						TargetType: goreflect.TypeFor[int64](),
+ 						Err:        fmt.Errorf("can't unmarshal %s into %T, expected *big.Float", tftypes.String, big.NewFloat(0)),
+ 					},
+ 				),
+@@ -344,7 +344,7 @@ func TestValueAs(t *testing.T) {
+ 					path.Empty(),
+ 					reflect.DiagNewAttributeValueIntoWrongType{
+ 						ValType:    goreflect.TypeOf(types.StringValue("hello")),
+-						TargetType: goreflect.TypeOf(testtypes.String{}),
++						TargetType: goreflect.TypeFor[testtypes.String](),
+ 						SchemaType: types.StringType,
+ 					},
+ 				),

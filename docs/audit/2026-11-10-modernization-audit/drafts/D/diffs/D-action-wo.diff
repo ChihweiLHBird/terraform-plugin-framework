@@ -1,0 +1,71 @@
+--- /home/user/terraform-plugin-framework/action/schema/set_nested_attribute.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/set_nested_attribute.go (draft)	2026-10-24 23:18:16.130404290 +0000
+@@ -240,4 +240,8 @@
+ 	if a.CustomType == nil && fwtype.ContainsCollectionWithDynamic(a.GetType()) {
+ 		resp.Diagnostics.Append(fwtype.AttributeCollectionWithDynamicTypeDiag(req.Path))
+ 	}
++
++	if fwschema.ContainsAnyWriteOnlyChildAttributes(a) {
++		resp.Diagnostics.Append(fwschema.InvalidSetNestedAttributeWithWriteOnlyDiag(req.Path))
++	}
+ }
+--- /home/user/terraform-plugin-framework/action/schema/set_nested_block.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/set_nested_block.go (draft)	2026-10-24 23:18:16.130576971 +0000
+@@ -198,6 +198,10 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (b SetNestedBlock) ValidateImplementation(ctx context.Context, req fwschema.ValidateImplementationRequest, resp *fwschema.ValidateImplementationResponse) {
++	if fwschema.BlockContainsAnyWriteOnlyChildAttributes(b) {
++		resp.Diagnostics.Append(fwschema.SetBlockCollectionWithWriteOnlyDiag(req.Path))
++	}
++
+ 	if b.CustomType == nil && fwtype.ContainsCollectionWithDynamic(b.Type()) {
+ 		resp.Diagnostics.Append(fwtype.BlockCollectionWithDynamicTypeDiag(req.Path))
+ 	}
+--- /home/user/terraform-plugin-framework/action/schema/single_nested_attribute.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/single_nested_attribute.go (draft)	2026-10-24 23:18:16.130260795 +0000
+@@ -4,6 +4,8 @@
+ package schema
+ 
+ import (
++	"context"
++
+ 	"fmt"
+ 
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+@@ -18,8 +20,9 @@
+ 
+ // Ensure the implementation satisifies the desired interfaces.
+ var (
+-	_ NestedAttribute                         = SingleNestedAttribute{}
+-	_ fwxschema.AttributeWithObjectValidators = SingleNestedAttribute{}
++	_ NestedAttribute                              = SingleNestedAttribute{}
++	_ fwschema.AttributeWithValidateImplementation = SingleNestedAttribute{}
++	_ fwxschema.AttributeWithObjectValidators      = SingleNestedAttribute{}
+ )
+ 
+ // SingleNestedAttribute represents an attribute that is a single object where
+@@ -123,6 +126,9 @@
+ 
+ 	// WriteOnly indicates whether this attribute can accept ephemeral values
+ 	// or not. If WriteOnly is true, either Optional or Required must also be true.
++	//
++	// If WriteOnly is true for a nested attribute, all of its child attributes
++	// must also set WriteOnly to true.
+ 	WriteOnly bool
+ }
+ 
+@@ -249,3 +255,13 @@
+ func (a SingleNestedAttribute) ObjectValidators() []validator.Object {
+ 	return a.Validators
+ }
++
++// ValidateImplementation contains logic for validating the
++// provider-defined implementation of the attribute to prevent unexpected
++// errors or panics. This logic runs during the GetProviderSchema RPC and
++// should never include false positives.
++func (a SingleNestedAttribute) ValidateImplementation(ctx context.Context, req fwschema.ValidateImplementationRequest, resp *fwschema.ValidateImplementationResponse) {
++	if a.IsWriteOnly() && !fwschema.ContainsAllWriteOnlyChildAttributes(a) {
++		resp.Diagnostics.Append(fwschema.InvalidWriteOnlyNestedAttributeDiag(req.Path))
++	}
++}

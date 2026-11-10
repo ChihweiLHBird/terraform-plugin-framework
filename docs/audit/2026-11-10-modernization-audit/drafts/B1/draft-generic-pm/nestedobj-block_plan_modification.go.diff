@@ -1,0 +1,172 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/snap-before-nestedobj/block_plan_modification.go	2026-10-24 23:19:58.736466559 +0000
++++ internal/fwserver/block_plan_modification.go	2026-10-24 23:20:12.110186691 +0000
+@@ -9,8 +9,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema/fwxschema"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwschemadata"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+ 	"github.com/hashicorp/terraform-plugin-framework/types"
+ )
+@@ -87,148 +85,39 @@
+ 
+ func NestedBlockObjectPlanModify(ctx context.Context, o fwschema.NestedBlockObject, req planmodifier.ObjectRequest, resp *ModifyAttributePlanResponse) {
+ 	if objectWithPlanModifiers, ok := o.(fwxschema.NestedBlockObjectWithPlanModifiers); ok {
+-		for _, objectPlanModifier := range objectWithPlanModifiers.ObjectPlanModifiers() {
+-			// Instantiate a new response for each request to prevent plan modifiers
+-			// from modifying or removing diagnostics.
+-			planModifyResp := &planmodifier.ObjectResponse{
+-				PlanValue: req.PlanValue,
+-				Private:   resp.Private,
+-			}
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Calling provider defined planmodifier.Object",
+-				map[string]interface{}{
+-					logging.KeyDescription: objectPlanModifier.Description(ctx),
+-				},
+-			)
+-
+-			objectPlanModifier.PlanModifyObject(ctx, req, planModifyResp)
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Called provider defined planmodifier.Object",
+-				map[string]interface{}{
+-					logging.KeyDescription: objectPlanModifier.Description(ctx),
+-				},
+-			)
+-
+-			req.PlanValue = planModifyResp.PlanValue
+-			resp.AttributePlan = planModifyResp.PlanValue
+-			resp.Diagnostics.Append(planModifyResp.Diagnostics...)
+-			resp.Private = planModifyResp.Private
+-
+-			if planModifyResp.RequiresReplace {
+-				resp.RequiresReplace.Append(req.Path)
+-			}
+-
+-			// only on new errors
+-			if planModifyResp.Diagnostics.HasError() {
+-				return
+-			}
++		if !runObjectPlanModifiers(ctx, objectWithPlanModifiers.ObjectPlanModifiers(), &req, resp) {
++			return
+ 		}
+ 	}
+ 
+ 	newPlanValueAttributes := req.PlanValue.Attributes()
+ 
+ 	for nestedName, nestedAttr := range o.GetAttributes() {
+-		nestedAttrConfig, diags := objectAttributeValue(ctx, req.ConfigValue, nestedName, fwschemadata.DataDescriptionConfiguration)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if diags.HasError() {
+-			return
+-		}
+-
+-		nestedAttrPlan, diags := objectAttributeValue(ctx, req.PlanValue, nestedName, fwschemadata.DataDescriptionPlan)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if diags.HasError() {
+-			return
++		modifyPlan := func(ctx context.Context, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++			AttributeModifyPlan(ctx, nestedAttr, req, resp)
+ 		}
+ 
+-		nestedAttrState, diags := objectAttributeValue(ctx, req.StateValue, nestedName, fwschemadata.DataDescriptionState)
++		nestedPlan, ok := nestedPlanModify(ctx, nestedName, modifyPlan, req, resp)
+ 
+-		resp.Diagnostics.Append(diags...)
+-
+-		if diags.HasError() {
++		if !ok {
+ 			return
+ 		}
+ 
+-		nestedAttrReq := ModifyAttributePlanRequest{
+-			AttributeConfig:         nestedAttrConfig,
+-			AttributePath:           req.Path.AtName(nestedName),
+-			AttributePathExpression: req.PathExpression.AtName(nestedName),
+-			AttributePlan:           nestedAttrPlan,
+-			AttributeState:          nestedAttrState,
+-			Config:                  req.Config,
+-			Plan:                    req.Plan,
+-			Private:                 resp.Private,
+-			State:                   req.State,
+-		}
+-		nestedAttrResp := &ModifyAttributePlanResponse{
+-			AttributePlan:   nestedAttrReq.AttributePlan,
+-			RequiresReplace: resp.RequiresReplace,
+-			Private:         nestedAttrReq.Private,
+-		}
+-
+-		AttributeModifyPlan(ctx, nestedAttr, nestedAttrReq, nestedAttrResp)
+-
+-		newPlanValueAttributes[nestedName] = nestedAttrResp.AttributePlan
+-		resp.Diagnostics.Append(nestedAttrResp.Diagnostics...)
+-		resp.Private = nestedAttrResp.Private
+-		resp.RequiresReplace.Append(nestedAttrResp.RequiresReplace...)
++		newPlanValueAttributes[nestedName] = nestedPlan
+ 	}
+ 
+ 	for nestedName, nestedBlock := range o.GetBlocks() {
+-		nestedBlockConfig, diags := objectAttributeValue(ctx, req.ConfigValue, nestedName, fwschemadata.DataDescriptionConfiguration)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if diags.HasError() {
+-			return
++		modifyPlan := func(ctx context.Context, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++			BlockModifyPlan(ctx, nestedBlock, req, resp)
+ 		}
+ 
+-		nestedBlockPlan, diags := objectAttributeValue(ctx, req.PlanValue, nestedName, fwschemadata.DataDescriptionPlan)
+-
+-		resp.Diagnostics.Append(diags...)
++		nestedPlan, ok := nestedPlanModify(ctx, nestedName, modifyPlan, req, resp)
+ 
+-		if diags.HasError() {
++		if !ok {
+ 			return
+ 		}
+ 
+-		nestedBlockState, diags := objectAttributeValue(ctx, req.StateValue, nestedName, fwschemadata.DataDescriptionState)
+-
+-		resp.Diagnostics.Append(diags...)
+-
+-		if diags.HasError() {
+-			return
+-		}
+-
+-		nestedBlockReq := ModifyAttributePlanRequest{
+-			AttributeConfig:         nestedBlockConfig,
+-			AttributePath:           req.Path.AtName(nestedName),
+-			AttributePathExpression: req.PathExpression.AtName(nestedName),
+-			AttributePlan:           nestedBlockPlan,
+-			AttributeState:          nestedBlockState,
+-			Config:                  req.Config,
+-			Plan:                    req.Plan,
+-			Private:                 resp.Private,
+-			State:                   req.State,
+-		}
+-		nestedBlockResp := &ModifyAttributePlanResponse{
+-			AttributePlan:   nestedBlockReq.AttributePlan,
+-			RequiresReplace: resp.RequiresReplace,
+-			Private:         nestedBlockReq.Private,
+-		}
+-
+-		BlockModifyPlan(ctx, nestedBlock, nestedBlockReq, nestedBlockResp)
+-
+-		newPlanValueAttributes[nestedName] = nestedBlockResp.AttributePlan
+-		resp.Diagnostics.Append(nestedBlockResp.Diagnostics...)
+-		resp.Private = nestedBlockResp.Private
+-		resp.RequiresReplace.Append(nestedBlockResp.RequiresReplace...)
++		newPlanValueAttributes[nestedName] = nestedPlan
+ 	}
+ 
+ 	newPlanValue, diags := types.ObjectValue(req.PlanValue.AttributeTypes(ctx), newPlanValueAttributes)

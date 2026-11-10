@@ -1,0 +1,105 @@
+--- /home/user/terraform-plugin-framework/internal/fwschema/attribute_validate_implementation.go	2026-10-24 21:30:10.487914473 +0000
++++ fwschema-draft/attribute_validate_implementation.go	2026-10-24 23:16:11.691237496 +0000
+@@ -59,34 +59,16 @@
+ 		return diags
+ 	}
+ 
+-	nestingMode := nestedAttribute.GetNestingMode()
+ 
+ 	for nestedAttributeName, nestedAttribute := range nestedObject.GetAttributes() {
+-		var nestedAttributePath path.Path
+-
+ 		// TODO: path.Path and path.PathExpression are intended to map onto
+ 		// actual data implementations, however we need some representation
+ 		// for schema paths without data. It may make sense to introduce an
+ 		// internal "schema path" to simplify outputting specialized
+ 		// strings for these types of diagnostics.
+ 		//
+-		// The below choices of AtListIndex(0), etc. are arbitrary in this
+-		// situation.
+-		//
+ 		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/574
+-		switch nestingMode {
+-		// case NestingModeList:
+-		// 	nestedAttributePath = req.Path.AtListIndex(0).AtName(nestedAttributeName)
+-		// case NestingModeMap:
+-		// 	nestedAttributePath = req.Path.AtMapKey("*").AtName(nestedAttributeName)
+-		// case NestingModeSet:
+-		// 	nestedAttributePath = req.Path.AtSetValue(types.StringValue("*")).AtName(nestedAttributeName)
+-		// case NestingModeSingle:
+-		// 	nestedAttributePath = req.Path.AtName(nestedAttributeName)
+-		default:
+-			// This is purely to preserve the prior logic. Refer to above comment.
+-			nestedAttributePath = req.Path.AtName(nestedAttributeName)
+-		}
++		nestedAttributePath := req.Path.AtName(nestedAttributeName)
+ 
+ 		nestedReq := ValidateImplementationRequest{
+ 			Name: nestedAttributeName,
+--- /home/user/terraform-plugin-framework/internal/fwschema/block_validate_implementation.go	2026-10-24 21:30:10.487914473 +0000
++++ fwschema-draft/block_validate_implementation.go	2026-10-24 23:16:11.691500969 +0000
+@@ -53,32 +53,16 @@
+ 		return diags
+ 	}
+ 
+-	nestingMode := block.GetNestingMode()
+ 
+ 	for nestedAttributeName, nestedAttribute := range nestedObject.GetAttributes() {
+-		var nestedAttributePath path.Path
+-
+ 		// TODO: path.Path and path.PathExpression are intended to map onto
+ 		// actual data implementations, however we need some representation
+ 		// for schema paths without data. It may make sense to introduce an
+ 		// internal "schema path" to simplify outputting specialized
+ 		// strings for these types of diagnostics.
+ 		//
+-		// The below choices of AtListIndex(0), etc. are arbitrary in this
+-		// situation.
+-		//
+ 		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/574
+-		switch nestingMode {
+-		// case BlockNestingModeList:
+-		// 	nestedAttributePath = req.Path.AtListIndex(0).AtName(nestedAttributeName)
+-		// case BlockNestingModeSet:
+-		// 	nestedAttributePath = req.Path.AtSetValue(types.StringValue("*")).AtName(nestedAttributeName)
+-		// case BlockNestingModeSingle:
+-		// 	nestedAttributePath = req.Path.AtName(nestedAttributeName)
+-		default:
+-			// This is purely to preserve the prior logic. Refer to above comment.
+-			nestedAttributePath = req.Path.AtName(nestedAttributeName)
+-		}
++		nestedAttributePath := req.Path.AtName(nestedAttributeName)
+ 
+ 		nestedReq := ValidateImplementationRequest{
+ 			Name: nestedAttributeName,
+@@ -89,29 +73,14 @@
+ 	}
+ 
+ 	for nestedBlockName, nestedBlock := range nestedObject.GetBlocks() {
+-		var nestedBlockPath path.Path
+-
+ 		// TODO: path.Path and path.PathExpression are intended to map onto
+ 		// actual data implementations, however we need some representation
+ 		// for schema paths without data. It may make sense to introduce an
+ 		// internal "schema path" to simplify outputting specialized
+ 		// strings for these types of diagnostics.
+ 		//
+-		// The below choices of AtListIndex(0), etc. are arbitrary in this
+-		// situation.
+-		//
+ 		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/574
+-		switch nestingMode {
+-		// case BlockNestingModeList:
+-		// 	nestedBlockPath = req.Path.AtListIndex(0).AtName(nestedBlockName)
+-		// case BlockNestingModeSet:
+-		// 	nestedBlockPath = req.Path.AtSetValue(types.StringValue("*")).AtName(nestedBlockName)
+-		// case BlockNestingModeSingle:
+-		// 	nestedBlockPath = req.Path.AtName(nestedBlockName)
+-		default:
+-			// This is purely to preserve the prior logic. Refer to above comment.
+-			nestedBlockPath = req.Path.AtName(nestedBlockName)
+-		}
++		nestedBlockPath := req.Path.AtName(nestedBlockName)
+ 
+ 		nestedReq := ValidateImplementationRequest{
+ 			Name: nestedBlockName,

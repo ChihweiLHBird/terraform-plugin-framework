@@ -1,0 +1,13 @@
+--- /home/user/terraform-plugin-framework/resource/schema/single_nested_attribute.go	2026-10-24 21:30:10.783597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/single_nested_attribute.go (draft)	2026-10-24 22:57:16.742119772 +0000
+@@ -331,10 +331,6 @@
+ 	}
+ 
+ 	if a.ObjectDefaultValue() != nil {
+-		if !a.IsComputed() {
+-			resp.Diagnostics.Append(nonComputedAttributeWithDefaultDiag(req.Path))
+-		}
+-
+ 		// Validate Default implementation. This is safe unless the framework
+ 		// ever allows more dynamic Default implementations at which the
+ 		// implementation would be required to be validated at runtime.

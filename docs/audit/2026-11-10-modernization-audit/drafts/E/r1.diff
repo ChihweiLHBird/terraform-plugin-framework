@@ -1,0 +1,58 @@
+diff -ru repo/types/basetypes/map_value.go draft7/types/basetypes/map_value.go
+--- repo/types/basetypes/map_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft7/types/basetypes/map_value.go	2026-10-24 23:14:38.393426360 +0000
+@@ -342,8 +342,8 @@
+ 	}
+ 
+ 	// We want the output to be consistent, so we sort the output by key
+-	keys := make([]string, 0, len(m.Elements()))
+-	for k := range m.Elements() {
++	keys := make([]string, 0, len(m.elements))
++	for k := range m.elements {
+ 		keys = append(keys, k)
+ 	}
+ 	sort.Strings(keys)
+@@ -356,7 +356,7 @@
+ 			res.WriteString(",")
+ 		}
+ 		//nolint:staticcheck
+-		res.WriteString(fmt.Sprintf("%q:%s", k, m.Elements()[k].String()))
++		res.WriteString(fmt.Sprintf("%q:%s", k, m.elements[k].String()))
+ 	}
+ 	res.WriteString("}")
+ 
+diff -ru repo/types/basetypes/object_value.go draft7/types/basetypes/object_value.go
+--- repo/types/basetypes/object_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft7/types/basetypes/object_value.go	2026-10-24 23:14:38.394938638 +0000
+@@ -374,8 +374,8 @@
+ 	}
+ 
+ 	// We want the output to be consistent, so we sort the output by key
+-	keys := make([]string, 0, len(o.Attributes()))
+-	for k := range o.Attributes() {
++	keys := make([]string, 0, len(o.attributes))
++	for k := range o.attributes {
+ 		keys = append(keys, k)
+ 	}
+ 	sort.Strings(keys)
+@@ -388,7 +388,7 @@
+ 			res.WriteString(",")
+ 		}
+ 		//nolint:staticcheck
+-		res.WriteString(fmt.Sprintf(`"%s":%s`, k, o.Attributes()[k].String()))
++		res.WriteString(fmt.Sprintf(`"%s":%s`, k, o.attributes[k].String()))
+ 	}
+ 	res.WriteString("}")
+ 
+diff -ru repo/types/basetypes/set_value.go draft7/types/basetypes/set_value.go
+--- repo/types/basetypes/set_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft7/types/basetypes/set_value.go	2026-10-24 23:14:38.395098982 +0000
+@@ -306,7 +306,7 @@
+ }
+ 
+ func (s SetValue) contains(v attr.Value) bool {
+-	for _, elem := range s.Elements() {
++	for _, elem := range s.elements {
+ 		if elem.Equal(v) {
+ 			return true
+ 		}

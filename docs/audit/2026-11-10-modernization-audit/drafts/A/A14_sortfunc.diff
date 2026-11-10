@@ -1,0 +1,273 @@
+--- /home/user/terraform-plugin-framework/internal/toproto5/block.go	2026-10-24 21:30:10.641348210 +0000
++++ internal/toproto5/block.go	2026-10-24 23:15:24.620251322 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"slices"
++	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+@@ -70,28 +71,12 @@
+ 		schemaNestedBlock.Block.BlockTypes = append(schemaNestedBlock.Block.BlockTypes, blockProto5)
+ 	}
+ 
+-	sort.Slice(schemaNestedBlock.Block.Attributes, func(i, j int) bool {
+-		if schemaNestedBlock.Block.Attributes[i] == nil {
+-			return true
+-		}
+-
+-		if schemaNestedBlock.Block.Attributes[j] == nil {
+-			return false
+-		}
+-
+-		return schemaNestedBlock.Block.Attributes[i].Name < schemaNestedBlock.Block.Attributes[j].Name
++	slices.SortFunc(schemaNestedBlock.Block.Attributes, func(a, b *tfprotov5.SchemaAttribute) int {
++		return strings.Compare(a.Name, b.Name)
+ 	})
+ 
+-	sort.Slice(schemaNestedBlock.Block.BlockTypes, func(i, j int) bool {
+-		if schemaNestedBlock.Block.BlockTypes[i] == nil {
+-			return true
+-		}
+-
+-		if schemaNestedBlock.Block.BlockTypes[j] == nil {
+-			return false
+-		}
+-
+-		return schemaNestedBlock.Block.BlockTypes[i].TypeName < schemaNestedBlock.Block.BlockTypes[j].TypeName
++	slices.SortFunc(schemaNestedBlock.Block.BlockTypes, func(a, b *tfprotov5.SchemaNestedBlock) int {
++		return strings.Compare(a.TypeName, b.TypeName)
+ 	})
+ 
+ 	return schemaNestedBlock, nil
+--- /home/user/terraform-plugin-framework/internal/toproto5/identity_schema.go	2026-10-24 21:30:10.650440935 +0000
++++ internal/toproto5/identity_schema.go	2026-10-24 23:15:24.620599428 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"slices"
++	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+@@ -34,16 +35,8 @@
+ 		attrs = append(attrs, a)
+ 	}
+ 
+-	sort.Slice(attrs, func(i, j int) bool {
+-		if attrs[i] == nil {
+-			return true
+-		}
+-
+-		if attrs[j] == nil {
+-			return false
+-		}
+-
+-		return attrs[i].Name < attrs[j].Name
++	slices.SortFunc(attrs, func(a, b *tfprotov5.ResourceIdentitySchemaAttribute) int {
++		return strings.Compare(a.Name, b.Name)
+ 	})
+ 
+ 	result.IdentityAttributes = attrs
+--- /home/user/terraform-plugin-framework/internal/toproto5/schema.go	2026-10-24 21:30:10.659449600 +0000
++++ internal/toproto5/schema.go	2026-10-24 23:15:24.620899238 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"slices"
++	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+@@ -45,28 +46,12 @@
+ 		blocks = append(blocks, proto5)
+ 	}
+ 
+-	sort.Slice(attrs, func(i, j int) bool {
+-		if attrs[i] == nil {
+-			return true
+-		}
+-
+-		if attrs[j] == nil {
+-			return false
+-		}
+-
+-		return attrs[i].Name < attrs[j].Name
++	slices.SortFunc(attrs, func(a, b *tfprotov5.SchemaAttribute) int {
++		return strings.Compare(a.Name, b.Name)
+ 	})
+ 
+-	sort.Slice(blocks, func(i, j int) bool {
+-		if blocks[i] == nil {
+-			return true
+-		}
+-
+-		if blocks[j] == nil {
+-			return false
+-		}
+-
+-		return blocks[i].TypeName < blocks[j].TypeName
++	slices.SortFunc(blocks, func(a, b *tfprotov5.SchemaNestedBlock) int {
++		return strings.Compare(a.TypeName, b.TypeName)
+ 	})
+ 
+ 	result.Block = &tfprotov5.SchemaBlock{
+--- /home/user/terraform-plugin-framework/internal/toproto6/block.go	2026-10-24 21:30:10.659597576 +0000
++++ internal/toproto6/block.go	2026-10-24 23:15:24.621203519 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"slices"
++	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+@@ -70,28 +71,12 @@
+ 		schemaNestedBlock.Block.BlockTypes = append(schemaNestedBlock.Block.BlockTypes, blockProto6)
+ 	}
+ 
+-	sort.Slice(schemaNestedBlock.Block.Attributes, func(i, j int) bool {
+-		if schemaNestedBlock.Block.Attributes[i] == nil {
+-			return true
+-		}
+-
+-		if schemaNestedBlock.Block.Attributes[j] == nil {
+-			return false
+-		}
+-
+-		return schemaNestedBlock.Block.Attributes[i].Name < schemaNestedBlock.Block.Attributes[j].Name
++	slices.SortFunc(schemaNestedBlock.Block.Attributes, func(a, b *tfprotov6.SchemaAttribute) int {
++		return strings.Compare(a.Name, b.Name)
+ 	})
+ 
+-	sort.Slice(schemaNestedBlock.Block.BlockTypes, func(i, j int) bool {
+-		if schemaNestedBlock.Block.BlockTypes[i] == nil {
+-			return true
+-		}
+-
+-		if schemaNestedBlock.Block.BlockTypes[j] == nil {
+-			return false
+-		}
+-
+-		return schemaNestedBlock.Block.BlockTypes[i].TypeName < schemaNestedBlock.Block.BlockTypes[j].TypeName
++	slices.SortFunc(schemaNestedBlock.Block.BlockTypes, func(a, b *tfprotov6.SchemaNestedBlock) int {
++		return strings.Compare(a.TypeName, b.TypeName)
+ 	})
+ 
+ 	return schemaNestedBlock, nil
+--- /home/user/terraform-plugin-framework/internal/toproto6/identity_schema.go	2026-10-24 21:30:10.673639662 +0000
++++ internal/toproto6/identity_schema.go	2026-10-24 23:15:24.621669501 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"slices"
++	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+@@ -34,16 +35,8 @@
+ 		attrs = append(attrs, a)
+ 	}
+ 
+-	sort.Slice(attrs, func(i, j int) bool {
+-		if attrs[i] == nil {
+-			return true
+-		}
+-
+-		if attrs[j] == nil {
+-			return false
+-		}
+-
+-		return attrs[i].Name < attrs[j].Name
++	slices.SortFunc(attrs, func(a, b *tfprotov6.ResourceIdentitySchemaAttribute) int {
++		return strings.Compare(a.Name, b.Name)
+ 	})
+ 
+ 	result.IdentityAttributes = attrs
+--- /home/user/terraform-plugin-framework/internal/toproto6/schema.go	2026-10-24 21:30:10.675597576 +0000
++++ internal/toproto6/schema.go	2026-10-24 23:15:24.622000227 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"slices"
++	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+@@ -45,28 +46,12 @@
+ 		blocks = append(blocks, proto6)
+ 	}
+ 
+-	sort.Slice(attrs, func(i, j int) bool {
+-		if attrs[i] == nil {
+-			return true
+-		}
+-
+-		if attrs[j] == nil {
+-			return false
+-		}
+-
+-		return attrs[i].Name < attrs[j].Name
++	slices.SortFunc(attrs, func(a, b *tfprotov6.SchemaAttribute) int {
++		return strings.Compare(a.Name, b.Name)
+ 	})
+ 
+-	sort.Slice(blocks, func(i, j int) bool {
+-		if blocks[i] == nil {
+-			return true
+-		}
+-
+-		if blocks[j] == nil {
+-			return false
+-		}
+-
+-		return blocks[i].TypeName < blocks[j].TypeName
++	slices.SortFunc(blocks, func(a, b *tfprotov6.SchemaNestedBlock) int {
++		return strings.Compare(a.TypeName, b.TypeName)
+ 	})
+ 
+ 	result.Block = &tfprotov6.SchemaBlock{
+--- /home/user/terraform-plugin-framework/internal/toproto6/schema_attribute.go	2026-10-24 21:30:10.675597576 +0000
++++ internal/toproto6/schema_attribute.go	2026-10-24 23:15:24.622313320 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"slices"
++	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+@@ -77,16 +78,8 @@
+ 		object.Attributes = append(object.Attributes, nestedSchemaAttribute)
+ 	}
+ 
+-	sort.Slice(object.Attributes, func(i, j int) bool {
+-		if object.Attributes[i] == nil {
+-			return true
+-		}
+-
+-		if object.Attributes[j] == nil {
+-			return false
+-		}
+-
+-		return object.Attributes[i].Name < object.Attributes[j].Name
++	slices.SortFunc(object.Attributes, func(a, b *tfprotov6.SchemaAttribute) int {
++		return strings.Compare(a.Name, b.Name)
+ 	})
+ 
+ 	schemaAttribute.NestedType = object

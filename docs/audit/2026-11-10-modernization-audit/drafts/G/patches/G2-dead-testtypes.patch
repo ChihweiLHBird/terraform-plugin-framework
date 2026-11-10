@@ -1,0 +1,379 @@
+diff --git a/internal/testing/testtypes/dynamic.go b/internal/testing/testtypes/dynamic.go
+index 69d7a67..13d734f 100644
+--- a/internal/testing/testtypes/dynamic.go
++++ b/internal/testing/testtypes/dynamic.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.DynamicTypable  = DynamicType{}
+-	_ basetypes.DynamicValuable = DynamicValue{}
+-)
++var _ basetypes.DynamicTypable = DynamicType{}
+ 
+ type DynamicType struct {
+ 	basetypes.DynamicType
+@@ -26,17 +23,3 @@ func (t DynamicType) Equal(o attr.Type) bool {
+ 
+ 	return t.DynamicType.Equal(other.DynamicType)
+ }
+-
+-type DynamicValue struct {
+-	basetypes.DynamicValue
+-}
+-
+-func (v DynamicValue) Equal(o attr.Value) bool {
+-	other, ok := o.(DynamicValue)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.DynamicValue.Equal(other.DynamicValue)
+-}
+diff --git a/internal/testing/testtypes/float32.go b/internal/testing/testtypes/float32.go
+index 9181152..f5a1888 100644
+--- a/internal/testing/testtypes/float32.go
++++ b/internal/testing/testtypes/float32.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.Float32Typable  = Float32Type{}
+-	_ basetypes.Float32Valuable = Float32Value{}
+-)
++var _ basetypes.Float32Typable = Float32Type{}
+ 
+ type Float32Type struct {
+ 	basetypes.Float32Type
+@@ -26,17 +23,3 @@ func (t Float32Type) Equal(o attr.Type) bool {
+ 
+ 	return t.Float32Type.Equal(other.Float32Type)
+ }
+-
+-type Float32Value struct {
+-	basetypes.Float32Value
+-}
+-
+-func (v Float32Value) Equal(o attr.Value) bool {
+-	other, ok := o.(Float32Value)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.Float32Value.Equal(other.Float32Value)
+-}
+diff --git a/internal/testing/testtypes/float64.go b/internal/testing/testtypes/float64.go
+index ee82fc6..2f68c35 100644
+--- a/internal/testing/testtypes/float64.go
++++ b/internal/testing/testtypes/float64.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.Float64Typable  = Float64Type{}
+-	_ basetypes.Float64Valuable = Float64Value{}
+-)
++var _ basetypes.Float64Typable = Float64Type{}
+ 
+ type Float64Type struct {
+ 	basetypes.Float64Type
+@@ -26,17 +23,3 @@ func (t Float64Type) Equal(o attr.Type) bool {
+ 
+ 	return t.Float64Type.Equal(other.Float64Type)
+ }
+-
+-type Float64Value struct {
+-	basetypes.Float64Value
+-}
+-
+-func (v Float64Value) Equal(o attr.Value) bool {
+-	other, ok := o.(Float64Value)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.Float64Value.Equal(other.Float64Value)
+-}
+diff --git a/internal/testing/testtypes/int32.go b/internal/testing/testtypes/int32.go
+index 9b1117c..57ca849 100644
+--- a/internal/testing/testtypes/int32.go
++++ b/internal/testing/testtypes/int32.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.Int32Typable  = Int32Type{}
+-	_ basetypes.Int32Valuable = Int32Value{}
+-)
++var _ basetypes.Int32Typable = Int32Type{}
+ 
+ type Int32Type struct {
+ 	basetypes.Int32Type
+@@ -26,17 +23,3 @@ func (t Int32Type) Equal(o attr.Type) bool {
+ 
+ 	return t.Int32Type.Equal(other.Int32Type)
+ }
+-
+-type Int32Value struct {
+-	basetypes.Int32Value
+-}
+-
+-func (v Int32Value) Equal(o attr.Value) bool {
+-	other, ok := o.(Int32Value)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.Int32Value.Equal(other.Int32Value)
+-}
+diff --git a/internal/testing/testtypes/int64.go b/internal/testing/testtypes/int64.go
+index 1909c7c..e17a667 100644
+--- a/internal/testing/testtypes/int64.go
++++ b/internal/testing/testtypes/int64.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.Int64Typable  = Int64Type{}
+-	_ basetypes.Int64Valuable = Int64Value{}
+-)
++var _ basetypes.Int64Typable = Int64Type{}
+ 
+ type Int64Type struct {
+ 	basetypes.Int64Type
+@@ -26,17 +23,3 @@ func (t Int64Type) Equal(o attr.Type) bool {
+ 
+ 	return t.Int64Type.Equal(other.Int64Type)
+ }
+-
+-type Int64Value struct {
+-	basetypes.Int64Value
+-}
+-
+-func (v Int64Value) Equal(o attr.Value) bool {
+-	other, ok := o.(Int64Value)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.Int64Value.Equal(other.Int64Value)
+-}
+diff --git a/internal/testing/testtypes/list.go b/internal/testing/testtypes/list.go
+index 32ba847..541fc95 100644
+--- a/internal/testing/testtypes/list.go
++++ b/internal/testing/testtypes/list.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.ListTypable  = ListType{}
+-	_ basetypes.ListValuable = ListValue{}
+-)
++var _ basetypes.ListTypable = ListType{}
+ 
+ type ListType struct {
+ 	basetypes.ListType
+@@ -26,17 +23,3 @@ func (t ListType) Equal(o attr.Type) bool {
+ 
+ 	return t.ListType.Equal(other.ListType)
+ }
+-
+-type ListValue struct {
+-	basetypes.ListValue
+-}
+-
+-func (v ListValue) Equal(o attr.Value) bool {
+-	other, ok := o.(ListValue)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.ListValue.Equal(other.ListValue)
+-}
+diff --git a/internal/testing/testtypes/map.go b/internal/testing/testtypes/map.go
+index 1f7e50f..98a134c 100644
+--- a/internal/testing/testtypes/map.go
++++ b/internal/testing/testtypes/map.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.MapTypable  = MapType{}
+-	_ basetypes.MapValuable = MapValue{}
+-)
++var _ basetypes.MapTypable = MapType{}
+ 
+ type MapType struct {
+ 	basetypes.MapType
+@@ -26,17 +23,3 @@ func (t MapType) Equal(o attr.Type) bool {
+ 
+ 	return t.MapType.Equal(other.MapType)
+ }
+-
+-type MapValue struct {
+-	basetypes.MapValue
+-}
+-
+-func (v MapValue) Equal(o attr.Value) bool {
+-	other, ok := o.(MapValue)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.MapValue.Equal(other.MapValue)
+-}
+diff --git a/internal/testing/testtypes/object.go b/internal/testing/testtypes/object.go
+index def4491..02538bd 100644
+--- a/internal/testing/testtypes/object.go
++++ b/internal/testing/testtypes/object.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.ObjectTypable  = ObjectType{}
+-	_ basetypes.ObjectValuable = ObjectValue{}
+-)
++var _ basetypes.ObjectTypable = ObjectType{}
+ 
+ type ObjectType struct {
+ 	basetypes.ObjectType
+@@ -26,17 +23,3 @@ func (t ObjectType) Equal(o attr.Type) bool {
+ 
+ 	return t.ObjectType.Equal(other.ObjectType)
+ }
+-
+-type ObjectValue struct {
+-	basetypes.ObjectValue
+-}
+-
+-func (v ObjectValue) Equal(o attr.Value) bool {
+-	other, ok := o.(ObjectValue)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.ObjectValue.Equal(other.ObjectValue)
+-}
+diff --git a/internal/testing/testtypes/set.go b/internal/testing/testtypes/set.go
+index eb7a4ff..90bb02e 100644
+--- a/internal/testing/testtypes/set.go
++++ b/internal/testing/testtypes/set.go
+@@ -8,10 +8,7 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-var (
+-	_ basetypes.SetTypable  = SetType{}
+-	_ basetypes.SetValuable = SetValue{}
+-)
++var _ basetypes.SetTypable = SetType{}
+ 
+ type SetType struct {
+ 	basetypes.SetType
+@@ -26,17 +23,3 @@ func (t SetType) Equal(o attr.Type) bool {
+ 
+ 	return t.SetType.Equal(other.SetType)
+ }
+-
+-type SetValue struct {
+-	basetypes.SetValue
+-}
+-
+-func (v SetValue) Equal(o attr.Value) bool {
+-	other, ok := o.(SetValue)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return v.SetValue.Equal(other.SetValue)
+-}
+diff --git a/internal/testing/testtypes/setwithvalidate.go b/internal/testing/testtypes/setwithvalidate.go
+index e9eebb0..cdab055 100644
+--- a/internal/testing/testtypes/setwithvalidate.go
++++ b/internal/testing/testtypes/setwithvalidate.go
+@@ -14,25 +14,13 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types"
+ )
+ 
+-var (
+-	//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-	_ xattr.TypeWithValidate = SetTypeWithValidateError{}
+-	//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-	_ xattr.TypeWithValidate = SetTypeWithValidateWarning{}
+-)
+-
+-type SetTypeWithValidateError struct {
+-	types.SetType
+-}
++//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
++var _ xattr.TypeWithValidate = SetTypeWithValidateWarning{}
+ 
+ type SetTypeWithValidateWarning struct {
+ 	types.SetType
+ }
+ 
+-func (t SetTypeWithValidateError) Validate(ctx context.Context, in tftypes.Value, path path.Path) diag.Diagnostics {
+-	return diag.Diagnostics{TestErrorDiagnostic(path)}
+-}
+-
+ func (t SetTypeWithValidateWarning) Validate(ctx context.Context, in tftypes.Value, path path.Path) diag.Diagnostics {
+ 	return diag.Diagnostics{TestWarningDiagnostic(path)}
+ }
+diff --git a/internal/testing/testtypes/setwithvalidateattribute.go b/internal/testing/testtypes/setwithvalidateattribute.go
+index 37b71fc..847d31f 100644
+--- a/internal/testing/testtypes/setwithvalidateattribute.go
++++ b/internal/testing/testtypes/setwithvalidateattribute.go
+@@ -14,36 +14,6 @@ import (
+ 	"github.com/hashicorp/terraform-plugin-framework/types"
+ )
+ 
+-type SetTypeWithValidateAttributeError struct {
+-	types.SetType
+-}
+-
+-func (t SetTypeWithValidateAttributeError) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+-	val, err := t.SetType.ValueFromTerraform(ctx, in)
+-	if err != nil {
+-		return nil, err
+-	}
+-
+-	set, ok := val.(types.Set)
+-	if !ok {
+-		return nil, fmt.Errorf("cannot assert %T as types.Set", val)
+-	}
+-
+-	return SetValueWithValidateAttributeError{
+-		set,
+-	}, nil
+-}
+-
+-var _ xattr.ValidateableAttribute = SetValueWithValidateAttributeError{}
+-
+-type SetValueWithValidateAttributeError struct {
+-	types.Set
+-}
+-
+-func (v SetValueWithValidateAttributeError) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+-	resp.Diagnostics.Append(TestErrorDiagnostic(req.Path))
+-}
+-
+ type SetTypeWithValidateAttributeWarning struct {
+ 	types.SetType
+ }

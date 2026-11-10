@@ -1,0 +1,22 @@
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/fix-blocklog/block_plan_modification.go	2026-10-24 23:22:11.861650846 +0000
++++ internal/fwserver/block_plan_modification.go	2026-10-24 23:22:11.875465212 +0000
+@@ -23,6 +23,8 @@
+ // package from the tfsdk package and not wanting to export the method.
+ // Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/365
+ func BlockModifyPlan(ctx context.Context, b fwschema.Block, req ModifyAttributePlanRequest, resp *ModifyAttributePlanResponse) {
++	ctx = logging.FrameworkWithAttributePath(ctx, req.AttributePath.String())
++
+ 	if req.Private != nil {
+ 		resp.Private = req.Private
+ 	}
+--- /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/B1/fix-blocklog/block_validation.go	2026-10-24 23:22:11.861799960 +0000
++++ internal/fwserver/block_validation.go	2026-10-24 23:22:11.875851426 +0000
+@@ -22,6 +22,8 @@
+ // package from the tfsdk package and not wanting to export the method.
+ // Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/365
+ func BlockValidate(ctx context.Context, b fwschema.Block, req ValidateAttributeRequest, resp *ValidateAttributeResponse) {
++	ctx = logging.FrameworkWithAttributePath(ctx, req.AttributePath.String())
++
+ 	configData := &fwschemadata.Data{
+ 		Description:    fwschemadata.DataDescriptionConfiguration,
+ 		Schema:         req.Config.Schema,

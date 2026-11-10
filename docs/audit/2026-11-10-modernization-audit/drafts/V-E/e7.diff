@@ -1,0 +1,1174 @@
+11c11
+< P[EEEZ] "[,]"
+---
+> P[EEEZ] "[]"
+13,19c13,19
+< P[EEEa] "[,a]"
+< E[ZZZa] "[,a]"
+< P[EEEq] "[,]"
+< E[ZZZq] "[,]"
+< P[EEEL] "[,b[0]]"
+< E[ZZZT] "[,]"
+< P[EEZ] "[,]"
+---
+> P[EEEa] "[a]"
+> E[ZZZa] "[a]"
+> P[EEEq] "[]"
+> E[ZZZq] "[]"
+> P[EEEL] "[b[0]]"
+> E[ZZZT] "[]"
+> P[EEZ] "[]"
+21c21
+< P[EEZE] "[,]"
+---
+> P[EEZE] "[]"
+23c23
+< P[EEZZ] "[,,]"
+---
+> P[EEZZ] "[,]"
+25,67c25,67
+< P[EEZa] "[,,a]"
+< E[ZZRa] "[,a]"
+< P[EEZq] "[,,]"
+< E[ZZRq] "[,]"
+< P[EEZL] "[,,b[0]]"
+< E[ZZRT] "[,]"
+< P[EEa] "[,a]"
+< E[ZZa] "[,a]"
+< P[EEaE] "[,a]"
+< E[ZZaZ] "[,a]"
+< P[EEaZ] "[,a,]"
+< E[ZZaR] "[,a]"
+< P[EEaa] "[,a,a]"
+< E[ZZaa] "[,a,a]"
+< P[EEaq] "[,a,]"
+< E[ZZaq] "[,a,]"
+< P[EEaL] "[,a,b[0]]"
+< E[ZZaT] "[,a,]"
+< P[EEq] "[,]"
+< E[ZZq] "[,]"
+< P[EEqE] "[,]"
+< E[ZZqZ] "[,]"
+< P[EEqZ] "[,,]"
+< E[ZZqR] "[,]"
+< P[EEqa] "[,,a]"
+< E[ZZqa] "[,,a]"
+< P[EEqq] "[,,]"
+< E[ZZqq] "[,,]"
+< P[EEqL] "[,,b[0]]"
+< E[ZZqT] "[,,]"
+< P[EEL] "[,b[0]]"
+< E[ZZT] "[,]"
+< P[EELE] "[,b[0]]"
+< E[ZZTZ] "[,]"
+< P[EELZ] "[,b[0],]"
+< E[ZZTR] "[,]"
+< P[EELa] "[,b[0],a]"
+< E[ZZTa] "[,,a]"
+< P[EELq] "[,b[0],]"
+< E[ZZTq] "[,,]"
+< P[EELL] "[,b[0],b[0]]"
+< E[ZZTT] "[,,]"
+< P[EZ] "[,]"
+---
+> P[EEZa] "[,a]"
+> E[ZZRa] "[a]"
+> P[EEZq] "[,]"
+> E[ZZRq] "[]"
+> P[EEZL] "[,b[0]]"
+> E[ZZRT] "[]"
+> P[EEa] "[a]"
+> E[ZZa] "[a]"
+> P[EEaE] "[a]"
+> E[ZZaZ] "[a]"
+> P[EEaZ] "[a,]"
+> E[ZZaR] "[a]"
+> P[EEaa] "[a,a]"
+> E[ZZaa] "[a,a]"
+> P[EEaq] "[a,]"
+> E[ZZaq] "[a,]"
+> P[EEaL] "[a,b[0]]"
+> E[ZZaT] "[a,]"
+> P[EEq] "[]"
+> E[ZZq] "[]"
+> P[EEqE] "[]"
+> E[ZZqZ] "[]"
+> P[EEqZ] "[,]"
+> E[ZZqR] "[]"
+> P[EEqa] "[,a]"
+> E[ZZqa] "[,a]"
+> P[EEqq] "[,]"
+> E[ZZqq] "[,]"
+> P[EEqL] "[,b[0]]"
+> E[ZZqT] "[,]"
+> P[EEL] "[b[0]]"
+> E[ZZT] "[]"
+> P[EELE] "[b[0]]"
+> E[ZZTZ] "[]"
+> P[EELZ] "[b[0],]"
+> E[ZZTR] "[]"
+> P[EELa] "[b[0],a]"
+> E[ZZTa] "[,a]"
+> P[EELq] "[b[0],]"
+> E[ZZTq] "[,]"
+> P[EELL] "[b[0],b[0]]"
+> E[ZZTT] "[,]"
+> P[EZ] "[]"
+69c69
+< P[EZE] "[,]"
+---
+> P[EZE] "[]"
+71c71
+< P[EZEE] "[,]"
+---
+> P[EZEE] "[]"
+73c73
+< P[EZEZ] "[,,]"
+---
+> P[EZEZ] "[,]"
+75,81c75,81
+< P[EZEa] "[,,a]"
+< E[ZRZa] "[,a]"
+< P[EZEq] "[,,]"
+< E[ZRZq] "[,]"
+< P[EZEL] "[,,b[0]]"
+< E[ZRZT] "[,]"
+< P[EZZ] "[,,]"
+---
+> P[EZEa] "[,a]"
+> E[ZRZa] "[a]"
+> P[EZEq] "[,]"
+> E[ZRZq] "[]"
+> P[EZEL] "[,b[0]]"
+> E[ZRZT] "[]"
+> P[EZZ] "[,]"
+83c83
+< P[EZZE] "[,,]"
+---
+> P[EZZE] "[,]"
+85c85
+< P[EZZZ] "[,,,]"
+---
+> P[EZZZ] "[,,]"
+87,314c87,314
+< P[EZZa] "[,,,a]"
+< E[ZRRa] "[,a]"
+< P[EZZq] "[,,,]"
+< E[ZRRq] "[,]"
+< P[EZZL] "[,,,b[0]]"
+< E[ZRRT] "[,]"
+< P[EZa] "[,,a]"
+< E[ZRa] "[,a]"
+< P[EZaE] "[,,a]"
+< E[ZRaZ] "[,a]"
+< P[EZaZ] "[,,a,]"
+< E[ZRaR] "[,a]"
+< P[EZaa] "[,,a,a]"
+< E[ZRaa] "[,a,a]"
+< P[EZaq] "[,,a,]"
+< E[ZRaq] "[,a,]"
+< P[EZaL] "[,,a,b[0]]"
+< E[ZRaT] "[,a,]"
+< P[EZq] "[,,]"
+< E[ZRq] "[,]"
+< P[EZqE] "[,,]"
+< E[ZRqZ] "[,]"
+< P[EZqZ] "[,,,]"
+< E[ZRqR] "[,]"
+< P[EZqa] "[,,,a]"
+< E[ZRqa] "[,,a]"
+< P[EZqq] "[,,,]"
+< E[ZRqq] "[,,]"
+< P[EZqL] "[,,,b[0]]"
+< E[ZRqT] "[,,]"
+< P[EZL] "[,,b[0]]"
+< E[ZRT] "[,]"
+< P[EZLE] "[,,b[0]]"
+< E[ZRTZ] "[,]"
+< P[EZLZ] "[,,b[0],]"
+< E[ZRTR] "[,]"
+< P[EZLa] "[,,b[0],a]"
+< E[ZRTa] "[,,a]"
+< P[EZLq] "[,,b[0],]"
+< E[ZRTq] "[,,]"
+< P[EZLL] "[,,b[0],b[0]]"
+< E[ZRTT] "[,,]"
+< P[Ea] "[,a]"
+< E[Za] "[,a]"
+< P[EaE] "[,a]"
+< E[ZaZ] "[,a]"
+< P[EaEE] "[,a]"
+< E[ZaZZ] "[,a]"
+< P[EaEZ] "[,a,]"
+< E[ZaZR] "[,a]"
+< P[EaEa] "[,a,a]"
+< E[ZaZa] "[,a,a]"
+< P[EaEq] "[,a,]"
+< E[ZaZq] "[,a,]"
+< P[EaEL] "[,a,b[0]]"
+< E[ZaZT] "[,a,]"
+< P[EaZ] "[,a,]"
+< E[ZaR] "[,a]"
+< P[EaZE] "[,a,]"
+< E[ZaRZ] "[,a]"
+< P[EaZZ] "[,a,,]"
+< E[ZaRR] "[,a]"
+< P[EaZa] "[,a,,a]"
+< E[ZaRa] "[,a,a]"
+< P[EaZq] "[,a,,]"
+< E[ZaRq] "[,a,]"
+< P[EaZL] "[,a,,b[0]]"
+< E[ZaRT] "[,a,]"
+< P[Eaa] "[,a,a]"
+< E[Zaa] "[,a,a]"
+< P[EaaE] "[,a,a]"
+< E[ZaaZ] "[,a,a]"
+< P[EaaZ] "[,a,a,]"
+< E[ZaaR] "[,a,a]"
+< P[Eaaa] "[,a,a,a]"
+< E[Zaaa] "[,a,a,a]"
+< P[Eaaq] "[,a,a,]"
+< E[Zaaq] "[,a,a,]"
+< P[EaaL] "[,a,a,b[0]]"
+< E[ZaaT] "[,a,a,]"
+< P[Eaq] "[,a,]"
+< E[Zaq] "[,a,]"
+< P[EaqE] "[,a,]"
+< E[ZaqZ] "[,a,]"
+< P[EaqZ] "[,a,,]"
+< E[ZaqR] "[,a,]"
+< P[Eaqa] "[,a,,a]"
+< E[Zaqa] "[,a,,a]"
+< P[Eaqq] "[,a,,]"
+< E[Zaqq] "[,a,,]"
+< P[EaqL] "[,a,,b[0]]"
+< E[ZaqT] "[,a,,]"
+< P[EaL] "[,a,b[0]]"
+< E[ZaT] "[,a,]"
+< P[EaLE] "[,a,b[0]]"
+< E[ZaTZ] "[,a,]"
+< P[EaLZ] "[,a,b[0],]"
+< E[ZaTR] "[,a,]"
+< P[EaLa] "[,a,b[0],a]"
+< E[ZaTa] "[,a,,a]"
+< P[EaLq] "[,a,b[0],]"
+< E[ZaTq] "[,a,,]"
+< P[EaLL] "[,a,b[0],b[0]]"
+< E[ZaTT] "[,a,,]"
+< P[Eq] "[,]"
+< E[Zq] "[,]"
+< P[EqE] "[,]"
+< E[ZqZ] "[,]"
+< P[EqEE] "[,]"
+< E[ZqZZ] "[,]"
+< P[EqEZ] "[,,]"
+< E[ZqZR] "[,]"
+< P[EqEa] "[,,a]"
+< E[ZqZa] "[,,a]"
+< P[EqEq] "[,,]"
+< E[ZqZq] "[,,]"
+< P[EqEL] "[,,b[0]]"
+< E[ZqZT] "[,,]"
+< P[EqZ] "[,,]"
+< E[ZqR] "[,]"
+< P[EqZE] "[,,]"
+< E[ZqRZ] "[,]"
+< P[EqZZ] "[,,,]"
+< E[ZqRR] "[,]"
+< P[EqZa] "[,,,a]"
+< E[ZqRa] "[,,a]"
+< P[EqZq] "[,,,]"
+< E[ZqRq] "[,,]"
+< P[EqZL] "[,,,b[0]]"
+< E[ZqRT] "[,,]"
+< P[Eqa] "[,,a]"
+< E[Zqa] "[,,a]"
+< P[EqaE] "[,,a]"
+< E[ZqaZ] "[,,a]"
+< P[EqaZ] "[,,a,]"
+< E[ZqaR] "[,,a]"
+< P[Eqaa] "[,,a,a]"
+< E[Zqaa] "[,,a,a]"
+< P[Eqaq] "[,,a,]"
+< E[Zqaq] "[,,a,]"
+< P[EqaL] "[,,a,b[0]]"
+< E[ZqaT] "[,,a,]"
+< P[Eqq] "[,,]"
+< E[Zqq] "[,,]"
+< P[EqqE] "[,,]"
+< E[ZqqZ] "[,,]"
+< P[EqqZ] "[,,,]"
+< E[ZqqR] "[,,]"
+< P[Eqqa] "[,,,a]"
+< E[Zqqa] "[,,,a]"
+< P[Eqqq] "[,,,]"
+< E[Zqqq] "[,,,]"
+< P[EqqL] "[,,,b[0]]"
+< E[ZqqT] "[,,,]"
+< P[EqL] "[,,b[0]]"
+< E[ZqT] "[,,]"
+< P[EqLE] "[,,b[0]]"
+< E[ZqTZ] "[,,]"
+< P[EqLZ] "[,,b[0],]"
+< E[ZqTR] "[,,]"
+< P[EqLa] "[,,b[0],a]"
+< E[ZqTa] "[,,,a]"
+< P[EqLq] "[,,b[0],]"
+< E[ZqTq] "[,,,]"
+< P[EqLL] "[,,b[0],b[0]]"
+< E[ZqTT] "[,,,]"
+< P[EL] "[,b[0]]"
+< E[ZT] "[,]"
+< P[ELE] "[,b[0]]"
+< E[ZTZ] "[,]"
+< P[ELEE] "[,b[0]]"
+< E[ZTZZ] "[,]"
+< P[ELEZ] "[,b[0],]"
+< E[ZTZR] "[,]"
+< P[ELEa] "[,b[0],a]"
+< E[ZTZa] "[,,a]"
+< P[ELEq] "[,b[0],]"
+< E[ZTZq] "[,,]"
+< P[ELEL] "[,b[0],b[0]]"
+< E[ZTZT] "[,,]"
+< P[ELZ] "[,b[0],]"
+< E[ZTR] "[,]"
+< P[ELZE] "[,b[0],]"
+< E[ZTRZ] "[,]"
+< P[ELZZ] "[,b[0],,]"
+< E[ZTRR] "[,]"
+< P[ELZa] "[,b[0],,a]"
+< E[ZTRa] "[,,a]"
+< P[ELZq] "[,b[0],,]"
+< E[ZTRq] "[,,]"
+< P[ELZL] "[,b[0],,b[0]]"
+< E[ZTRT] "[,,]"
+< P[ELa] "[,b[0],a]"
+< E[ZTa] "[,,a]"
+< P[ELaE] "[,b[0],a]"
+< E[ZTaZ] "[,,a]"
+< P[ELaZ] "[,b[0],a,]"
+< E[ZTaR] "[,,a]"
+< P[ELaa] "[,b[0],a,a]"
+< E[ZTaa] "[,,a,a]"
+< P[ELaq] "[,b[0],a,]"
+< E[ZTaq] "[,,a,]"
+< P[ELaL] "[,b[0],a,b[0]]"
+< E[ZTaT] "[,,a,]"
+< P[ELq] "[,b[0],]"
+< E[ZTq] "[,,]"
+< P[ELqE] "[,b[0],]"
+< E[ZTqZ] "[,,]"
+< P[ELqZ] "[,b[0],,]"
+< E[ZTqR] "[,,]"
+< P[ELqa] "[,b[0],,a]"
+< E[ZTqa] "[,,,a]"
+< P[ELqq] "[,b[0],,]"
+< E[ZTqq] "[,,,]"
+< P[ELqL] "[,b[0],,b[0]]"
+< E[ZTqT] "[,,,]"
+< P[ELL] "[,b[0],b[0]]"
+< E[ZTT] "[,,]"
+< P[ELLE] "[,b[0],b[0]]"
+< E[ZTTZ] "[,,]"
+< P[ELLZ] "[,b[0],b[0],]"
+< E[ZTTR] "[,,]"
+< P[ELLa] "[,b[0],b[0],a]"
+< E[ZTTa] "[,,,a]"
+< P[ELLq] "[,b[0],b[0],]"
+< E[ZTTq] "[,,,]"
+< P[ELLL] "[,b[0],b[0],b[0]]"
+< E[ZTTT] "[,,,]"
+---
+> P[EZZa] "[,,a]"
+> E[ZRRa] "[a]"
+> P[EZZq] "[,,]"
+> E[ZRRq] "[]"
+> P[EZZL] "[,,b[0]]"
+> E[ZRRT] "[]"
+> P[EZa] "[,a]"
+> E[ZRa] "[a]"
+> P[EZaE] "[,a]"
+> E[ZRaZ] "[a]"
+> P[EZaZ] "[,a,]"
+> E[ZRaR] "[a]"
+> P[EZaa] "[,a,a]"
+> E[ZRaa] "[a,a]"
+> P[EZaq] "[,a,]"
+> E[ZRaq] "[a,]"
+> P[EZaL] "[,a,b[0]]"
+> E[ZRaT] "[a,]"
+> P[EZq] "[,]"
+> E[ZRq] "[]"
+> P[EZqE] "[,]"
+> E[ZRqZ] "[]"
+> P[EZqZ] "[,,]"
+> E[ZRqR] "[]"
+> P[EZqa] "[,,a]"
+> E[ZRqa] "[,a]"
+> P[EZqq] "[,,]"
+> E[ZRqq] "[,]"
+> P[EZqL] "[,,b[0]]"
+> E[ZRqT] "[,]"
+> P[EZL] "[,b[0]]"
+> E[ZRT] "[]"
+> P[EZLE] "[,b[0]]"
+> E[ZRTZ] "[]"
+> P[EZLZ] "[,b[0],]"
+> E[ZRTR] "[]"
+> P[EZLa] "[,b[0],a]"
+> E[ZRTa] "[,a]"
+> P[EZLq] "[,b[0],]"
+> E[ZRTq] "[,]"
+> P[EZLL] "[,b[0],b[0]]"
+> E[ZRTT] "[,]"
+> P[Ea] "[a]"
+> E[Za] "[a]"
+> P[EaE] "[a]"
+> E[ZaZ] "[a]"
+> P[EaEE] "[a]"
+> E[ZaZZ] "[a]"
+> P[EaEZ] "[a,]"
+> E[ZaZR] "[a]"
+> P[EaEa] "[a,a]"
+> E[ZaZa] "[a,a]"
+> P[EaEq] "[a,]"
+> E[ZaZq] "[a,]"
+> P[EaEL] "[a,b[0]]"
+> E[ZaZT] "[a,]"
+> P[EaZ] "[a,]"
+> E[ZaR] "[a]"
+> P[EaZE] "[a,]"
+> E[ZaRZ] "[a]"
+> P[EaZZ] "[a,,]"
+> E[ZaRR] "[a]"
+> P[EaZa] "[a,,a]"
+> E[ZaRa] "[a,a]"
+> P[EaZq] "[a,,]"
+> E[ZaRq] "[a,]"
+> P[EaZL] "[a,,b[0]]"
+> E[ZaRT] "[a,]"
+> P[Eaa] "[a,a]"
+> E[Zaa] "[a,a]"
+> P[EaaE] "[a,a]"
+> E[ZaaZ] "[a,a]"
+> P[EaaZ] "[a,a,]"
+> E[ZaaR] "[a,a]"
+> P[Eaaa] "[a,a,a]"
+> E[Zaaa] "[a,a,a]"
+> P[Eaaq] "[a,a,]"
+> E[Zaaq] "[a,a,]"
+> P[EaaL] "[a,a,b[0]]"
+> E[ZaaT] "[a,a,]"
+> P[Eaq] "[a,]"
+> E[Zaq] "[a,]"
+> P[EaqE] "[a,]"
+> E[ZaqZ] "[a,]"
+> P[EaqZ] "[a,,]"
+> E[ZaqR] "[a,]"
+> P[Eaqa] "[a,,a]"
+> E[Zaqa] "[a,,a]"
+> P[Eaqq] "[a,,]"
+> E[Zaqq] "[a,,]"
+> P[EaqL] "[a,,b[0]]"
+> E[ZaqT] "[a,,]"
+> P[EaL] "[a,b[0]]"
+> E[ZaT] "[a,]"
+> P[EaLE] "[a,b[0]]"
+> E[ZaTZ] "[a,]"
+> P[EaLZ] "[a,b[0],]"
+> E[ZaTR] "[a,]"
+> P[EaLa] "[a,b[0],a]"
+> E[ZaTa] "[a,,a]"
+> P[EaLq] "[a,b[0],]"
+> E[ZaTq] "[a,,]"
+> P[EaLL] "[a,b[0],b[0]]"
+> E[ZaTT] "[a,,]"
+> P[Eq] "[]"
+> E[Zq] "[]"
+> P[EqE] "[]"
+> E[ZqZ] "[]"
+> P[EqEE] "[]"
+> E[ZqZZ] "[]"
+> P[EqEZ] "[,]"
+> E[ZqZR] "[]"
+> P[EqEa] "[,a]"
+> E[ZqZa] "[,a]"
+> P[EqEq] "[,]"
+> E[ZqZq] "[,]"
+> P[EqEL] "[,b[0]]"
+> E[ZqZT] "[,]"
+> P[EqZ] "[,]"
+> E[ZqR] "[]"
+> P[EqZE] "[,]"
+> E[ZqRZ] "[]"
+> P[EqZZ] "[,,]"
+> E[ZqRR] "[]"
+> P[EqZa] "[,,a]"
+> E[ZqRa] "[,a]"
+> P[EqZq] "[,,]"
+> E[ZqRq] "[,]"
+> P[EqZL] "[,,b[0]]"
+> E[ZqRT] "[,]"
+> P[Eqa] "[,a]"
+> E[Zqa] "[,a]"
+> P[EqaE] "[,a]"
+> E[ZqaZ] "[,a]"
+> P[EqaZ] "[,a,]"
+> E[ZqaR] "[,a]"
+> P[Eqaa] "[,a,a]"
+> E[Zqaa] "[,a,a]"
+> P[Eqaq] "[,a,]"
+> E[Zqaq] "[,a,]"
+> P[EqaL] "[,a,b[0]]"
+> E[ZqaT] "[,a,]"
+> P[Eqq] "[,]"
+> E[Zqq] "[,]"
+> P[EqqE] "[,]"
+> E[ZqqZ] "[,]"
+> P[EqqZ] "[,,]"
+> E[ZqqR] "[,]"
+> P[Eqqa] "[,,a]"
+> E[Zqqa] "[,,a]"
+> P[Eqqq] "[,,]"
+> E[Zqqq] "[,,]"
+> P[EqqL] "[,,b[0]]"
+> E[ZqqT] "[,,]"
+> P[EqL] "[,b[0]]"
+> E[ZqT] "[,]"
+> P[EqLE] "[,b[0]]"
+> E[ZqTZ] "[,]"
+> P[EqLZ] "[,b[0],]"
+> E[ZqTR] "[,]"
+> P[EqLa] "[,b[0],a]"
+> E[ZqTa] "[,,a]"
+> P[EqLq] "[,b[0],]"
+> E[ZqTq] "[,,]"
+> P[EqLL] "[,b[0],b[0]]"
+> E[ZqTT] "[,,]"
+> P[EL] "[b[0]]"
+> E[ZT] "[]"
+> P[ELE] "[b[0]]"
+> E[ZTZ] "[]"
+> P[ELEE] "[b[0]]"
+> E[ZTZZ] "[]"
+> P[ELEZ] "[b[0],]"
+> E[ZTZR] "[]"
+> P[ELEa] "[b[0],a]"
+> E[ZTZa] "[,a]"
+> P[ELEq] "[b[0],]"
+> E[ZTZq] "[,]"
+> P[ELEL] "[b[0],b[0]]"
+> E[ZTZT] "[,]"
+> P[ELZ] "[b[0],]"
+> E[ZTR] "[]"
+> P[ELZE] "[b[0],]"
+> E[ZTRZ] "[]"
+> P[ELZZ] "[b[0],,]"
+> E[ZTRR] "[]"
+> P[ELZa] "[b[0],,a]"
+> E[ZTRa] "[,a]"
+> P[ELZq] "[b[0],,]"
+> E[ZTRq] "[,]"
+> P[ELZL] "[b[0],,b[0]]"
+> E[ZTRT] "[,]"
+> P[ELa] "[b[0],a]"
+> E[ZTa] "[,a]"
+> P[ELaE] "[b[0],a]"
+> E[ZTaZ] "[,a]"
+> P[ELaZ] "[b[0],a,]"
+> E[ZTaR] "[,a]"
+> P[ELaa] "[b[0],a,a]"
+> E[ZTaa] "[,a,a]"
+> P[ELaq] "[b[0],a,]"
+> E[ZTaq] "[,a,]"
+> P[ELaL] "[b[0],a,b[0]]"
+> E[ZTaT] "[,a,]"
+> P[ELq] "[b[0],]"
+> E[ZTq] "[,]"
+> P[ELqE] "[b[0],]"
+> E[ZTqZ] "[,]"
+> P[ELqZ] "[b[0],,]"
+> E[ZTqR] "[,]"
+> P[ELqa] "[b[0],,a]"
+> E[ZTqa] "[,,a]"
+> P[ELqq] "[b[0],,]"
+> E[ZTqq] "[,,]"
+> P[ELqL] "[b[0],,b[0]]"
+> E[ZTqT] "[,,]"
+> P[ELL] "[b[0],b[0]]"
+> E[ZTT] "[,]"
+> P[ELLE] "[b[0],b[0]]"
+> E[ZTTZ] "[,]"
+> P[ELLZ] "[b[0],b[0],]"
+> E[ZTTR] "[,]"
+> P[ELLa] "[b[0],b[0],a]"
+> E[ZTTa] "[,,a]"
+> P[ELLq] "[b[0],b[0],]"
+> E[ZTTq] "[,,]"
+> P[ELLL] "[b[0],b[0],b[0]]"
+> E[ZTTT] "[,,]"
+326c326
+< E[RZZa] "[,a]"
+---
+> E[RZZa] "[a]"
+328c328
+< E[RZZq] "[,]"
+---
+> E[RZZq] "[]"
+330c330
+< E[RZZT] "[,]"
+---
+> E[RZZT] "[]"
+338c338
+< E[RZRa] "[,a]"
+---
+> E[RZRa] "[a]"
+340c340
+< E[RZRq] "[,]"
+---
+> E[RZRq] "[]"
+342c342
+< E[RZRT] "[,]"
+---
+> E[RZRT] "[]"
+344c344
+< E[RZa] "[,a]"
+---
+> E[RZa] "[a]"
+346c346
+< E[RZaZ] "[,a]"
+---
+> E[RZaZ] "[a]"
+348c348
+< E[RZaR] "[,a]"
+---
+> E[RZaR] "[a]"
+350c350
+< E[RZaa] "[,a,a]"
+---
+> E[RZaa] "[a,a]"
+352c352
+< E[RZaq] "[,a,]"
+---
+> E[RZaq] "[a,]"
+354c354
+< E[RZaT] "[,a,]"
+---
+> E[RZaT] "[a,]"
+356c356
+< E[RZq] "[,]"
+---
+> E[RZq] "[]"
+358c358
+< E[RZqZ] "[,]"
+---
+> E[RZqZ] "[]"
+360c360
+< E[RZqR] "[,]"
+---
+> E[RZqR] "[]"
+362c362
+< E[RZqa] "[,,a]"
+---
+> E[RZqa] "[,a]"
+364c364
+< E[RZqq] "[,,]"
+---
+> E[RZqq] "[,]"
+366c366
+< E[RZqT] "[,,]"
+---
+> E[RZqT] "[,]"
+368c368
+< E[RZT] "[,]"
+---
+> E[RZT] "[]"
+370c370
+< E[RZTZ] "[,]"
+---
+> E[RZTZ] "[]"
+372c372
+< E[RZTR] "[,]"
+---
+> E[RZTR] "[]"
+374c374
+< E[RZTa] "[,,a]"
+---
+> E[RZTa] "[,a]"
+376c376
+< E[RZTq] "[,,]"
+---
+> E[RZTq] "[,]"
+378c378
+< E[RZTT] "[,,]"
+---
+> E[RZTT] "[,]"
+388c388
+< E[RRZa] "[,a]"
+---
+> E[RRZa] "[a]"
+390c390
+< E[RRZq] "[,]"
+---
+> E[RRZq] "[]"
+392c392
+< E[RRZT] "[,]"
+---
+> E[RRZT] "[]"
+400c400
+< E[RRRa] "[,a]"
+---
+> E[RRRa] "[a]"
+402c402
+< E[RRRq] "[,]"
+---
+> E[RRRq] "[]"
+404c404
+< E[RRRT] "[,]"
+---
+> E[RRRT] "[]"
+406c406
+< E[RRa] "[,a]"
+---
+> E[RRa] "[a]"
+408c408
+< E[RRaZ] "[,a]"
+---
+> E[RRaZ] "[a]"
+410c410
+< E[RRaR] "[,a]"
+---
+> E[RRaR] "[a]"
+412c412
+< E[RRaa] "[,a,a]"
+---
+> E[RRaa] "[a,a]"
+414c414
+< E[RRaq] "[,a,]"
+---
+> E[RRaq] "[a,]"
+416c416
+< E[RRaT] "[,a,]"
+---
+> E[RRaT] "[a,]"
+418c418
+< E[RRq] "[,]"
+---
+> E[RRq] "[]"
+420c420
+< E[RRqZ] "[,]"
+---
+> E[RRqZ] "[]"
+422c422
+< E[RRqR] "[,]"
+---
+> E[RRqR] "[]"
+424c424
+< E[RRqa] "[,,a]"
+---
+> E[RRqa] "[,a]"
+426c426
+< E[RRqq] "[,,]"
+---
+> E[RRqq] "[,]"
+428c428
+< E[RRqT] "[,,]"
+---
+> E[RRqT] "[,]"
+430c430
+< E[RRT] "[,]"
+---
+> E[RRT] "[]"
+432c432
+< E[RRTZ] "[,]"
+---
+> E[RRTZ] "[]"
+434c434
+< E[RRTR] "[,]"
+---
+> E[RRTR] "[]"
+436c436
+< E[RRTa] "[,,a]"
+---
+> E[RRTa] "[,a]"
+438c438
+< E[RRTq] "[,,]"
+---
+> E[RRTq] "[,]"
+440c440
+< E[RRTT] "[,,]"
+---
+> E[RRTT] "[,]"
+442c442
+< E[Ra] "[,a]"
+---
+> E[Ra] "[a]"
+444c444
+< E[RaZ] "[,a]"
+---
+> E[RaZ] "[a]"
+446c446
+< E[RaZZ] "[,a]"
+---
+> E[RaZZ] "[a]"
+448c448
+< E[RaZR] "[,a]"
+---
+> E[RaZR] "[a]"
+450c450
+< E[RaZa] "[,a,a]"
+---
+> E[RaZa] "[a,a]"
+452c452
+< E[RaZq] "[,a,]"
+---
+> E[RaZq] "[a,]"
+454c454
+< E[RaZT] "[,a,]"
+---
+> E[RaZT] "[a,]"
+456c456
+< E[RaR] "[,a]"
+---
+> E[RaR] "[a]"
+458c458
+< E[RaRZ] "[,a]"
+---
+> E[RaRZ] "[a]"
+460c460
+< E[RaRR] "[,a]"
+---
+> E[RaRR] "[a]"
+462c462
+< E[RaRa] "[,a,a]"
+---
+> E[RaRa] "[a,a]"
+464c464
+< E[RaRq] "[,a,]"
+---
+> E[RaRq] "[a,]"
+466c466
+< E[RaRT] "[,a,]"
+---
+> E[RaRT] "[a,]"
+468c468
+< E[Raa] "[,a,a]"
+---
+> E[Raa] "[a,a]"
+470c470
+< E[RaaZ] "[,a,a]"
+---
+> E[RaaZ] "[a,a]"
+472c472
+< E[RaaR] "[,a,a]"
+---
+> E[RaaR] "[a,a]"
+474c474
+< E[Raaa] "[,a,a,a]"
+---
+> E[Raaa] "[a,a,a]"
+476c476
+< E[Raaq] "[,a,a,]"
+---
+> E[Raaq] "[a,a,]"
+478c478
+< E[RaaT] "[,a,a,]"
+---
+> E[RaaT] "[a,a,]"
+480c480
+< E[Raq] "[,a,]"
+---
+> E[Raq] "[a,]"
+482c482
+< E[RaqZ] "[,a,]"
+---
+> E[RaqZ] "[a,]"
+484c484
+< E[RaqR] "[,a,]"
+---
+> E[RaqR] "[a,]"
+486c486
+< E[Raqa] "[,a,,a]"
+---
+> E[Raqa] "[a,,a]"
+488c488
+< E[Raqq] "[,a,,]"
+---
+> E[Raqq] "[a,,]"
+490c490
+< E[RaqT] "[,a,,]"
+---
+> E[RaqT] "[a,,]"
+492c492
+< E[RaT] "[,a,]"
+---
+> E[RaT] "[a,]"
+494c494
+< E[RaTZ] "[,a,]"
+---
+> E[RaTZ] "[a,]"
+496c496
+< E[RaTR] "[,a,]"
+---
+> E[RaTR] "[a,]"
+498c498
+< E[RaTa] "[,a,,a]"
+---
+> E[RaTa] "[a,,a]"
+500c500
+< E[RaTq] "[,a,,]"
+---
+> E[RaTq] "[a,,]"
+502c502
+< E[RaTT] "[,a,,]"
+---
+> E[RaTT] "[a,,]"
+504c504
+< E[Rq] "[,]"
+---
+> E[Rq] "[]"
+506c506
+< E[RqZ] "[,]"
+---
+> E[RqZ] "[]"
+508c508
+< E[RqZZ] "[,]"
+---
+> E[RqZZ] "[]"
+510c510
+< E[RqZR] "[,]"
+---
+> E[RqZR] "[]"
+512c512
+< E[RqZa] "[,,a]"
+---
+> E[RqZa] "[,a]"
+514c514
+< E[RqZq] "[,,]"
+---
+> E[RqZq] "[,]"
+516c516
+< E[RqZT] "[,,]"
+---
+> E[RqZT] "[,]"
+518c518
+< E[RqR] "[,]"
+---
+> E[RqR] "[]"
+520c520
+< E[RqRZ] "[,]"
+---
+> E[RqRZ] "[]"
+522c522
+< E[RqRR] "[,]"
+---
+> E[RqRR] "[]"
+524c524
+< E[RqRa] "[,,a]"
+---
+> E[RqRa] "[,a]"
+526c526
+< E[RqRq] "[,,]"
+---
+> E[RqRq] "[,]"
+528c528
+< E[RqRT] "[,,]"
+---
+> E[RqRT] "[,]"
+530c530
+< E[Rqa] "[,,a]"
+---
+> E[Rqa] "[,a]"
+532c532
+< E[RqaZ] "[,,a]"
+---
+> E[RqaZ] "[,a]"
+534c534
+< E[RqaR] "[,,a]"
+---
+> E[RqaR] "[,a]"
+536c536
+< E[Rqaa] "[,,a,a]"
+---
+> E[Rqaa] "[,a,a]"
+538c538
+< E[Rqaq] "[,,a,]"
+---
+> E[Rqaq] "[,a,]"
+540c540
+< E[RqaT] "[,,a,]"
+---
+> E[RqaT] "[,a,]"
+542c542
+< E[Rqq] "[,,]"
+---
+> E[Rqq] "[,]"
+544c544
+< E[RqqZ] "[,,]"
+---
+> E[RqqZ] "[,]"
+546c546
+< E[RqqR] "[,,]"
+---
+> E[RqqR] "[,]"
+548c548
+< E[Rqqa] "[,,,a]"
+---
+> E[Rqqa] "[,,a]"
+550c550
+< E[Rqqq] "[,,,]"
+---
+> E[Rqqq] "[,,]"
+552c552
+< E[RqqT] "[,,,]"
+---
+> E[RqqT] "[,,]"
+554c554
+< E[RqT] "[,,]"
+---
+> E[RqT] "[,]"
+556c556
+< E[RqTZ] "[,,]"
+---
+> E[RqTZ] "[,]"
+558c558
+< E[RqTR] "[,,]"
+---
+> E[RqTR] "[,]"
+560c560
+< E[RqTa] "[,,,a]"
+---
+> E[RqTa] "[,,a]"
+562c562
+< E[RqTq] "[,,,]"
+---
+> E[RqTq] "[,,]"
+564c564
+< E[RqTT] "[,,,]"
+---
+> E[RqTT] "[,,]"
+566c566
+< E[RT] "[,]"
+---
+> E[RT] "[]"
+568c568
+< E[RTZ] "[,]"
+---
+> E[RTZ] "[]"
+570c570
+< E[RTZZ] "[,]"
+---
+> E[RTZZ] "[]"
+572c572
+< E[RTZR] "[,]"
+---
+> E[RTZR] "[]"
+574c574
+< E[RTZa] "[,,a]"
+---
+> E[RTZa] "[,a]"
+576c576
+< E[RTZq] "[,,]"
+---
+> E[RTZq] "[,]"
+578c578
+< E[RTZT] "[,,]"
+---
+> E[RTZT] "[,]"
+580c580
+< E[RTR] "[,]"
+---
+> E[RTR] "[]"
+582c582
+< E[RTRZ] "[,]"
+---
+> E[RTRZ] "[]"
+584c584
+< E[RTRR] "[,]"
+---
+> E[RTRR] "[]"
+586c586
+< E[RTRa] "[,,a]"
+---
+> E[RTRa] "[,a]"
+588c588
+< E[RTRq] "[,,]"
+---
+> E[RTRq] "[,]"
+590c590
+< E[RTRT] "[,,]"
+---
+> E[RTRT] "[,]"
+592c592
+< E[RTa] "[,,a]"
+---
+> E[RTa] "[,a]"
+594c594
+< E[RTaZ] "[,,a]"
+---
+> E[RTaZ] "[,a]"
+596c596
+< E[RTaR] "[,,a]"
+---
+> E[RTaR] "[,a]"
+598c598
+< E[RTaa] "[,,a,a]"
+---
+> E[RTaa] "[,a,a]"
+600c600
+< E[RTaq] "[,,a,]"
+---
+> E[RTaq] "[,a,]"
+602c602
+< E[RTaT] "[,,a,]"
+---
+> E[RTaT] "[,a,]"
+604c604
+< E[RTq] "[,,]"
+---
+> E[RTq] "[,]"
+606c606
+< E[RTqZ] "[,,]"
+---
+> E[RTqZ] "[,]"
+608c608
+< E[RTqR] "[,,]"
+---
+> E[RTqR] "[,]"
+610c610
+< E[RTqa] "[,,,a]"
+---
+> E[RTqa] "[,,a]"
+612c612
+< E[RTqq] "[,,,]"
+---
+> E[RTqq] "[,,]"
+614c614
+< E[RTqT] "[,,,]"
+---
+> E[RTqT] "[,,]"
+616c616
+< E[RTT] "[,,]"
+---
+> E[RTT] "[,]"
+618c618
+< E[RTTZ] "[,,]"
+---
+> E[RTTZ] "[,]"
+620c620
+< E[RTTR] "[,,]"
+---
+> E[RTTR] "[,]"
+622c622
+< E[RTTa] "[,,,a]"
+---
+> E[RTTa] "[,,a]"
+624c624
+< E[RTTq] "[,,,]"
+---
+> E[RTTq] "[,,]"
+626c626
+< E[RTTT] "[,,,]"
+---
+> E[RTTT] "[,,]"

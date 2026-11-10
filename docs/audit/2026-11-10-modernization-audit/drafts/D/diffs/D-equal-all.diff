@@ -1,0 +1,2321 @@
+--- /home/user/terraform-plugin-framework/action/schema/bool_attribute.go	2026-10-24 21:30:10.371852253 +0000
++++ /home/user/terraform-plugin-framework/action/schema/bool_attribute.go (draft)	2026-10-24 23:08:05.042719161 +0000
+@@ -119,11 +119,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/dynamic_attribute.go	2026-10-24 21:30:10.373701961 +0000
++++ /home/user/terraform-plugin-framework/action/schema/dynamic_attribute.go (draft)	2026-10-24 23:08:05.042894276 +0000
+@@ -120,11 +120,7 @@
+ // Equal returns true if the given Attribute is a DynamicAttribute
+ // and all fields are equal.
+ func (a DynamicAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(DynamicAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/float32_attribute.go	2026-10-24 21:30:10.373701961 +0000
++++ /home/user/terraform-plugin-framework/action/schema/float32_attribute.go (draft)	2026-10-24 23:08:05.043022045 +0000
+@@ -122,11 +122,7 @@
+ // Equal returns true if the given Attribute is a Float32Attribute
+ // and all fields are equal.
+ func (a Float32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/float64_attribute.go	2026-10-24 21:30:10.373701961 +0000
++++ /home/user/terraform-plugin-framework/action/schema/float64_attribute.go (draft)	2026-10-24 23:08:05.043150849 +0000
+@@ -122,11 +122,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/int32_attribute.go	2026-10-24 21:30:10.373701961 +0000
++++ /home/user/terraform-plugin-framework/action/schema/int32_attribute.go (draft)	2026-10-24 23:08:05.043337815 +0000
+@@ -122,11 +122,7 @@
+ // Equal returns true if the given Attribute is a Int32Attribute
+ // and all fields are equal.
+ func (a Int32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/int64_attribute.go	2026-10-24 21:30:10.373701961 +0000
++++ /home/user/terraform-plugin-framework/action/schema/int64_attribute.go (draft)	2026-10-24 23:08:05.043474956 +0000
+@@ -122,11 +122,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/list_attribute.go	2026-10-24 21:30:10.378010441 +0000
++++ /home/user/terraform-plugin-framework/action/schema/list_attribute.go (draft)	2026-10-24 23:08:05.043604415 +0000
+@@ -138,11 +138,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/list_nested_attribute.go	2026-10-24 21:30:10.378010441 +0000
++++ /home/user/terraform-plugin-framework/action/schema/list_nested_attribute.go (draft)	2026-10-24 23:08:05.043752694 +0000
+@@ -157,13 +157,7 @@
+ // Equal returns true if the given Attribute is a ListNestedAttribute
+ // and all fields are equal.
+ func (a ListNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(ListNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/list_nested_block.go	2026-10-24 21:30:10.378010441 +0000
++++ /home/user/terraform-plugin-framework/action/schema/list_nested_block.go (draft)	2026-10-24 23:08:05.043880359 +0000
+@@ -145,11 +145,7 @@
+ // Equal returns true if the given Block is ListNestedBlock
+ // and all fields are equal.
+ func (b ListNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(ListNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/map_attribute.go	2026-10-24 21:30:10.378010441 +0000
++++ /home/user/terraform-plugin-framework/action/schema/map_attribute.go (draft)	2026-10-24 23:08:05.044003681 +0000
+@@ -141,11 +141,7 @@
+ // Equal returns true if the given Attribute is a MapAttribute
+ // and all fields are equal.
+ func (a MapAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(MapAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/map_nested_attribute.go	2026-10-24 21:30:10.378010441 +0000
++++ /home/user/terraform-plugin-framework/action/schema/map_nested_attribute.go (draft)	2026-10-24 23:08:05.044171796 +0000
+@@ -157,13 +157,7 @@
+ // Equal returns true if the given Attribute is a MapNestedAttribute
+ // and all fields are equal.
+ func (a MapNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(MapNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/number_attribute.go	2026-10-24 21:30:10.382054869 +0000
++++ /home/user/terraform-plugin-framework/action/schema/number_attribute.go (draft)	2026-10-24 23:08:05.044421660 +0000
+@@ -123,11 +123,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/object_attribute.go	2026-10-24 21:30:10.382054869 +0000
++++ /home/user/terraform-plugin-framework/action/schema/object_attribute.go (draft)	2026-10-24 23:08:05.044566034 +0000
+@@ -140,11 +140,7 @@
+ // Equal returns true if the given Attribute is a ObjectAttribute
+ // and all fields are equal.
+ func (a ObjectAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ObjectAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/set_attribute.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/set_attribute.go (draft)	2026-10-24 23:08:05.044733198 +0000
+@@ -132,11 +132,7 @@
+ // Equal returns true if the given Attribute is a SetAttribute
+ // and all fields are equal.
+ func (a SetAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(SetAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/set_nested_attribute.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/set_nested_attribute.go (draft)	2026-10-24 23:08:05.044864659 +0000
+@@ -145,13 +145,7 @@
+ // Equal returns true if the given Attribute is a SetNestedAttribute
+ // and all fields are equal.
+ func (a SetNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SetNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/set_nested_block.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/set_nested_block.go (draft)	2026-10-24 23:08:05.044989166 +0000
+@@ -145,11 +145,7 @@
+ // Equal returns true if the given Block is SetNestedBlock
+ // and all fields are equal.
+ func (b SetNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SetNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/single_nested_attribute.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/single_nested_attribute.go (draft)	2026-10-24 23:08:05.045115342 +0000
+@@ -147,13 +147,7 @@
+ // Equal returns true if the given Attribute is a SingleNestedAttribute
+ // and all fields are equal.
+ func (a SingleNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SingleNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetAttributes returns the Attributes field value.
+--- /home/user/terraform-plugin-framework/action/schema/single_nested_block.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/single_nested_block.go (draft)	2026-10-24 23:08:05.045336029 +0000
+@@ -147,11 +147,7 @@
+ // Equal returns true if the given Attribute is b SingleNestedBlock
+ // and all fields are equal.
+ func (b SingleNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SingleNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/action/schema/string_attribute.go	2026-10-24 21:30:10.383850774 +0000
++++ /home/user/terraform-plugin-framework/action/schema/string_attribute.go (draft)	2026-10-24 23:08:05.045500000 +0000
+@@ -119,11 +119,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/bool_attribute.go	2026-10-24 21:30:10.390475505 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/bool_attribute.go (draft)	2026-10-24 23:08:04.227708326 +0000
+@@ -136,11 +136,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/dynamic_attribute.go	2026-10-24 21:30:10.390475505 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/dynamic_attribute.go (draft)	2026-10-24 23:08:04.227891350 +0000
+@@ -132,11 +132,7 @@
+ // Equal returns true if the given Attribute is a DynamicAttribute
+ // and all fields are equal.
+ func (a DynamicAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(DynamicAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/float32_attribute.go	2026-10-24 21:30:10.390475505 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/float32_attribute.go (draft)	2026-10-24 23:08:04.228026501 +0000
+@@ -134,11 +134,7 @@
+ // Equal returns true if the given Attribute is a Float32Attribute
+ // and all fields are equal.
+ func (a Float32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float32Validators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/float64_attribute.go	2026-10-24 21:30:10.390475505 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/float64_attribute.go (draft)	2026-10-24 23:08:04.228157897 +0000
+@@ -134,11 +134,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float64Validators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/int32_attribute.go	2026-10-24 21:30:10.391597583 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/int32_attribute.go (draft)	2026-10-24 23:08:04.228329930 +0000
+@@ -134,11 +134,7 @@
+ // Equal returns true if the given Attribute is a Int32Attribute
+ // and all fields are equal.
+ func (a Int32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/int64_attribute.go	2026-10-24 21:30:10.391597583 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/int64_attribute.go (draft)	2026-10-24 23:08:04.228473763 +0000
+@@ -134,11 +134,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/list_attribute.go	2026-10-24 21:30:10.391597583 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/list_attribute.go (draft)	2026-10-24 23:08:04.228616348 +0000
+@@ -150,11 +150,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/list_nested_attribute.go	2026-10-24 21:30:10.391597583 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/list_nested_attribute.go (draft)	2026-10-24 23:08:04.228758060 +0000
+@@ -166,13 +166,7 @@
+ // Equal returns true if the given Attribute is a ListNestedAttribute
+ // and all fields are equal.
+ func (a ListNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(ListNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/list_nested_block.go	2026-10-24 21:30:10.391597583 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/list_nested_block.go (draft)	2026-10-24 23:08:04.228888989 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Block is ListNestedBlock
+ // and all fields are equal.
+ func (b ListNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(ListNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/map_attribute.go	2026-10-24 21:30:10.391597583 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/map_attribute.go (draft)	2026-10-24 23:08:04.229012609 +0000
+@@ -153,11 +153,7 @@
+ // Equal returns true if the given Attribute is a MapAttribute
+ // and all fields are equal.
+ func (a MapAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(MapAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/map_nested_attribute.go	2026-10-24 21:30:10.391597583 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/map_nested_attribute.go (draft)	2026-10-24 23:08:04.229152528 +0000
+@@ -166,13 +166,7 @@
+ // Equal returns true if the given Attribute is a MapNestedAttribute
+ // and all fields are equal.
+ func (a MapNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(MapNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/number_attribute.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/number_attribute.go (draft)	2026-10-24 23:08:04.229470040 +0000
+@@ -135,11 +135,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/object_attribute.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/object_attribute.go (draft)	2026-10-24 23:08:04.229641185 +0000
+@@ -152,11 +152,7 @@
+ // Equal returns true if the given Attribute is a ObjectAttribute
+ // and all fields are equal.
+ func (a ObjectAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ObjectAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/set_attribute.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/set_attribute.go (draft)	2026-10-24 23:08:04.229809962 +0000
+@@ -148,11 +148,7 @@
+ // Equal returns true if the given Attribute is a SetAttribute
+ // and all fields are equal.
+ func (a SetAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(SetAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/set_nested_attribute.go	2026-10-24 21:30:10.395597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/set_nested_attribute.go (draft)	2026-10-24 23:08:04.229944182 +0000
+@@ -161,13 +161,7 @@
+ // Equal returns true if the given Attribute is a SetNestedAttribute
+ // and all fields are equal.
+ func (a SetNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SetNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/set_nested_block.go	2026-10-24 21:30:10.399597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/set_nested_block.go (draft)	2026-10-24 23:08:04.230067614 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Block is SetNestedBlock
+ // and all fields are equal.
+ func (b SetNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SetNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/single_nested_attribute.go	2026-10-24 21:30:10.399597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/single_nested_attribute.go (draft)	2026-10-24 23:08:04.230195539 +0000
+@@ -159,13 +159,7 @@
+ // Equal returns true if the given Attribute is a SingleNestedAttribute
+ // and all fields are equal.
+ func (a SingleNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SingleNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetAttributes returns the Attributes field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/single_nested_block.go	2026-10-24 21:30:10.399597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/single_nested_block.go (draft)	2026-10-24 23:08:04.230380527 +0000
+@@ -148,11 +148,7 @@
+ // Equal returns true if the given Attribute is b SingleNestedBlock
+ // and all fields are equal.
+ func (b SingleNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SingleNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/datasource/schema/string_attribute.go	2026-10-24 21:30:10.399597582 +0000
++++ /home/user/terraform-plugin-framework/datasource/schema/string_attribute.go (draft)	2026-10-24 23:08:04.230509309 +0000
+@@ -131,11 +131,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/bool_attribute.go	2026-10-24 21:30:10.409210950 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/bool_attribute.go (draft)	2026-10-24 23:08:04.833727575 +0000
+@@ -134,11 +134,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/dynamic_attribute.go	2026-10-24 21:30:10.409210950 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/dynamic_attribute.go (draft)	2026-10-24 23:08:04.833914691 +0000
+@@ -130,11 +130,7 @@
+ // Equal returns true if the given Attribute is a DynamicAttribute
+ // and all fields are equal.
+ func (a DynamicAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(DynamicAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/float32_attribute.go	2026-10-24 21:30:10.409210950 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/float32_attribute.go (draft)	2026-10-24 23:08:04.834068662 +0000
+@@ -132,11 +132,7 @@
+ // Equal returns true if the given Attribute is a Float32Attribute
+ // and all fields are equal.
+ func (a Float32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float32Validators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/float64_attribute.go	2026-10-24 21:30:10.411597582 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/float64_attribute.go (draft)	2026-10-24 23:08:04.834310489 +0000
+@@ -132,11 +132,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float64Validators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/int32_attribute.go	2026-10-24 21:30:10.411597582 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/int32_attribute.go (draft)	2026-10-24 23:08:04.834474933 +0000
+@@ -132,11 +132,7 @@
+ // Equal returns true if the given Attribute is a Int32Attribute
+ // and all fields are equal.
+ func (a Int32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/int64_attribute.go	2026-10-24 21:30:10.411597582 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/int64_attribute.go (draft)	2026-10-24 23:08:04.834622772 +0000
+@@ -132,11 +132,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/list_attribute.go	2026-10-24 21:30:10.416368853 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/list_attribute.go (draft)	2026-10-24 23:08:04.834787315 +0000
+@@ -147,11 +147,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/list_nested_attribute.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/list_nested_attribute.go (draft)	2026-10-24 23:08:04.834946436 +0000
+@@ -164,13 +164,7 @@
+ // Equal returns true if the given Attribute is a ListNestedAttribute
+ // and all fields are equal.
+ func (a ListNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(ListNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/list_nested_block.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/list_nested_block.go (draft)	2026-10-24 23:08:04.835103285 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Block is ListNestedBlock
+ // and all fields are equal.
+ func (b ListNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(ListNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/map_attribute.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/map_attribute.go (draft)	2026-10-24 23:08:04.835297592 +0000
+@@ -151,11 +151,7 @@
+ // Equal returns true if the given Attribute is a MapAttribute
+ // and all fields are equal.
+ func (a MapAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(MapAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/map_nested_attribute.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/map_nested_attribute.go (draft)	2026-10-24 23:08:04.835499908 +0000
+@@ -164,13 +164,7 @@
+ // Equal returns true if the given Attribute is a MapNestedAttribute
+ // and all fields are equal.
+ func (a MapNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(MapNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/number_attribute.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/number_attribute.go (draft)	2026-10-24 23:08:04.835744978 +0000
+@@ -133,11 +133,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/object_attribute.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/object_attribute.go (draft)	2026-10-24 23:08:04.835906827 +0000
+@@ -149,11 +149,7 @@
+ // Equal returns true if the given Attribute is a ObjectAttribute
+ // and all fields are equal.
+ func (a ObjectAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ObjectAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/set_attribute.go	2026-10-24 21:30:10.417091356 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/set_attribute.go (draft)	2026-10-24 23:08:04.836097831 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Attribute is a SetAttribute
+ // and all fields are equal.
+ func (a SetAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(SetAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/set_nested_attribute.go	2026-10-24 21:30:10.419597582 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/set_nested_attribute.go (draft)	2026-10-24 23:08:04.836346445 +0000
+@@ -159,13 +159,7 @@
+ // Equal returns true if the given Attribute is a SetNestedAttribute
+ // and all fields are equal.
+ func (a SetNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SetNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/set_nested_block.go	2026-10-24 21:30:10.419597582 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/set_nested_block.go (draft)	2026-10-24 23:08:04.836554494 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Block is SetNestedBlock
+ // and all fields are equal.
+ func (b SetNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SetNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/single_nested_attribute.go	2026-10-24 21:30:10.419597582 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/single_nested_attribute.go (draft)	2026-10-24 23:08:04.836715906 +0000
+@@ -157,13 +157,7 @@
+ // Equal returns true if the given Attribute is a SingleNestedAttribute
+ // and all fields are equal.
+ func (a SingleNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SingleNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetAttributes returns the Attributes field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/single_nested_block.go	2026-10-24 21:30:10.424832049 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/single_nested_block.go (draft)	2026-10-24 23:08:04.836869809 +0000
+@@ -148,11 +148,7 @@
+ // Equal returns true if the given Attribute is b SingleNestedBlock
+ // and all fields are equal.
+ func (b SingleNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SingleNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/ephemeral/schema/string_attribute.go	2026-10-24 21:30:10.425253534 +0000
++++ /home/user/terraform-plugin-framework/ephemeral/schema/string_attribute.go (draft)	2026-10-24 23:08:04.837117622 +0000
+@@ -129,11 +129,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /dev/null	2026-10-23 04:17:44.166722291 +0000
++++ /home/user/terraform-plugin-framework/internal/fwschema/typed_equal.go (draft)	2026-10-24 23:08:03.991719960 +0000
+@@ -0,0 +1,36 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package fwschema
++
++// TypedAttributesEqual returns true if o has the same concrete type as a and
++// AttributesEqual returns true.
++func TypedAttributesEqual[T Attribute](a T, o Attribute) bool {
++	if _, ok := o.(T); !ok {
++		return false
++	}
++
++	return AttributesEqual(a, o)
++}
++
++// TypedNestedAttributesEqual returns true if o has the same concrete type as
++// a and NestedAttributesEqual returns true.
++func TypedNestedAttributesEqual[T NestedAttribute](a T, o Attribute) bool {
++	other, ok := o.(T)
++
++	if !ok {
++		return false
++	}
++
++	return NestedAttributesEqual(a, other)
++}
++
++// TypedBlocksEqual returns true if o has the same concrete type as b and
++// BlocksEqual returns true.
++func TypedBlocksEqual[T Block](b T, o Block) bool {
++	if _, ok := o.(T); !ok {
++		return false
++	}
++
++	return BlocksEqual(b, o)
++}
+--- /home/user/terraform-plugin-framework/list/schema/bool_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/bool_attribute.go (draft)	2026-10-24 23:08:05.236137229 +0000
+@@ -121,11 +121,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/dynamic_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/dynamic_attribute.go (draft)	2026-10-24 23:08:05.236396434 +0000
+@@ -112,11 +112,7 @@
+ // Equal returns true if the given Attribute is a DynamicAttribute
+ // and all fields are equal.
+ func (a DynamicAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(DynamicAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/float32_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/float32_attribute.go (draft)	2026-10-24 23:08:05.236554984 +0000
+@@ -119,11 +119,7 @@
+ // Equal returns true if the given Attribute is a Float32Attribute
+ // and all fields are equal.
+ func (a Float32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float32Validators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/list/schema/float64_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/float64_attribute.go (draft)	2026-10-24 23:08:05.236680269 +0000
+@@ -119,11 +119,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float64Validators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/list/schema/int32_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/int32_attribute.go (draft)	2026-10-24 23:08:05.236814271 +0000
+@@ -119,11 +119,7 @@
+ // Equal returns true if the given Attribute is a Int32Attribute
+ // and all fields are equal.
+ func (a Int32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/int64_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/int64_attribute.go (draft)	2026-10-24 23:08:05.236938716 +0000
+@@ -119,11 +119,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/list_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/list_attribute.go (draft)	2026-10-24 23:08:05.237060010 +0000
+@@ -132,11 +132,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/list_nested_attribute.go	2026-10-24 21:30:10.688011338 +0000
++++ /home/user/terraform-plugin-framework/list/schema/list_nested_attribute.go (draft)	2026-10-24 23:08:05.237235460 +0000
+@@ -151,13 +151,7 @@
+ // Equal returns true if the given Attribute is a ListNestedAttribute
+ // and all fields are equal.
+ func (a ListNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(ListNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/list_nested_block.go	2026-10-24 21:30:10.693828199 +0000
++++ /home/user/terraform-plugin-framework/list/schema/list_nested_block.go (draft)	2026-10-24 23:08:05.237466654 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Block is ListNestedBlock
+ // and all fields are equal.
+ func (b ListNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(ListNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/map_attribute.go	2026-10-24 21:30:10.693828199 +0000
++++ /home/user/terraform-plugin-framework/list/schema/map_attribute.go (draft)	2026-10-24 23:08:05.237620988 +0000
+@@ -135,11 +135,7 @@
+ // Equal returns true if the given Attribute is a MapAttribute
+ // and all fields are equal.
+ func (a MapAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(MapAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/map_nested_attribute.go	2026-10-24 21:30:10.693828199 +0000
++++ /home/user/terraform-plugin-framework/list/schema/map_nested_attribute.go (draft)	2026-10-24 23:08:05.237754469 +0000
+@@ -151,13 +151,7 @@
+ // Equal returns true if the given Attribute is a MapNestedAttribute
+ // and all fields are equal.
+ func (a MapNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(MapNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/number_attribute.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/number_attribute.go (draft)	2026-10-24 23:08:05.237941213 +0000
+@@ -120,11 +120,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/object_attribute.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/object_attribute.go (draft)	2026-10-24 23:08:05.238064589 +0000
+@@ -137,11 +137,7 @@
+ // Equal returns true if the given Attribute is a ObjectAttribute
+ // and all fields are equal.
+ func (a ObjectAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ObjectAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/single_nested_attribute.go	2026-10-24 21:30:10.695356134 +0000
++++ /home/user/terraform-plugin-framework/list/schema/single_nested_attribute.go (draft)	2026-10-24 23:08:05.238294615 +0000
+@@ -144,13 +144,7 @@
+ // Equal returns true if the given Attribute is a SingleNestedAttribute
+ // and all fields are equal.
+ func (a SingleNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SingleNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetAttributes returns the Attributes field value.
+--- /home/user/terraform-plugin-framework/list/schema/single_nested_block.go	2026-10-24 21:30:10.697763603 +0000
++++ /home/user/terraform-plugin-framework/list/schema/single_nested_block.go (draft)	2026-10-24 23:08:05.238447417 +0000
+@@ -148,11 +148,7 @@
+ // Equal returns true if the given Attribute is b SingleNestedBlock
+ // and all fields are equal.
+ func (b SingleNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SingleNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/list/schema/string_attribute.go	2026-10-24 21:30:10.697763603 +0000
++++ /home/user/terraform-plugin-framework/list/schema/string_attribute.go (draft)	2026-10-24 23:08:05.238572586 +0000
+@@ -116,11 +116,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/metaschema/bool_attribute.go	2026-10-24 21:30:10.707597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/bool_attribute.go (draft)	2026-10-24 23:08:04.654945769 +0000
+@@ -66,11 +66,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/float64_attribute.go	2026-10-24 21:30:10.707597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/float64_attribute.go (draft)	2026-10-24 23:08:04.655318567 +0000
+@@ -69,11 +69,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/int64_attribute.go	2026-10-24 21:30:10.707597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/int64_attribute.go (draft)	2026-10-24 23:08:04.655586877 +0000
+@@ -69,11 +69,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/list_attribute.go	2026-10-24 21:30:10.707597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/list_attribute.go (draft)	2026-10-24 23:08:04.655859323 +0000
+@@ -80,11 +80,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/list_nested_attribute.go	2026-10-24 21:30:10.707597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/list_nested_attribute.go (draft)	2026-10-24 23:08:04.656149461 +0000
+@@ -94,13 +94,7 @@
+ // Equal returns true if the given Attribute is a ListNestedAttribute
+ // and all fields are equal.
+ func (a ListNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(ListNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/map_attribute.go	2026-10-24 21:30:10.707597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/map_attribute.go (draft)	2026-10-24 23:08:04.656454766 +0000
+@@ -83,11 +83,7 @@
+ // Equal returns true if the given Attribute is a MapAttribute
+ // and all fields are equal.
+ func (a MapAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(MapAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/map_nested_attribute.go	2026-10-24 21:30:10.707597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/map_nested_attribute.go (draft)	2026-10-24 23:08:04.656746980 +0000
+@@ -94,13 +94,7 @@
+ // Equal returns true if the given Attribute is a MapNestedAttribute
+ // and all fields are equal.
+ func (a MapNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(MapNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/number_attribute.go	2026-10-24 21:30:10.711597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/number_attribute.go (draft)	2026-10-24 23:08:04.657050452 +0000
+@@ -70,11 +70,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/object_attribute.go	2026-10-24 21:30:10.711597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/object_attribute.go (draft)	2026-10-24 23:08:04.657408256 +0000
+@@ -82,11 +82,7 @@
+ // Equal returns true if the given Attribute is a ObjectAttribute
+ // and all fields are equal.
+ func (a ObjectAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ObjectAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/set_attribute.go	2026-10-24 21:30:10.711597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/set_attribute.go (draft)	2026-10-24 23:08:04.657745884 +0000
+@@ -78,11 +78,7 @@
+ // Equal returns true if the given Attribute is a SetAttribute
+ // and all fields are equal.
+ func (a SetAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(SetAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/set_nested_attribute.go	2026-10-24 21:30:10.711597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/set_nested_attribute.go (draft)	2026-10-24 23:08:04.657998082 +0000
+@@ -89,13 +89,7 @@
+ // Equal returns true if the given Attribute is a SetNestedAttribute
+ // and all fields are equal.
+ func (a SetNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SetNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/metaschema/single_nested_attribute.go	2026-10-24 21:30:10.715597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/single_nested_attribute.go (draft)	2026-10-24 23:08:04.658314664 +0000
+@@ -94,13 +94,7 @@
+ // Equal returns true if the given Attribute is a SingleNestedAttribute
+ // and all fields are equal.
+ func (a SingleNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SingleNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetAttributes returns the Attributes field value.
+--- /home/user/terraform-plugin-framework/provider/metaschema/string_attribute.go	2026-10-24 21:30:10.715597575 +0000
++++ /home/user/terraform-plugin-framework/provider/metaschema/string_attribute.go (draft)	2026-10-24 23:08:04.658568792 +0000
+@@ -66,11 +66,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage always returns an empty string as there is no
+--- /home/user/terraform-plugin-framework/provider/schema/bool_attribute.go	2026-10-24 21:30:10.715597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/bool_attribute.go (draft)	2026-10-24 23:08:04.438271700 +0000
+@@ -129,11 +129,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/dynamic_attribute.go	2026-10-24 21:30:10.715597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/dynamic_attribute.go (draft)	2026-10-24 23:08:04.438474448 +0000
+@@ -121,11 +121,7 @@
+ // Equal returns true if the given Attribute is a DynamicAttribute
+ // and all fields are equal.
+ func (a DynamicAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(DynamicAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/float32_attribute.go	2026-10-24 21:30:10.719597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/float32_attribute.go (draft)	2026-10-24 23:08:04.438610823 +0000
+@@ -127,11 +127,7 @@
+ // Equal returns true if the given Attribute is a Float32Attribute
+ // and all fields are equal.
+ func (a Float32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float32Validators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/provider/schema/float64_attribute.go	2026-10-24 21:30:10.719597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/float64_attribute.go (draft)	2026-10-24 23:08:04.438739357 +0000
+@@ -127,11 +127,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float64Validators returns the Validators field value.
+--- /home/user/terraform-plugin-framework/provider/schema/int32_attribute.go	2026-10-24 21:30:10.719597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/int32_attribute.go (draft)	2026-10-24 23:08:04.438861167 +0000
+@@ -127,11 +127,7 @@
+ // Equal returns true if the given Attribute is a Int32Attribute
+ // and all fields are equal.
+ func (a Int32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/int64_attribute.go	2026-10-24 21:30:10.719597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/int64_attribute.go (draft)	2026-10-24 23:08:04.438986248 +0000
+@@ -127,11 +127,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/list_attribute.go	2026-10-24 21:30:10.719597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/list_attribute.go (draft)	2026-10-24 23:08:04.439111017 +0000
+@@ -143,11 +143,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/list_nested_attribute.go	2026-10-24 21:30:10.719597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/list_nested_attribute.go (draft)	2026-10-24 23:08:04.439292210 +0000
+@@ -159,13 +159,7 @@
+ // Equal returns true if the given Attribute is a ListNestedAttribute
+ // and all fields are equal.
+ func (a ListNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(ListNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/list_nested_block.go	2026-10-24 21:30:10.719597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/list_nested_block.go (draft)	2026-10-24 23:08:04.439446612 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Block is ListNestedBlock
+ // and all fields are equal.
+ func (b ListNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(ListNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/map_attribute.go	2026-10-24 21:30:10.719597575 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/map_attribute.go (draft)	2026-10-24 23:08:04.439574420 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Attribute is a MapAttribute
+ // and all fields are equal.
+ func (a MapAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(MapAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/map_nested_attribute.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/map_nested_attribute.go (draft)	2026-10-24 23:08:04.439725324 +0000
+@@ -158,13 +158,7 @@
+ // Equal returns true if the given Attribute is a MapNestedAttribute
+ // and all fields are equal.
+ func (a MapNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(MapNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/number_attribute.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/number_attribute.go (draft)	2026-10-24 23:08:04.439926620 +0000
+@@ -128,11 +128,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/object_attribute.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/object_attribute.go (draft)	2026-10-24 23:08:04.440047421 +0000
+@@ -145,11 +145,7 @@
+ // Equal returns true if the given Attribute is a ObjectAttribute
+ // and all fields are equal.
+ func (a ObjectAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ObjectAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/set_attribute.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/set_attribute.go (draft)	2026-10-24 23:08:04.440233231 +0000
+@@ -141,11 +141,7 @@
+ // Equal returns true if the given Attribute is a SetAttribute
+ // and all fields are equal.
+ func (a SetAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(SetAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/set_nested_attribute.go	2026-10-24 21:30:10.726191854 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/set_nested_attribute.go (draft)	2026-10-24 23:08:04.440402752 +0000
+@@ -154,13 +154,7 @@
+ // Equal returns true if the given Attribute is a SetNestedAttribute
+ // and all fields are equal.
+ func (a SetNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SetNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/set_nested_block.go	2026-10-24 21:30:10.730448115 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/set_nested_block.go (draft)	2026-10-24 23:08:04.440530461 +0000
+@@ -146,11 +146,7 @@
+ // Equal returns true if the given Block is SetNestedBlock
+ // and all fields are equal.
+ func (b SetNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SetNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/single_nested_attribute.go	2026-10-24 21:30:10.730448115 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/single_nested_attribute.go (draft)	2026-10-24 23:08:04.440661840 +0000
+@@ -152,13 +152,7 @@
+ // Equal returns true if the given Attribute is a SingleNestedAttribute
+ // and all fields are equal.
+ func (a SingleNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SingleNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetAttributes returns the Attributes field value.
+--- /home/user/terraform-plugin-framework/provider/schema/single_nested_block.go	2026-10-24 21:30:10.730448115 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/single_nested_block.go (draft)	2026-10-24 23:08:04.440785850 +0000
+@@ -148,11 +148,7 @@
+ // Equal returns true if the given Attribute is b SingleNestedBlock
+ // and all fields are equal.
+ func (b SingleNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SingleNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/provider/schema/string_attribute.go	2026-10-24 21:30:10.730448115 +0000
++++ /home/user/terraform-plugin-framework/provider/schema/string_attribute.go (draft)	2026-10-24 23:08:04.440909227 +0000
+@@ -124,11 +124,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/identityschema/bool_attribute.go	2026-10-24 21:30:10.731597575 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/bool_attribute.go (draft)	2026-10-24 23:08:05.596679154 +0000
+@@ -57,11 +57,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns an empty string as identity attributes cannot
+--- /home/user/terraform-plugin-framework/resource/identityschema/float32_attribute.go	2026-10-24 21:30:10.731597575 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/float32_attribute.go (draft)	2026-10-24 23:08:05.596874226 +0000
+@@ -60,11 +60,7 @@
+ // Equal returns true if the given Attribute is a Float32Attribute
+ // and all fields are equal.
+ func (a Float32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns an empty string as identity attributes cannot
+--- /home/user/terraform-plugin-framework/resource/identityschema/float64_attribute.go	2026-10-24 21:30:10.731597575 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/float64_attribute.go (draft)	2026-10-24 23:08:05.597001641 +0000
+@@ -60,11 +60,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns an empty string as identity attributes cannot
+--- /home/user/terraform-plugin-framework/resource/identityschema/int32_attribute.go	2026-10-24 21:30:10.731597575 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/int32_attribute.go (draft)	2026-10-24 23:08:05.597135827 +0000
+@@ -60,11 +60,7 @@
+ // Equal returns true if the given Attribute is a Int32Attribute
+ // and all fields are equal.
+ func (a Int32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns an empty string as identity attributes cannot
+--- /home/user/terraform-plugin-framework/resource/identityschema/int64_attribute.go	2026-10-24 21:30:10.737537070 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/int64_attribute.go (draft)	2026-10-24 23:08:05.597343683 +0000
+@@ -60,11 +60,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns an empty string as identity attributes cannot
+--- /home/user/terraform-plugin-framework/resource/identityschema/list_attribute.go	2026-10-24 21:30:10.737537070 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/list_attribute.go (draft)	2026-10-24 23:08:05.597492112 +0000
+@@ -86,11 +86,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns an empty string as identity attributes cannot
+--- /home/user/terraform-plugin-framework/resource/identityschema/number_attribute.go	2026-10-24 21:30:10.737537070 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/number_attribute.go (draft)	2026-10-24 23:08:05.597616062 +0000
+@@ -61,11 +61,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns an empty string as identity attributes cannot
+--- /home/user/terraform-plugin-framework/resource/identityschema/string_attribute.go	2026-10-24 21:30:10.737537070 +0000
++++ /home/user/terraform-plugin-framework/resource/identityschema/string_attribute.go (draft)	2026-10-24 23:08:05.597762458 +0000
+@@ -57,11 +57,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns an empty string as identity attributes cannot
+--- /home/user/terraform-plugin-framework/resource/schema/bool_attribute.go	2026-10-24 21:30:10.740157399 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/bool_attribute.go (draft)	2026-10-24 23:08:04.021779211 +0000
+@@ -188,11 +188,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/dynamic_attribute.go	2026-10-24 21:30:10.745643924 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/dynamic_attribute.go (draft)	2026-10-24 23:08:04.021977491 +0000
+@@ -174,11 +174,7 @@
+ // Equal returns true if the given Attribute is a DynamicAttribute
+ // and all fields are equal.
+ func (a DynamicAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(DynamicAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/float32_attribute.go	2026-10-24 21:30:10.750714602 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/float32_attribute.go (draft)	2026-10-24 23:08:04.022124308 +0000
+@@ -176,11 +176,7 @@
+ // Equal returns true if the given Attribute is a Float32Attribute
+ // and all fields are equal.
+ func (a Float32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float32DefaultValue returns the Default field value.
+--- /home/user/terraform-plugin-framework/resource/schema/float64_attribute.go	2026-10-24 21:30:10.750714602 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/float64_attribute.go (draft)	2026-10-24 23:08:04.022384657 +0000
+@@ -176,11 +176,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // Float64DefaultValue returns the Default field value.
+--- /home/user/terraform-plugin-framework/resource/schema/int32_attribute.go	2026-10-24 21:30:10.751597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/int32_attribute.go (draft)	2026-10-24 23:08:04.022560928 +0000
+@@ -176,11 +176,7 @@
+ // Equal returns true if the given Attribute is a Int32Attribute
+ // and all fields are equal.
+ func (a Int32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/int64_attribute.go	2026-10-24 21:30:10.758659694 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/int64_attribute.go (draft)	2026-10-24 23:08:04.022695822 +0000
+@@ -176,11 +176,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/list_attribute.go	2026-10-24 21:30:10.759597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/list_attribute.go (draft)	2026-10-24 23:08:04.022849031 +0000
+@@ -189,11 +189,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/list_nested_attribute.go	2026-10-24 21:30:10.759597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/list_nested_attribute.go (draft)	2026-10-24 23:08:04.023093222 +0000
+@@ -208,13 +208,7 @@
+ // Equal returns true if the given Attribute is a ListNestedAttribute
+ // and all fields are equal.
+ func (a ListNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(ListNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/list_nested_block.go	2026-10-24 21:30:10.759597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/list_nested_block.go (draft)	2026-10-24 23:08:04.023297274 +0000
+@@ -165,11 +165,7 @@
+ // Equal returns true if the given Block is ListNestedBlock
+ // and all fields are equal.
+ func (b ListNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(ListNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/map_attribute.go	2026-10-24 21:30:10.763597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/map_attribute.go (draft)	2026-10-24 23:08:04.023463115 +0000
+@@ -192,11 +192,7 @@
+ // Equal returns true if the given Attribute is a MapAttribute
+ // and all fields are equal.
+ func (a MapAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(MapAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/map_nested_attribute.go	2026-10-24 21:30:10.763597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/map_nested_attribute.go (draft)	2026-10-24 23:08:04.023609323 +0000
+@@ -208,13 +208,7 @@
+ // Equal returns true if the given Attribute is a MapNestedAttribute
+ // and all fields are equal.
+ func (a MapNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(MapNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/number_attribute.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/number_attribute.go (draft)	2026-10-24 23:08:04.023822554 +0000
+@@ -177,11 +177,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/object_attribute.go	2026-10-24 21:30:10.771811099 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/object_attribute.go (draft)	2026-10-24 23:08:04.023962438 +0000
+@@ -191,11 +191,7 @@
+ // Equal returns true if the given Attribute is a ObjectAttribute
+ // and all fields are equal.
+ func (a ObjectAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ObjectAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/set_attribute.go	2026-10-24 21:30:10.779597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/set_attribute.go (draft)	2026-10-24 23:08:04.024196975 +0000
+@@ -177,11 +177,7 @@
+ // Equal returns true if the given Attribute is a SetAttribute
+ // and all fields are equal.
+ func (a SetAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(SetAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/set_nested_attribute.go	2026-10-24 21:30:10.779597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/set_nested_attribute.go (draft)	2026-10-24 23:08:04.024415228 +0000
+@@ -190,13 +190,7 @@
+ // Equal returns true if the given Attribute is a SetNestedAttribute
+ // and all fields are equal.
+ func (a SetNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SetNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/set_nested_block.go	2026-10-24 21:30:10.779597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/set_nested_block.go (draft)	2026-10-24 23:08:04.024550127 +0000
+@@ -166,11 +166,7 @@
+ // Equal returns true if the given Block is SetNestedBlock
+ // and all fields are equal.
+ func (b SetNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SetNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/single_nested_attribute.go	2026-10-24 21:30:10.783597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/single_nested_attribute.go (draft)	2026-10-24 23:08:04.024691667 +0000
+@@ -200,13 +200,7 @@
+ // Equal returns true if the given Attribute is a SingleNestedAttribute
+ // and all fields are equal.
+ func (a SingleNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SingleNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetAttributes returns the Attributes field value.
+--- /home/user/terraform-plugin-framework/resource/schema/single_nested_block.go	2026-10-24 21:30:10.783597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/single_nested_block.go (draft)	2026-10-24 23:08:04.024830665 +0000
+@@ -167,11 +167,7 @@
+ // Equal returns true if the given Attribute is b SingleNestedBlock
+ // and all fields are equal.
+ func (b SingleNestedBlock) Equal(o fwschema.Block) bool {
+-	if _, ok := o.(SingleNestedBlock); !ok {
+-		return false
+-	}
+-
+-	return fwschema.BlocksEqual(b, o)
++	return fwschema.TypedBlocksEqual(b, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/resource/schema/string_attribute.go	2026-10-24 21:30:10.787597574 +0000
++++ /home/user/terraform-plugin-framework/resource/schema/string_attribute.go (draft)	2026-10-24 23:08:04.024964645 +0000
+@@ -173,11 +173,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/bool_attribute.go	2026-10-24 21:30:10.800154874 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/bool_attribute.go (draft)	2026-10-24 23:08:05.422744638 +0000
+@@ -100,11 +100,7 @@
+ // Equal returns true if the given Attribute is a BoolAttribute
+ // and all fields are equal.
+ func (a BoolAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(BoolAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/dynamic_attribute.go	2026-10-24 21:30:10.800154874 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/dynamic_attribute.go (draft)	2026-10-24 23:08:05.422974225 +0000
+@@ -101,11 +101,7 @@
+ // Equal returns true if the given Attribute is a DynamicAttribute
+ // and all fields are equal.
+ func (a DynamicAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(DynamicAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/float32_attribute.go	2026-10-24 21:30:10.800154874 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/float32_attribute.go (draft)	2026-10-24 23:08:05.423243776 +0000
+@@ -103,11 +103,7 @@
+ // Equal returns true if the given Attribute is a Float32Attribute
+ // and all fields are equal.
+ func (a Float32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/float64_attribute.go	2026-10-24 21:30:10.800154874 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/float64_attribute.go (draft)	2026-10-24 23:08:05.423503524 +0000
+@@ -103,11 +103,7 @@
+ // Equal returns true if the given Attribute is a Float64Attribute
+ // and all fields are equal.
+ func (a Float64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Float64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/int32_attribute.go	2026-10-24 21:30:10.800499553 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/int32_attribute.go (draft)	2026-10-24 23:08:05.423749316 +0000
+@@ -103,11 +103,7 @@
+ // Equal returns true if the given Attribute is a Int32Attribute
+ // and all fields are equal.
+ func (a Int32Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int32Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/int64_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/int64_attribute.go (draft)	2026-10-24 23:08:05.423982340 +0000
+@@ -103,11 +103,7 @@
+ // Equal returns true if the given Attribute is a Int64Attribute
+ // and all fields are equal.
+ func (a Int64Attribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(Int64Attribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/list_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/list_attribute.go (draft)	2026-10-24 23:08:05.424267715 +0000
+@@ -119,11 +119,7 @@
+ // Equal returns true if the given Attribute is a ListAttribute
+ // and all fields are equal.
+ func (a ListAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ListAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/list_nested_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/list_nested_attribute.go (draft)	2026-10-24 23:08:05.424539932 +0000
+@@ -135,13 +135,7 @@
+ // Equal returns true if the given Attribute is a ListNestedAttribute
+ // and all fields are equal.
+ func (a ListNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(ListNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/map_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/map_attribute.go (draft)	2026-10-24 23:08:05.424778032 +0000
+@@ -122,11 +122,7 @@
+ // Equal returns true if the given Attribute is a MapAttribute
+ // and all fields are equal.
+ func (a MapAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(MapAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/map_nested_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/map_nested_attribute.go (draft)	2026-10-24 23:08:05.425015516 +0000
+@@ -135,13 +135,7 @@
+ // Equal returns true if the given Attribute is a MapNestedAttribute
+ // and all fields are equal.
+ func (a MapNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(MapNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/number_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/number_attribute.go (draft)	2026-10-24 23:08:05.425402806 +0000
+@@ -104,11 +104,7 @@
+ // Equal returns true if the given Attribute is a NumberAttribute
+ // and all fields are equal.
+ func (a NumberAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(NumberAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/object_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/object_attribute.go (draft)	2026-10-24 23:08:05.425664012 +0000
+@@ -120,11 +120,7 @@
+ // Equal returns true if the given Attribute is a ObjectAttribute
+ // and all fields are equal.
+ func (a ObjectAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(ObjectAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/set_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/set_attribute.go (draft)	2026-10-24 23:08:05.425956827 +0000
+@@ -117,11 +117,7 @@
+ // Equal returns true if the given Attribute is a SetAttribute
+ // and all fields are equal.
+ func (a SetAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(SetAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/set_nested_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/set_nested_attribute.go (draft)	2026-10-24 23:08:05.426215666 +0000
+@@ -130,13 +130,7 @@
+ // Equal returns true if the given Attribute is a SetNestedAttribute
+ // and all fields are equal.
+ func (a SetNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SetNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/single_nested_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/single_nested_attribute.go (draft)	2026-10-24 23:08:05.426400121 +0000
+@@ -128,13 +128,7 @@
+ // Equal returns true if the given Attribute is a SingleNestedAttribute
+ // and all fields are equal.
+ func (a SingleNestedAttribute) Equal(o fwschema.Attribute) bool {
+-	other, ok := o.(SingleNestedAttribute)
+-
+-	if !ok {
+-		return false
+-	}
+-
+-	return fwschema.NestedAttributesEqual(a, other)
++	return fwschema.TypedNestedAttributesEqual(a, o)
+ }
+ 
+ // GetAttributes returns the Attributes field value.
+--- /home/user/terraform-plugin-framework/statestore/schema/string_attribute.go	2026-10-24 21:30:10.800530440 +0000
++++ /home/user/terraform-plugin-framework/statestore/schema/string_attribute.go (draft)	2026-10-24 23:08:05.426589494 +0000
+@@ -100,11 +100,7 @@
+ // Equal returns true if the given Attribute is a StringAttribute
+ // and all fields are equal.
+ func (a StringAttribute) Equal(o fwschema.Attribute) bool {
+-	if _, ok := o.(StringAttribute); !ok {
+-		return false
+-	}
+-
+-	return fwschema.AttributesEqual(a, o)
++	return fwschema.TypedAttributesEqual(a, o)
+ }
+ 
+ // GetDeprecationMessage returns the DeprecationMessage field value.

@@ -1,0 +1,153 @@
+diff -ruN repo/types/basetypes/map_value.go draft2/types/basetypes/map_value.go
+--- repo/types/basetypes/map_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft2/types/basetypes/map_value.go	2026-10-24 23:03:35.029450117 +0000
+@@ -9,7 +9,8 @@
+ import (
+ 	"context"
+ 	"fmt"
+-	"sort"
++	"maps"
++	"slices"
+ 	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+@@ -174,9 +175,7 @@
+ 	// Ensure callers cannot mutate the internal elements
+ 	result := make(map[string]attr.Value, len(m.elements))
+ 
+-	for key, value := range m.elements {
+-		result[key] = value
+-	}
++	maps.Copy(result, m.elements)
+ 
+ 	return result
+ }
+@@ -342,11 +341,7 @@
+ 	}
+ 
+ 	// We want the output to be consistent, so we sort the output by key
+-	keys := make([]string, 0, len(m.Elements()))
+-	for k := range m.Elements() {
+-		keys = append(keys, k)
+-	}
+-	sort.Strings(keys)
++	keys := slices.Sorted(maps.Keys(m.elements))
+ 
+ 	var res strings.Builder
+ 
+@@ -356,7 +351,7 @@
+ 			res.WriteString(",")
+ 		}
+ 		//nolint:staticcheck
+-		res.WriteString(fmt.Sprintf("%q:%s", k, m.Elements()[k].String()))
++		res.WriteString(fmt.Sprintf("%q:%s", k, m.elements[k].String()))
+ 	}
+ 	res.WriteString("}")
+ 
+diff -ruN repo/types/basetypes/object_type.go draft2/types/basetypes/object_type.go
+--- repo/types/basetypes/object_type.go	2026-09-25 10:13:00.000000000 +0000
++++ draft2/types/basetypes/object_type.go	2026-10-24 23:03:29.296445898 +0000
+@@ -6,7 +6,8 @@
+ import (
+ 	"context"
+ 	"fmt"
+-	"sort"
++	"maps"
++	"slices"
+ 	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+@@ -43,9 +44,7 @@
+ 	// Ensure callers cannot mutate the value
+ 	result := make(map[string]attr.Type, len(o.AttrTypes))
+ 
+-	for key, value := range o.AttrTypes {
+-		result[key] = value
+-	}
++	maps.Copy(result, o.AttrTypes)
+ 
+ 	return result
+ }
+@@ -145,12 +144,7 @@
+ func (o ObjectType) String() string {
+ 	var res strings.Builder
+ 	res.WriteString("types.ObjectType[")
+-	keys := make([]string, 0, len(o.AttrTypes))
+-	for k := range o.AttrTypes {
+-		keys = append(keys, k)
+-	}
+-	sort.Strings(keys)
+-	for pos, key := range keys {
++	for pos, key := range slices.Sorted(maps.Keys(o.AttrTypes)) {
+ 		if pos != 0 {
+ 			res.WriteString(", ")
+ 		}
+diff -ruN repo/types/basetypes/object_value.go draft2/types/basetypes/object_value.go
+--- repo/types/basetypes/object_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft2/types/basetypes/object_value.go	2026-10-24 23:03:29.297832348 +0000
+@@ -6,7 +6,8 @@
+ import (
+ 	"context"
+ 	"fmt"
+-	"sort"
++	"maps"
++	"slices"
+ 	"strings"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+@@ -235,9 +236,7 @@
+ 	// Ensure callers cannot mutate the internal attributes
+ 	result := make(map[string]attr.Value, len(o.attributes))
+ 
+-	for name, value := range o.attributes {
+-		result[name] = value
+-	}
++	maps.Copy(result, o.attributes)
+ 
+ 	return result
+ }
+@@ -247,9 +246,7 @@
+ 	// Ensure callers cannot mutate the internal attribute types
+ 	result := make(map[string]attr.Type, len(o.attributeTypes))
+ 
+-	for name, typ := range o.attributeTypes {
+-		result[name] = typ
+-	}
++	maps.Copy(result, o.attributeTypes)
+ 
+ 	return result
+ }
+@@ -374,11 +371,7 @@
+ 	}
+ 
+ 	// We want the output to be consistent, so we sort the output by key
+-	keys := make([]string, 0, len(o.Attributes()))
+-	for k := range o.Attributes() {
+-		keys = append(keys, k)
+-	}
+-	sort.Strings(keys)
++	keys := slices.Sorted(maps.Keys(o.attributes))
+ 
+ 	var res strings.Builder
+ 
+@@ -388,7 +381,7 @@
+ 			res.WriteString(",")
+ 		}
+ 		//nolint:staticcheck
+-		res.WriteString(fmt.Sprintf(`"%s":%s`, k, o.Attributes()[k].String()))
++		res.WriteString(fmt.Sprintf(`"%s":%s`, k, o.attributes[k].String()))
+ 	}
+ 	res.WriteString("}")
+ 
+diff -ruN repo/types/basetypes/set_value.go draft2/types/basetypes/set_value.go
+--- repo/types/basetypes/set_value.go	2026-09-25 10:13:00.000000000 +0000
++++ draft2/types/basetypes/set_value.go	2026-10-24 23:03:29.297943944 +0000
+@@ -306,7 +306,7 @@
+ }
+ 
+ func (s SetValue) contains(v attr.Value) bool {
+-	for _, elem := range s.Elements() {
++	for _, elem := range s.elements {
+ 		if elem.Equal(v) {
+ 			return true
+ 		}

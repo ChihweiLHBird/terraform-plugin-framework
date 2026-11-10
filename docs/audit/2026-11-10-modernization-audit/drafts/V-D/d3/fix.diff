@@ -1,0 +1,56 @@
+--- /home/user/terraform-plugin-framework/internal/fwserver/attribute_validation.go	2026-10-24 21:30:10.508094224 +0000
++++ /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-D/d3/attribute_validation.go	2026-11-10 21:19:48.672607631 +0000
+@@ -1149,7 +1149,9 @@
+ 		}
+ 		nestedAttributeObjectResp := &ValidateAttributeResponse{}
+ 
+-		NestedAttributeObjectValidate(ctx, nestedAttributeObject, nestedAttributeObjectReq, nestedAttributeObjectResp)
++		// The object validators of a single nested attribute were already
++		// run by AttributeValidateObject, so only validate the attributes.
++		nestedAttributeObjectValidate(ctx, nestedAttributeObject, false, nestedAttributeObjectReq, nestedAttributeObjectResp)
+ 
+ 		resp.Diagnostics.Append(nestedAttributeObjectResp.Diagnostics...)
+ 	default:
+@@ -1165,9 +1167,13 @@
+ }
+ 
+ func NestedAttributeObjectValidate(ctx context.Context, o fwschema.NestedAttributeObject, req ValidateAttributeRequest, resp *ValidateAttributeResponse) {
++	nestedAttributeObjectValidate(ctx, o, true, req, resp)
++}
++
++func nestedAttributeObjectValidate(ctx context.Context, o fwschema.NestedAttributeObject, objectValidators bool, req ValidateAttributeRequest, resp *ValidateAttributeResponse) {
+ 	objectWithValidators, ok := o.(fwxschema.NestedAttributeObjectWithValidators)
+ 
+-	if ok {
++	if ok && objectValidators {
+ 		objectVal, ok := req.AttributeConfig.(basetypes.ObjectValuable)
+ 
+ 		if !ok {
+--- /home/user/terraform-plugin-framework/internal/fwserver/block_validation.go	2026-10-24 21:30:10.511597580 +0000
++++ /tmp/claude-0/-home-user-terraform-plugin-framework/fa76c6e0-389f-5a99-aa88-c4a029b125d0/scratchpad/audit/work/V-D/d3/block_validation.go	2026-11-10 21:19:48.672730728 +0000
+@@ -150,7 +150,9 @@
+ 		}
+ 		nestedBlockObjectResp := &ValidateAttributeResponse{}
+ 
+-		NestedBlockObjectValidate(ctx, nestedBlockObject, nestedBlockObjectReq, nestedBlockObjectResp)
++		// The object validators of a single nested block were already run by
++		// BlockValidateObject, so only validate the attributes and blocks.
++		nestedBlockObjectValidate(ctx, nestedBlockObject, false, nestedBlockObjectReq, nestedBlockObjectResp)
+ 
+ 		resp.Diagnostics.Append(nestedBlockObjectResp.Diagnostics...)
+ 	default:
+@@ -373,9 +375,13 @@
+ }
+ 
+ func NestedBlockObjectValidate(ctx context.Context, o fwschema.NestedBlockObject, req ValidateAttributeRequest, resp *ValidateAttributeResponse) {
++	nestedBlockObjectValidate(ctx, o, true, req, resp)
++}
++
++func nestedBlockObjectValidate(ctx context.Context, o fwschema.NestedBlockObject, objectValidators bool, req ValidateAttributeRequest, resp *ValidateAttributeResponse) {
+ 	objectWithValidators, ok := o.(fwxschema.NestedBlockObjectWithValidators)
+ 
+-	if ok {
++	if ok && objectValidators {
+ 		objectVal, ok := req.AttributeConfig.(basetypes.ObjectValuable)
+ 
+ 		if !ok {

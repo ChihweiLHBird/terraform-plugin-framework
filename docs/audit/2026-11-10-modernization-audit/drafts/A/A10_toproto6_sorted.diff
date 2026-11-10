@@ -1,0 +1,323 @@
+--- /home/user/terraform-plugin-framework/internal/toproto6/schema.go	2026-10-24 21:30:10.675597576 +0000
++++ internal/toproto6/schema.go	2026-10-24 23:16:28.953553628 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"maps"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+@@ -23,9 +24,12 @@
+ 	}
+ 
+ 	var attrs []*tfprotov6.SchemaAttribute
+-	var blocks []*tfprotov6.SchemaNestedBlock
++	var protoBlocks []*tfprotov6.SchemaNestedBlock
+ 
+-	for name, attr := range s.GetAttributes() {
++	attributes := s.GetAttributes()
++
++	for _, name := range slices.Sorted(maps.Keys(attributes)) {
++		attr := attributes[name]
+ 		a, err := SchemaAttribute(ctx, name, tftypes.NewAttributePath().WithAttributeName(name), attr)
+ 
+ 		if err != nil {
+@@ -35,45 +39,24 @@
+ 		attrs = append(attrs, a)
+ 	}
+ 
+-	for name, block := range s.GetBlocks() {
++	blocks := s.GetBlocks()
++
++	for _, name := range slices.Sorted(maps.Keys(blocks)) {
++		block := blocks[name]
+ 		proto6, err := Block(ctx, name, tftypes.NewAttributePath().WithAttributeName(name), block)
+ 
+ 		if err != nil {
+ 			return nil, err
+ 		}
+ 
+-		blocks = append(blocks, proto6)
++		protoBlocks = append(protoBlocks, proto6)
+ 	}
+ 
+-	sort.Slice(attrs, func(i, j int) bool {
+-		if attrs[i] == nil {
+-			return true
+-		}
+-
+-		if attrs[j] == nil {
+-			return false
+-		}
+-
+-		return attrs[i].Name < attrs[j].Name
+-	})
+-
+-	sort.Slice(blocks, func(i, j int) bool {
+-		if blocks[i] == nil {
+-			return true
+-		}
+-
+-		if blocks[j] == nil {
+-			return false
+-		}
+-
+-		return blocks[i].TypeName < blocks[j].TypeName
+-	})
+-
+ 	result.Block = &tfprotov6.SchemaBlock{
+ 		// core doesn't do anything with version, as far as I can tell,
+ 		// so let's not set it.
+ 		Attributes:         attrs,
+-		BlockTypes:         blocks,
++		BlockTypes:         protoBlocks,
+ 		Deprecated:         s.GetDeprecationMessage() != "",
+ 		DeprecationMessage: s.GetDeprecationMessage(),
+ 	}
+--- /home/user/terraform-plugin-framework/internal/toproto6/block.go	2026-10-24 21:30:10.659597576 +0000
++++ internal/toproto6/block.go	2026-10-24 23:16:28.885553630 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"maps"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+@@ -48,7 +49,10 @@
+ 
+ 	nestedBlockObject := b.GetNestedObject()
+ 
+-	for attrName, attr := range nestedBlockObject.GetAttributes() {
++	attributes := nestedBlockObject.GetAttributes()
++
++	for _, attrName := range slices.Sorted(maps.Keys(attributes)) {
++		attr := attributes[attrName]
+ 		attrPath := path.WithAttributeName(attrName)
+ 		attrProto6, err := SchemaAttribute(ctx, attrName, attrPath, attr)
+ 
+@@ -59,7 +63,10 @@
+ 		schemaNestedBlock.Block.Attributes = append(schemaNestedBlock.Block.Attributes, attrProto6)
+ 	}
+ 
+-	for blockName, block := range nestedBlockObject.GetBlocks() {
++	blocks := nestedBlockObject.GetBlocks()
++
++	for _, blockName := range slices.Sorted(maps.Keys(blocks)) {
++		block := blocks[blockName]
+ 		blockPath := path.WithAttributeName(blockName)
+ 		blockProto6, err := Block(ctx, blockName, blockPath, block)
+ 
+@@ -70,29 +77,5 @@
+ 		schemaNestedBlock.Block.BlockTypes = append(schemaNestedBlock.Block.BlockTypes, blockProto6)
+ 	}
+ 
+-	sort.Slice(schemaNestedBlock.Block.Attributes, func(i, j int) bool {
+-		if schemaNestedBlock.Block.Attributes[i] == nil {
+-			return true
+-		}
+-
+-		if schemaNestedBlock.Block.Attributes[j] == nil {
+-			return false
+-		}
+-
+-		return schemaNestedBlock.Block.Attributes[i].Name < schemaNestedBlock.Block.Attributes[j].Name
+-	})
+-
+-	sort.Slice(schemaNestedBlock.Block.BlockTypes, func(i, j int) bool {
+-		if schemaNestedBlock.Block.BlockTypes[i] == nil {
+-			return true
+-		}
+-
+-		if schemaNestedBlock.Block.BlockTypes[j] == nil {
+-			return false
+-		}
+-
+-		return schemaNestedBlock.Block.BlockTypes[i].TypeName < schemaNestedBlock.Block.BlockTypes[j].TypeName
+-	})
+-
+ 	return schemaNestedBlock, nil
+ }
+--- /home/user/terraform-plugin-framework/internal/toproto6/schema_attribute.go	2026-10-24 21:30:10.675597576 +0000
++++ internal/toproto6/schema_attribute.go	2026-10-24 23:16:28.953553628 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"maps"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+@@ -67,7 +68,10 @@
+ 		return nil, path.NewErrorf("unrecognized nesting mode %v", nm)
+ 	}
+ 
+-	for nestedName, nestedA := range nestedAttribute.GetNestedObject().GetAttributes() {
++	nestedAttributes := nestedAttribute.GetNestedObject().GetAttributes()
++
++	for _, nestedName := range slices.Sorted(maps.Keys(nestedAttributes)) {
++		nestedA := nestedAttributes[nestedName]
+ 		nestedSchemaAttribute, err := SchemaAttribute(ctx, nestedName, path.WithAttributeName(nestedName), nestedA)
+ 
+ 		if err != nil {
+@@ -77,18 +81,6 @@
+ 		object.Attributes = append(object.Attributes, nestedSchemaAttribute)
+ 	}
+ 
+-	sort.Slice(object.Attributes, func(i, j int) bool {
+-		if object.Attributes[i] == nil {
+-			return true
+-		}
+-
+-		if object.Attributes[j] == nil {
+-			return false
+-		}
+-
+-		return object.Attributes[i].Name < object.Attributes[j].Name
+-	})
+-
+ 	schemaAttribute.NestedType = object
+ 	schemaAttribute.Type = nil
+ 
+--- /home/user/terraform-plugin-framework/internal/toproto6/identity_schema.go	2026-10-24 21:30:10.673639662 +0000
++++ internal/toproto6/identity_schema.go	2026-10-24 23:16:28.885553630 +0000
+@@ -5,7 +5,8 @@
+ 
+ import (
+ 	"context"
+-	"sort"
++	"maps"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+@@ -24,7 +25,10 @@
+ 
+ 	attrs := make([]*tfprotov6.ResourceIdentitySchemaAttribute, 0)
+ 
+-	for name, attr := range s.GetAttributes() {
++	attributes := s.GetAttributes()
++
++	for _, name := range slices.Sorted(maps.Keys(attributes)) {
++		attr := attributes[name]
+ 		a, err := IdentitySchemaAttribute(ctx, name, tftypes.NewAttributePath().WithAttributeName(name), attr)
+ 
+ 		if err != nil {
+@@ -34,18 +38,6 @@
+ 		attrs = append(attrs, a)
+ 	}
+ 
+-	sort.Slice(attrs, func(i, j int) bool {
+-		if attrs[i] == nil {
+-			return true
+-		}
+-
+-		if attrs[j] == nil {
+-			return false
+-		}
+-
+-		return attrs[i].Name < attrs[j].Name
+-	})
+-
+ 	result.IdentityAttributes = attrs
+ 
+ 	return result, nil
+--- /home/user/terraform-plugin-framework/internal/toproto6/getproviderschema.go	2026-10-24 21:30:10.670522450 +0000
++++ internal/toproto6/getproviderschema.go	2026-10-24 23:16:10.715392931 +0000
+@@ -5,6 +5,8 @@
+ 
+ import (
+ 	"context"
++	"maps"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+@@ -55,7 +57,8 @@
+ 		return protov6
+ 	}
+ 
+-	for actionType, actionSchema := range fw.ActionSchemas {
++	for _, actionType := range slices.Sorted(maps.Keys(fw.ActionSchemas)) {
++		actionSchema := fw.ActionSchemas[actionType]
+ 		protov6.ActionSchemas[actionType], err = ActionSchema(ctx, actionSchema)
+ 
+ 		if err != nil {
+@@ -69,7 +72,8 @@
+ 		}
+ 	}
+ 
+-	for dataSourceType, dataSourceSchema := range fw.DataSourceSchemas {
++	for _, dataSourceType := range slices.Sorted(maps.Keys(fw.DataSourceSchemas)) {
++		dataSourceSchema := fw.DataSourceSchemas[dataSourceType]
+ 		protov6.DataSourceSchemas[dataSourceType], err = Schema(ctx, dataSourceSchema)
+ 
+ 		if err != nil {
+@@ -87,7 +91,8 @@
+ 		protov6.Functions[name] = Function(ctx, functionDefinition)
+ 	}
+ 
+-	for resourceType, resourceSchema := range fw.ResourceSchemas {
++	for _, resourceType := range slices.Sorted(maps.Keys(fw.ResourceSchemas)) {
++		resourceSchema := fw.ResourceSchemas[resourceType]
+ 		protov6.ResourceSchemas[resourceType], err = Schema(ctx, resourceSchema)
+ 
+ 		if err != nil {
+@@ -101,7 +106,8 @@
+ 		}
+ 	}
+ 
+-	for ephemeralResourceType, ephemeralResourceSchema := range fw.EphemeralResourceSchemas {
++	for _, ephemeralResourceType := range slices.Sorted(maps.Keys(fw.EphemeralResourceSchemas)) {
++		ephemeralResourceSchema := fw.EphemeralResourceSchemas[ephemeralResourceType]
+ 		protov6.EphemeralResourceSchemas[ephemeralResourceType], err = Schema(ctx, ephemeralResourceSchema)
+ 
+ 		if err != nil {
+@@ -115,7 +121,8 @@
+ 		}
+ 	}
+ 
+-	for listResourceType, listResourceSchema := range fw.ListResourceSchemas {
++	for _, listResourceType := range slices.Sorted(maps.Keys(fw.ListResourceSchemas)) {
++		listResourceSchema := fw.ListResourceSchemas[listResourceType]
+ 		protov6.ListResourceSchemas[listResourceType], err = Schema(ctx, listResourceSchema)
+ 
+ 		if err != nil {
+@@ -129,7 +136,8 @@
+ 		}
+ 	}
+ 
+-	for stateStoreType, stateStoreSchema := range fw.StateStoreSchemas {
++	for _, stateStoreType := range slices.Sorted(maps.Keys(fw.StateStoreSchemas)) {
++		stateStoreSchema := fw.StateStoreSchemas[stateStoreType]
+ 		protov6.StateStoreSchemas[stateStoreType], err = Schema(ctx, stateStoreSchema)
+ 
+ 		if err != nil {
+--- /home/user/terraform-plugin-framework/internal/toproto6/getresourceidentityschemas.go	2026-10-24 21:30:10.670522450 +0000
++++ internal/toproto6/getresourceidentityschemas.go	2026-10-24 23:16:10.716177678 +0000
+@@ -5,6 +5,8 @@
+ 
+ import (
+ 	"context"
++	"maps"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+ 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+@@ -24,7 +26,8 @@
+ 
+ 	var err error
+ 
+-	for resourceType, identitySchema := range fw.IdentitySchemas {
++	for _, resourceType := range slices.Sorted(maps.Keys(fw.IdentitySchemas)) {
++		identitySchema := fw.IdentitySchemas[resourceType]
+ 		protov6.IdentitySchemas[resourceType], err = IdentitySchema(ctx, identitySchema)
+ 
+ 		if err != nil {

@@ -1,0 +1,922 @@
+diff -ruN /home/user/terraform-plugin-framework/internal/reflect/interfaces.go repo/internal/reflect/interfaces.go
+--- /home/user/terraform-plugin-framework/internal/reflect/interfaces.go	2026-10-24 21:30:10.588381323 +0000
++++ repo/internal/reflect/interfaces.go	2026-10-24 22:53:38.199606887 +0000
+@@ -80,31 +80,10 @@
+ 			return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 		}
+ 
+-		switch t := res.(type) {
+-		case xattr.ValidateableAttribute:
+-			resp := xattr.ValidateAttributeResponse{}
+-
+-			t.ValidateAttribute(ctx,
+-				xattr.ValidateAttributeRequest{
+-					Path: path,
+-				},
+-				&resp,
+-			)
+-
+-			diags.Append(resp.Diagnostics...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		default:
+-			//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-			if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-				diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			}
++		diags.Append(validateAttributeValue(ctx, typ, res, tfVal, path)...)
++
++		if diags.HasError() {
++			return nil, diags
+ 		}
+ 
+ 		return res, nil
+@@ -121,31 +100,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := res.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
++	diags.Append(validateAttributeValue(ctx, typ, res, tfVal, path)...)
+ 
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return res, nil
+@@ -214,31 +172,10 @@
+ 			return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 		}
+ 
+-		switch t := res.(type) {
+-		case xattr.ValidateableAttribute:
+-			resp := xattr.ValidateAttributeResponse{}
+-
+-			t.ValidateAttribute(ctx,
+-				xattr.ValidateAttributeRequest{
+-					Path: path,
+-				},
+-				&resp,
+-			)
+-
+-			diags.Append(resp.Diagnostics...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		default:
+-			//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-			if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-				diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			}
++		diags.Append(validateAttributeValue(ctx, typ, res, tfVal, path)...)
++
++		if diags.HasError() {
++			return nil, diags
+ 		}
+ 
+ 		return res, nil
+@@ -255,31 +192,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := res.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
++	diags.Append(validateAttributeValue(ctx, typ, res, tfVal, path)...)
+ 
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return res, diags
+@@ -346,31 +262,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := res.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
++	diags.Append(validateAttributeValue(ctx, typ, res, tfVal, path)...)
+ 
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return res, diags
+@@ -389,31 +284,10 @@
+ 		return target, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := res.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
++	diags.Append(validateAttributeValue(ctx, typ, res, val, path)...)
+ 
+-		if diags.HasError() {
+-			return target, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, val, path)...)
+-
+-			if diags.HasError() {
+-				return target, diags
+-			}
+-		}
++	if diags.HasError() {
++		return target, diags
+ 	}
+ 
+ 	if reflect.TypeOf(res) != target.Type() {
+diff -ruN /home/user/terraform-plugin-framework/internal/reflect/map.go repo/internal/reflect/map.go
+--- /home/user/terraform-plugin-framework/internal/reflect/map.go	2026-10-24 21:30:10.590939641 +0000
++++ repo/internal/reflect/map.go	2026-10-24 22:53:43.611179145 +0000
+@@ -11,7 +11,6 @@
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+ )
+@@ -115,31 +114,10 @@
+ 			return nil, diags
+ 		}
+ 
+-		switch t := attrVal.(type) {
+-		case xattr.ValidateableAttribute:
+-			resp := xattr.ValidateAttributeResponse{}
+-
+-			t.ValidateAttribute(ctx,
+-				xattr.ValidateAttributeRequest{
+-					Path: path,
+-				},
+-				&resp,
+-			)
+-
+-			diags.Append(resp.Diagnostics...)
++		diags.Append(validateAttributeValue(ctx, typ, attrVal, tfVal, path)...)
+ 
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		default:
+-			//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-			if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-				diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			}
++		if diags.HasError() {
++			return nil, diags
+ 		}
+ 
+ 		return attrVal, diags
+@@ -175,31 +153,10 @@
+ 			return nil, append(diags, toTerraformValueErrorDiag(err, path))
+ 		}
+ 
+-		switch t := val.(type) {
+-		case xattr.ValidateableAttribute:
+-			resp := xattr.ValidateAttributeResponse{}
+-
+-			t.ValidateAttribute(ctx,
+-				xattr.ValidateAttributeRequest{
+-					Path: mapKeyPath,
+-				},
+-				&resp,
+-			)
+-
+-			diags.Append(resp.Diagnostics...)
++		diags.Append(validateAttributeValue(ctx, elemType, val, tfVal, mapKeyPath)...)
+ 
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		default:
+-			//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-			if typeWithValidate, ok := elemType.(xattr.TypeWithValidate); ok {
+-				diags.Append(typeWithValidate.Validate(ctx, tfVal, mapKeyPath)...)
+-
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			}
++		if diags.HasError() {
++			return nil, diags
+ 		}
+ 
+ 		tfElems[key.String()] = tfVal
+@@ -223,31 +180,10 @@
+ 		return nil, diags
+ 	}
+ 
+-	switch t := attrVal.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
++	diags.Append(validateAttributeValue(ctx, typ, attrVal, tfVal, path)...)
+ 
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return attrVal, diags
+diff -ruN /home/user/terraform-plugin-framework/internal/reflect/number.go repo/internal/reflect/number.go
+--- /home/user/terraform-plugin-framework/internal/reflect/number.go	2026-10-24 21:30:10.590939641 +0000
++++ repo/internal/reflect/number.go	2026-10-24 22:53:43.614195397 +0000
+@@ -14,7 +14,6 @@
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+ )
+@@ -202,31 +201,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := num.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
++	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+ 
+-		diags.Append(resp.Diagnostics...)
+-
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfNum, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return num, diags
+@@ -248,31 +226,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := num.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
++	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+ 
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfNum, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return num, diags
+@@ -294,31 +251,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := num.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
+-
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfNum, path)...)
++	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+ 
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return num, diags
+@@ -340,31 +276,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := num.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
++	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+ 
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfNum, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return num, diags
+@@ -387,31 +302,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := num.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
+-
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfNum, path)...)
++	diags.Append(validateAttributeValue(ctx, typ, num, tfNum, path)...)
+ 
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return num, diags
+diff -ruN /home/user/terraform-plugin-framework/internal/reflect/pointer.go repo/internal/reflect/pointer.go
+--- /home/user/terraform-plugin-framework/internal/reflect/pointer.go	2026-10-24 21:30:10.590939641 +0000
++++ repo/internal/reflect/pointer.go	2026-10-24 22:53:43.617156222 +0000
+@@ -11,7 +11,6 @@
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+ )
+@@ -105,31 +104,10 @@
+ 			return nil, diags
+ 		}
+ 
+-		switch t := attrVal.(type) {
+-		case xattr.ValidateableAttribute:
+-			resp := xattr.ValidateAttributeResponse{}
+-
+-			t.ValidateAttribute(ctx,
+-				xattr.ValidateAttributeRequest{
+-					Path: path,
+-				},
+-				&resp,
+-			)
+-
+-			diags.Append(resp.Diagnostics...)
++		diags.Append(validateAttributeValue(ctx, typ, attrVal, tfVal, path)...)
+ 
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		default:
+-			//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-			if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-				diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			}
++		if diags.HasError() {
++			return nil, diags
+ 		}
+ 
+ 		return attrVal, diags
+diff -ruN /home/user/terraform-plugin-framework/internal/reflect/primitive.go repo/internal/reflect/primitive.go
+--- /home/user/terraform-plugin-framework/internal/reflect/primitive.go	2026-10-24 21:30:10.591597578 +0000
++++ repo/internal/reflect/primitive.go	2026-10-24 22:53:43.619657081 +0000
+@@ -11,7 +11,6 @@
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+ )
+@@ -74,31 +73,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := str.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
++	diags.Append(validateAttributeValue(ctx, typ, str, tfStr, path)...)
+ 
+-		diags.Append(resp.Diagnostics...)
+-
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfStr, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return str, diags
+@@ -120,31 +98,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := b.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
++	diags.Append(validateAttributeValue(ctx, typ, b, tfBool, path)...)
+ 
+-		diags.Append(resp.Diagnostics...)
+-
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfBool, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return b, diags
+diff -ruN /home/user/terraform-plugin-framework/internal/reflect/slice.go repo/internal/reflect/slice.go
+--- /home/user/terraform-plugin-framework/internal/reflect/slice.go	2026-10-24 21:30:10.595193040 +0000
++++ repo/internal/reflect/slice.go	2026-10-24 22:53:43.622682984 +0000
+@@ -11,7 +11,6 @@
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+ )
+@@ -197,31 +196,10 @@
+ 			return nil, diags
+ 		}
+ 
+-		switch t := attrVal.(type) {
+-		case xattr.ValidateableAttribute:
+-			resp := xattr.ValidateAttributeResponse{}
+-
+-			t.ValidateAttribute(ctx,
+-				xattr.ValidateAttributeRequest{
+-					Path: path,
+-				},
+-				&resp,
+-			)
+-
+-			diags.Append(resp.Diagnostics...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		default:
+-			//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-			if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-				diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
++		diags.Append(validateAttributeValue(ctx, typ, attrVal, tfVal, path)...)
+ 
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			}
++		if diags.HasError() {
++			return nil, diags
+ 		}
+ 
+ 		return attrVal, diags
+@@ -259,31 +237,10 @@
+ 				valPath = path.AtSetValue(val)
+ 			}
+ 
+-			switch t := val.(type) {
+-			case xattr.ValidateableAttribute:
+-				resp := xattr.ValidateAttributeResponse{}
+-
+-				t.ValidateAttribute(ctx,
+-					xattr.ValidateAttributeRequest{
+-						Path: valPath,
+-					},
+-					&resp,
+-				)
++			diags.Append(validateAttributeValue(ctx, elemType, val, tfVal, valPath)...)
+ 
+-				diags.Append(resp.Diagnostics...)
+-
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			default:
+-				//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-				if typeWithValidate, ok := elemType.(xattr.TypeWithValidate); ok {
+-					diags.Append(typeWithValidate.Validate(ctx, tfVal, valPath)...)
+-
+-					if diags.HasError() {
+-						return nil, diags
+-					}
+-				}
++			if diags.HasError() {
++				return nil, diags
+ 			}
+ 
+ 			tfElems = append(tfElems, tfVal)
+@@ -349,31 +306,10 @@
+ 				return nil, append(diags, toTerraformValueErrorDiag(err, path))
+ 			}
+ 
+-			switch t := val.(type) {
+-			case xattr.ValidateableAttribute:
+-				resp := xattr.ValidateAttributeResponse{}
+-
+-				t.ValidateAttribute(ctx,
+-					xattr.ValidateAttributeRequest{
+-						Path: valPath,
+-					},
+-					&resp,
+-				)
+-
+-				diags.Append(resp.Diagnostics...)
++			diags.Append(validateAttributeValue(ctx, elemAttrType, val, tfVal, valPath)...)
+ 
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			default:
+-				//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-				if typeWithValidate, ok := elemAttrType.(xattr.TypeWithValidate); ok {
+-					diags.Append(typeWithValidate.Validate(ctx, tfVal, valPath)...)
+-
+-					if diags.HasError() {
+-						return nil, diags
+-					}
+-				}
++			if diags.HasError() {
++				return nil, diags
+ 			}
+ 
+ 			tfElems = append(tfElems, tfVal)
+@@ -406,31 +342,10 @@
+ 		return nil, diags
+ 	}
+ 
+-	switch t := attrVal.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
+-
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
++	diags.Append(validateAttributeValue(ctx, typ, attrVal, tfVal, path)...)
+ 
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return attrVal, diags
+diff -ruN /home/user/terraform-plugin-framework/internal/reflect/struct.go repo/internal/reflect/struct.go
+--- /home/user/terraform-plugin-framework/internal/reflect/struct.go	2026-10-24 21:30:10.595193040 +0000
++++ repo/internal/reflect/struct.go	2026-10-24 22:53:43.625144431 +0000
+@@ -12,7 +12,6 @@
+ 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+-	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+ )
+@@ -273,31 +272,10 @@
+ 			return nil, append(diags, toTerraformValueErrorDiag(err, path))
+ 		}
+ 
+-		switch t := attrVal.(type) {
+-		case xattr.ValidateableAttribute:
+-			resp := xattr.ValidateAttributeResponse{}
+-
+-			t.ValidateAttribute(ctx,
+-				xattr.ValidateAttributeRequest{
+-					Path: path,
+-				},
+-				&resp,
+-			)
+-
+-			diags.Append(resp.Diagnostics...)
++		diags.Append(validateAttributeValue(ctx, attrTypes[name], attrVal, tfObjVal, path)...)
+ 
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		default:
+-			//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-			if typeWithValidate, ok := attrTypes[name].(xattr.TypeWithValidate); ok {
+-				diags.Append(typeWithValidate.Validate(ctx, tfObjVal, path)...)
+-
+-				if diags.HasError() {
+-					return nil, diags
+-				}
+-			}
++		if diags.HasError() {
++			return nil, diags
+ 		}
+ 
+ 		tfObjTyp := tfObjVal.Type()
+@@ -322,31 +300,10 @@
+ 		return nil, append(diags, valueFromTerraformErrorDiag(err, path))
+ 	}
+ 
+-	switch t := ret.(type) {
+-	case xattr.ValidateableAttribute:
+-		resp := xattr.ValidateAttributeResponse{}
+-
+-		t.ValidateAttribute(ctx,
+-			xattr.ValidateAttributeRequest{
+-				Path: path,
+-			},
+-			&resp,
+-		)
+-
+-		diags.Append(resp.Diagnostics...)
++	diags.Append(validateAttributeValue(ctx, typ, ret, tfVal, path)...)
+ 
+-		if diags.HasError() {
+-			return nil, diags
+-		}
+-	default:
+-		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+-		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
+-			diags.Append(typeWithValidate.Validate(ctx, tfVal, path)...)
+-
+-			if diags.HasError() {
+-				return nil, diags
+-			}
+-		}
++	if diags.HasError() {
++		return nil, diags
+ 	}
+ 
+ 	return ret, diags
+diff -ruN /home/user/terraform-plugin-framework/internal/reflect/validate.go repo/internal/reflect/validate.go
+--- /home/user/terraform-plugin-framework/internal/reflect/validate.go	1970-01-01 00:00:00.000000000 +0000
++++ repo/internal/reflect/validate.go	2026-10-24 22:53:38.208733698 +0000
+@@ -0,0 +1,42 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package reflect
++
++import (
++	"context"
++
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	"github.com/hashicorp/terraform-plugin-framework/attr"
++	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
++	"github.com/hashicorp/terraform-plugin-framework/path"
++)
++
++// validateAttributeValue returns the diagnostics of validating val, which was
++// produced by typ from tfVal: val's ValidateAttribute method if val implements
++// xattr.ValidateableAttribute, otherwise the deprecated Validate method of typ
++// if typ implements xattr.TypeWithValidate, otherwise nil.
++func validateAttributeValue(ctx context.Context, typ attr.Type, val attr.Value, tfVal tftypes.Value, path path.Path) diag.Diagnostics {
++	switch t := val.(type) {
++	case xattr.ValidateableAttribute:
++		resp := xattr.ValidateAttributeResponse{}
++
++		t.ValidateAttribute(ctx,
++			xattr.ValidateAttributeRequest{
++				Path: path,
++			},
++			&resp,
++		)
++
++		return resp.Diagnostics
++	default:
++		//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
++		if typeWithValidate, ok := typ.(xattr.TypeWithValidate); ok {
++			return typeWithValidate.Validate(ctx, tfVal, path)
++		}
++	}
++
++	return nil
++}
