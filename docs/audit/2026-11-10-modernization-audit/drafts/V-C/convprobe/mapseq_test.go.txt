@@ -1,0 +1,46 @@
+package convprobe
+
+import (
+	"maps"
+	"testing"
+)
+
+type eqer interface{ Equal(eqer) bool }
+type sv string
+
+func (s sv) Equal(o eqer) bool { x, ok := o.(sv); return ok && x == s }
+
+func loopEqual(u, o map[string]eqer) bool {
+	if len(u) != len(o) {
+		return false
+	}
+	for name, ua := range u {
+		oa, ok := o[name]
+		if !ok {
+			return false
+		}
+		if !ua.Equal(oa) {
+			return false
+		}
+	}
+	return true
+}
+
+func TestMapsEqualFunc(t *testing.T) {
+	cases := map[string][2]map[string]eqer{
+		"nil-nil":       {nil, nil},
+		"nil-empty":     {nil, {}},
+		"empty-nil":     {{}, nil},
+		"samelen-diffk": {{"a": sv("x")}, {"b": sv("x")}},
+		"samek-diffv":   {{"a": sv("x")}, {"a": sv("y")}},
+		"equal":         {{"a": sv("x"), "b": sv("y")}, {"b": sv("y"), "a": sv("x")}},
+		"difflen":       {{"a": sv("x")}, {"a": sv("x"), "b": sv("y")}},
+	}
+	for n, c := range cases {
+		l, m := loopEqual(c[0], c[1]), maps.EqualFunc(c[0], c[1], eqer.Equal)
+		t.Logf("%-14s loop=%v maps.EqualFunc=%v", n, l, m)
+		if l != m {
+			t.Errorf("differ")
+		}
+	}
+}

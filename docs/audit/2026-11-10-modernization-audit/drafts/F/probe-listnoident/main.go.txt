@@ -1,0 +1,83 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/list"
+	listschema "github.com/hashicorp/terraform-plugin-framework/list/schema"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+type prov struct{}
+
+func (p prov) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) { resp.TypeName = "p" }
+func (p prov) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse)          {}
+func (p prov) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse)  {}
+func (p prov) DataSources(context.Context) []func() datasource.DataSource                       { return nil }
+func (p prov) Resources(context.Context) []func() resource.Resource {
+	return []func() resource.Resource{func() resource.Resource { return thing{} }}
+}
+func (p prov) ListResources(context.Context) []func() list.ListResource {
+	return []func() list.ListResource{func() list.ListResource { return thing{} }}
+}
+
+// thing is a resource WITHOUT identity, plus a list resource for it.
+type thing struct{}
+
+func (thing) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_thing"
+}
+func (thing) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{Attributes: map[string]schema.Attribute{"id": schema.StringAttribute{Computed: true}}}
+}
+func (thing) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {}
+func (thing) Read(context.Context, resource.ReadRequest, *resource.ReadResponse)       {}
+func (thing) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {}
+func (thing) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {}
+func (thing) ListResourceConfigSchema(_ context.Context, _ list.ListResourceSchemaRequest, resp *list.ListResourceSchemaResponse) {
+	resp.Schema = listschema.Schema{}
+}
+func (thing) List(ctx context.Context, req list.ListRequest, stream *list.ListResultsStream) {
+	stream.Results = func(push func(list.ListResult) bool) {
+		r := req.NewListResult(ctx) // documented convenience constructor
+		r.DisplayName = "x"
+		push(r)
+	}
+}
+
+func main() {
+	ctx := context.Background()
+	srv, err := providerserver.NewProtocol6WithError(prov{})()
+	if err != nil {
+		panic(err)
+	}
+	gps, _ := srv.GetProviderSchema(ctx, &tfprotov6.GetProviderSchemaRequest{})
+	fmt.Println("GetProviderSchema diagnostics:", len(gps.Diagnostics), "list schemas:", len(gps.ListResourceSchemas))
+	for _, d := range gps.Diagnostics {
+		fmt.Println("  diag:", d.Summary)
+	}
+	cfg, _ := tfprotov6.NewDynamicValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{}}, tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{}}, map[string]tftypes.Value{}))
+	ls, err := srv.(tfprotov6.ProviderServerWithListResource).ListResource(ctx, &tfprotov6.ListResourceRequest{TypeName: "p_thing", Config: &cfg})
+	if err != nil {
+		fmt.Println("ListResource err:", err)
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("PANIC while iterating results:", r)
+		}
+	}()
+	for res := range ls.Results {
+		fmt.Println("result:", res.DisplayName, "diags:", len(res.Diagnostics))
+		for _, d := range res.Diagnostics {
+			fmt.Println("  ", d.Severity, d.Summary)
+		}
+	}
+}

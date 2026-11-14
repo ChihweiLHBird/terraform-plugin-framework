@@ -1,0 +1,1052 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/zz_vb2_alias_test.go b/internal/fwserver/zz_vb2_alias_test.go
+--- a/internal/fwserver/zz_vb2_alias_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/zz_vb2_alias_test.go	2026-11-10 21:26:20.291763797 +0000
+@@ -0,0 +1,65 @@
++package fwserver_test
++
++import (
++	"context"
++	"os"
++	"sync"
++	"testing"
++
++	"github.com/hashicorp/terraform-plugin-framework/datasource"
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
++	"github.com/hashicorp/terraform-plugin-framework/provider"
++	"github.com/hashicorp/terraform-plugin-framework/resource"
++)
++
++type vbDS struct{ name string }
++
++func (d vbDS) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
++	resp.TypeName = d.name
++}
++func (vbDS) Schema(context.Context, datasource.SchemaRequest, *datasource.SchemaResponse) {}
++func (vbDS) Read(context.Context, datasource.ReadRequest, *datasource.ReadResponse)       {}
++
++type vbAliasProvider struct{}
++
++func (vbAliasProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
++	resp.TypeName = "vb"
++}
++func (vbAliasProvider) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse) {}
++func (vbAliasProvider) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse) {
++}
++func (vbAliasProvider) DataSources(context.Context) []func() datasource.DataSource {
++	var out []func() datasource.DataSource
++	for _, n := range []string{"a", "a", "b", "b", ""} {
++		n := n
++		out = append(out, func() datasource.DataSource { return vbDS{n} })
++	}
++	return out
++}
++func (vbAliasProvider) Resources(context.Context) []func() resource.Resource { return nil }
++
++func TestVB2Alias(t *testing.T) {
++	s := &fwserver.Server{Provider: vbAliasProvider{}}
++	ctx := context.Background()
++	_, cached := s.DataSourceFuncs(ctx)
++	t.Logf("cached len=%d cap=%d", len(cached), cap(cached))
++	_, d1 := s.DataSource(ctx, "first")
++	before := d1[len(d1)-1].Detail()
++	_, d2 := s.DataSource(ctx, "second")
++	after := d1[len(d1)-1].Detail()
++	t.Logf("d1 last detail before second lookup: %q", before)
++	t.Logf("d1 last detail after  second lookup: %q", after)
++	t.Logf("d2 last detail: %q", d2[len(d2)-1].Detail())
++	if os.Getenv("VB2_RACE") != "" {
++		var wg sync.WaitGroup
++		for i := 0; i < 8; i++ {
++			wg.Add(1)
++			go func() {
++				defer wg.Done()
++				_, d := s.DataSource(ctx, "x")
++				_ = d[len(d)-1].Detail()
++			}()
++		}
++		wg.Wait()
++	}
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/zz_vb2_ctx_test.go b/internal/fwserver/zz_vb2_ctx_test.go
+--- a/internal/fwserver/zz_vb2_ctx_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/zz_vb2_ctx_test.go	2026-11-10 21:23:35.815058254 +0000
+@@ -0,0 +1,140 @@
++package fwserver
++
++import (
++	"bytes"
++	"context"
++	"fmt"
++	"io"
++	"os"
++	"runtime"
++	"testing"
++	"time"
++
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++	"github.com/hashicorp/terraform-plugin-log/tfsdklogtest"
++
++	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
++	"github.com/hashicorp/terraform-plugin-framework/types"
++)
++
++func vbSchema() schema.Schema {
++	return schema.Schema{
++		Attributes: map[string]schema.Attribute{
++			"items": schema.ListNestedAttribute{Optional: true, NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
++				"a": schema.StringAttribute{Optional: true},
++				"b": schema.StringAttribute{Optional: true, Computed: true},
++				"c": schema.StringAttribute{Computed: true},
++			}}},
++			"secret": schema.StringAttribute{Optional: true, WriteOnly: true},
++			"m":      schema.MapAttribute{ElementType: types.StringType, Optional: true},
++			"d":      schema.DynamicAttribute{Optional: true, Computed: true},
++			"comp":   schema.StringAttribute{Computed: true},
++		},
++		Blocks: map[string]schema.Block{
++			"blk": schema.ListNestedBlock{NestedObject: schema.NestedBlockObject{Attributes: map[string]schema.Attribute{
++				"x": schema.StringAttribute{Optional: true, Computed: true},
++			}}},
++		},
++	}
++}
++
++func vbValue(n int, nullComputed bool) tftypes.Value {
++	sch := vbSchema()
++	rootT := sch.Type().TerraformType(context.Background()).(tftypes.Object)
++	itemT := rootT.AttributeTypes["items"].(tftypes.List).ElementType
++	blkT := rootT.AttributeTypes["blk"].(tftypes.List).ElementType
++	str := func(s string) tftypes.Value {
++		if nullComputed {
++			return tftypes.NewValue(tftypes.String, nil)
++		}
++		return tftypes.NewValue(tftypes.String, s)
++	}
++	items := make([]tftypes.Value, n)
++	for i := range items {
++		items[i] = tftypes.NewValue(itemT, map[string]tftypes.Value{
++			"a": tftypes.NewValue(tftypes.String, fmt.Sprintf("a%d", i)),
++			"b": str("b"),
++			"c": str("c"),
++		})
++	}
++	return tftypes.NewValue(rootT, map[string]tftypes.Value{
++		"items":  tftypes.NewValue(rootT.AttributeTypes["items"], items),
++		"secret": tftypes.NewValue(tftypes.String, "s3cret"),
++		"m":      tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{"k1": tftypes.NewValue(tftypes.String, "v1"), "k2": tftypes.NewValue(tftypes.String, "v2")}),
++		"d":      tftypes.NewValue(tftypes.List{ElementType: tftypes.Number}, []tftypes.Value{tftypes.NewValue(tftypes.Number, 1)}),
++		"comp":   str("comp"),
++		"blk": tftypes.NewValue(rootT.AttributeTypes["blk"], []tftypes.Value{
++			tftypes.NewValue(blkT, map[string]tftypes.Value{"x": str("x")}),
++		}),
++	})
++}
++
++// Writes the captured log output and transformed values to the file named by VB2_OUT.
++func TestVB2CtxLogs(t *testing.T) {
++	var buf bytes.Buffer
++	ctx := tfsdklogtest.RootLogger(context.Background(), &buf)
++	ctx = logging.InitContext(ctx)
++	ctx = logging.FrameworkWithAttributePath(ctx, "pre-existing")
++	sch := vbSchema()
++
++	plan := vbValue(3, false)
++	cfg := vbValue(3, true)
++	out1, err1 := tftypes.Transform(plan, NullifyWriteOnlyAttributes(ctx, sch))
++	out2, err2 := tftypes.Transform(plan, MarkComputedNilsAsUnknown(ctx, cfg, sch))
++	logging.FrameworkTrace(ctx, "after transforms")
++	res := fmt.Sprintf("%s\n%v\n%s\n%v\n", out1, err1, out2, err2) + buf.String()
++	if p := os.Getenv("VB2_OUT"); p != "" {
++		if err := os.WriteFile(p, []byte(res), 0o644); err != nil {
++			t.Fatal(err)
++		}
++	}
++	t.Logf("log bytes=%d lines=%d", buf.Len(), bytes.Count(buf.Bytes(), []byte("\n")))
++}
++
++func TestVB2CtxTiming(t *testing.T) {
++	if os.Getenv("VB2_TIMING") == "" {
++		t.Skip()
++	}
++	sch := vbSchema()
++	for _, logOn := range []bool{false, true} {
++		for _, n := range []int{1000, 2000, 4000, 8000} {
++			plan := vbValue(n, false)
++			cfg := vbValue(n, true)
++			for _, which := range []string{"nullify", "markcomputed"} {
++				best := time.Duration(1 << 62)
++				var retained int64
++				for rep := 0; rep < 3; rep++ {
++					ctx := context.Background()
++					if logOn {
++						ctx = tfsdklogtest.RootLogger(ctx, io.Discard)
++						ctx = logging.InitContext(ctx)
++					}
++					var f func(*tftypes.AttributePath, tftypes.Value) (tftypes.Value, error)
++					if which == "nullify" {
++						f = NullifyWriteOnlyAttributes(ctx, sch)
++					} else {
++						f = MarkComputedNilsAsUnknown(ctx, cfg, sch)
++					}
++					runtime.GC()
++					var m0, m2 runtime.MemStats
++					runtime.ReadMemStats(&m0)
++					start := time.Now()
++					_, err := tftypes.Transform(plan, f)
++					el := time.Since(start)
++					if err != nil {
++						t.Fatal(err)
++					}
++					runtime.GC()
++					runtime.ReadMemStats(&m2)
++					runtime.KeepAlive(f)
++					if el < best {
++						best = el
++					}
++					retained = (int64(m2.HeapAlloc) - int64(m0.HeapAlloc)) / 1024
++				}
++				t.Logf("log=%-5v n=%5d %-12s best=%10v retained(closure alive)=%7dKB", logOn, n, which, best.Round(time.Millisecond), retained)
++			}
++		}
++	}
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/zz_vb2_nil_test.go b/internal/fwserver/zz_vb2_nil_test.go
+--- a/internal/fwserver/zz_vb2_nil_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/zz_vb2_nil_test.go	2026-11-10 21:29:36.476240372 +0000
+@@ -0,0 +1,79 @@
++package fwserver_test
++
++import (
++	"context"
++	"fmt"
++	"testing"
++
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
++	"github.com/hashicorp/terraform-plugin-framework/list"
++	"github.com/hashicorp/terraform-plugin-framework/provider"
++	"github.com/hashicorp/terraform-plugin-framework/resource"
++	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
++	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
++)
++
++type vbDeferProv struct{ vbAliasProvider }
++
++func (vbDeferProv) Configure(_ context.Context, _ provider.ConfigureRequest, resp *provider.ConfigureResponse) {
++	resp.Deferred = &provider.Deferred{Reason: provider.DeferredReasonProviderConfigUnknown}
++}
++
++type vbCreateRes struct{}
++
++func (vbCreateRes) Metadata(context.Context, resource.MetadataRequest, *resource.MetadataResponse) {}
++func (vbCreateRes) Schema(context.Context, resource.SchemaRequest, *resource.SchemaResponse)       {}
++func (vbCreateRes) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
++	resp.State.Raw = tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String}}, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x")})
++}
++func (vbCreateRes) Read(context.Context, resource.ReadRequest, *resource.ReadResponse)       {}
++func (vbCreateRes) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {}
++func (vbCreateRes) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {}
++
++type vbList struct{}
++
++func (vbList) Metadata(context.Context, resource.MetadataRequest, *resource.MetadataResponse) {}
++func (vbList) ListResourceConfigSchema(context.Context, list.ListResourceSchemaRequest, *list.ListResourceSchemaResponse) {
++}
++func (vbList) List(_ context.Context, req list.ListRequest, _ *list.ListResultsStream) {
++	fmt.Printf("VB2 list provider saw Config.Schema type %T\n", req.Config.Schema)
++}
++
++func vbCatch(t *testing.T, name string, f func()) {
++	defer func() {
++		if r := recover(); r != nil {
++			t.Logf("B2-6 %s: PANIC %v", name, r)
++		}
++	}()
++	f()
++	t.Logf("B2-6 %s: no panic", name)
++}
++
++func TestVB2Nil(t *testing.T) {
++	ctx := context.Background()
++	vbCatch(t, "(1) ConfigureProvider(nil req, deferring provider)", func() {
++		s := &fwserver.Server{Provider: vbDeferProv{}}
++		s.ConfigureProvider(ctx, nil, &provider.ConfigureResponse{})
++	})
++	vbCatch(t, "(2) ReadDataSource(nil Config)", func() {
++		s := &fwserver.Server{Provider: vbAliasProvider{}}
++		s.ReadDataSource(ctx, &fwserver.ReadDataSourceRequest{DataSource: vbDS{"x"}, DataSourceSchema: dsschema.Schema{}}, &fwserver.ReadDataSourceResponse{})
++	})
++	sch := schema.Schema{Attributes: map[string]schema.Attribute{"id": schema.StringAttribute{Computed: true}}}
++	vbCatch(t, "(3) ApplyResourceChange(nil PriorState, nil PlannedState)", func() {
++		s := &fwserver.Server{Provider: vbAliasProvider{}}
++		s.ApplyResourceChange(ctx, &fwserver.ApplyResourceChangeRequest{ResourceSchema: sch, Resource: vbCreateRes{}}, &fwserver.ApplyResourceChangeResponse{})
++	})
++	ids := identityschema.Schema{Attributes: map[string]identityschema.Attribute{"id": identityschema.StringAttribute{RequiredForImport: true}}}
++	vbCatch(t, "(4) ListResource(nil Config, nil ResourceSchema, identity schema)", func() {
++		s := &fwserver.Server{Provider: vbAliasProvider{}}
++		s.ListResource(ctx, &fwserver.ListRequest{ListResource: vbList{}, ResourceIdentitySchema: ids}, &fwserver.ListResultsStream{})
++	})
++	vbCatch(t, "(4b) ListResource(nil Config, ResourceSchema set)", func() {
++		s := &fwserver.Server{Provider: vbAliasProvider{}}
++		s.ListResource(ctx, &fwserver.ListRequest{ListResource: vbList{}, ResourceSchema: sch, ResourceIdentitySchema: ids}, &fwserver.ListResultsStream{})
++	})
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/zz_vb2_registry_test.go b/internal/fwserver/zz_vb2_registry_test.go
+--- a/internal/fwserver/zz_vb2_registry_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/zz_vb2_registry_test.go	2026-11-10 21:33:47.015619134 +0000
+@@ -0,0 +1,191 @@
++package fwserver_test
++
++import (
++	"bytes"
++	"context"
++	"fmt"
++	"os"
++	"testing"
++
++	"github.com/hashicorp/terraform-plugin-log/tfsdklogtest"
++
++	"github.com/hashicorp/terraform-plugin-framework/action"
++	"github.com/hashicorp/terraform-plugin-framework/datasource"
++	"github.com/hashicorp/terraform-plugin-framework/diag"
++	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
++	"github.com/hashicorp/terraform-plugin-framework/function"
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
++	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
++	"github.com/hashicorp/terraform-plugin-framework/list"
++	"github.com/hashicorp/terraform-plugin-framework/provider"
++	"github.com/hashicorp/terraform-plugin-framework/resource"
++	"github.com/hashicorp/terraform-plugin-framework/statestore"
++)
++
++var vbNames = []string{"vb_one", "", "vb_two", "vb_one", "vb_three", "vb_two"}
++
++func vbRegistryProvider() provider.Provider {
++	p := &testprovider.Provider{
++		MetadataMethod: func(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) { resp.TypeName = "vb" },
++		DataSourcesMethod: func(context.Context) []func() datasource.DataSource {
++			var out []func() datasource.DataSource
++			for _, n := range vbNames {
++				out = append(out, func() datasource.DataSource {
++					return &testprovider.DataSource{MetadataMethod: func(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
++						if n != "" {
++							resp.TypeName = req.ProviderTypeName + "|" + n
++						}
++					}}
++				})
++			}
++			return out
++		},
++		ResourcesMethod: func(context.Context) []func() resource.Resource {
++			var out []func() resource.Resource
++			for _, n := range vbNames {
++				out = append(out, func() resource.Resource {
++					return &testprovider.Resource{MetadataMethod: func(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
++						if n != "" {
++							resp.TypeName = req.ProviderTypeName + "|" + n
++						}
++					}}
++				})
++			}
++			return out
++		},
++		EphemeralResourcesMethod: func(context.Context) []func() ephemeral.EphemeralResource {
++			var out []func() ephemeral.EphemeralResource
++			for _, n := range vbNames {
++				out = append(out, func() ephemeral.EphemeralResource {
++					return &testprovider.EphemeralResource{MetadataMethod: func(_ context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
++						if n != "" {
++							resp.TypeName = req.ProviderTypeName + "|" + n
++						}
++					}}
++				})
++			}
++			return out
++		},
++		ActionsMethod: func(context.Context) []func() action.Action {
++			var out []func() action.Action
++			for _, n := range vbNames {
++				out = append(out, func() action.Action {
++					return &testprovider.Action{MetadataMethod: func(_ context.Context, req action.MetadataRequest, resp *action.MetadataResponse) {
++						if n != "" {
++							resp.TypeName = req.ProviderTypeName + "|" + n
++						}
++					}}
++				})
++			}
++			return out
++		},
++		StateStoresMethod: func(context.Context) []func() statestore.StateStore {
++			var out []func() statestore.StateStore
++			for _, n := range vbNames {
++				out = append(out, func() statestore.StateStore {
++					return &testprovider.StateStore{MetadataMethod: func(_ context.Context, req statestore.MetadataRequest, resp *statestore.MetadataResponse) {
++						if n != "" {
++							resp.TypeName = req.ProviderTypeName + "|" + n
++						}
++					}}
++				})
++			}
++			return out
++		},
++		ListResourcesMethod: func(context.Context) []func() list.ListResource {
++			var out []func() list.ListResource
++			for _, n := range append([]string{"vb_nomatch"}, vbNames...) {
++				out = append(out, func() list.ListResource {
++					return &testprovider.ListResource{MetadataMethod: func(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
++						if n != "" {
++							resp.TypeName = req.ProviderTypeName + "|" + n
++						}
++					}}
++				})
++			}
++			return out
++		},
++	}
++	return &testprovider.ProviderWithFunctions{Provider: p, FunctionsMethod: func(context.Context) []func() function.Function {
++		var out []func() function.Function
++		for _, n := range vbNames {
++			out = append(out, func() function.Function {
++				return &testprovider.Function{MetadataMethod: func(_ context.Context, _ function.MetadataRequest, resp *function.MetadataResponse) {
++					resp.Name = n
++				}}
++			})
++		}
++		return out
++	}}
++}
++
++type vbBareProvider struct{}
++
++func (vbBareProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
++	resp.TypeName = "bare"
++}
++func (vbBareProvider) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse) {}
++func (vbBareProvider) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse) {
++}
++func (vbBareProvider) DataSources(context.Context) []func() datasource.DataSource { return nil }
++func (vbBareProvider) Resources(context.Context) []func() resource.Resource        { return nil }
++
++func vbDump(buf *bytes.Buffer, name string, keys []string, diags diag.Diagnostics) {
++	fmt.Fprintf(buf, "## %s keys(sorted)=%v\n", name, keys)
++	for _, d := range diags {
++		fmt.Fprintf(buf, "  %v | %q | %q\n", d.Severity(), d.Summary(), d.Detail())
++	}
++}
++
++func sortedKeys[V any](m map[string]V) []string {
++	var out []string
++	for k := range m {
++		out = append(out, k)
++	}
++	for i := range out {
++		for j := i + 1; j < len(out); j++ {
++			if out[j] < out[i] {
++				out[i], out[j] = out[j], out[i]
++			}
++		}
++	}
++	if m == nil {
++		return []string{"<nil map>"}
++	}
++	return out
++}
++
++func TestVB2Registry(t *testing.T) {
++	var logs, out bytes.Buffer
++	ctx := tfsdklogtest.RootLogger(context.Background(), &logs)
++	ctx = logging.InitContext(ctx)
++	for _, prov := range []provider.Provider{vbRegistryProvider(), &testprovider.Provider{}, vbBareProvider{}} {
++		s := &fwserver.Server{Provider: prov}
++		for round := 0; round < 2; round++ {
++			fmt.Fprintf(&out, "# provider %T round %d\n", prov, round)
++			m1, d1 := s.DataSourceFuncs(ctx)
++			vbDump(&out, "DataSourceFuncs", sortedKeys(m1), d1)
++			m2, d2 := s.ResourceFuncs(ctx)
++			vbDump(&out, "ResourceFuncs", sortedKeys(m2), d2)
++			m3, d3 := s.EphemeralResourceFuncs(ctx)
++			vbDump(&out, "EphemeralResourceFuncs", sortedKeys(m3), d3)
++			m4, d4 := s.ActionFuncs(ctx)
++			vbDump(&out, "ActionFuncs", sortedKeys(m4), d4)
++			m5, d5 := s.StateStoreFuncs(ctx)
++			vbDump(&out, "StateStoreFuncs", sortedKeys(m5), d5)
++			m6, d6 := s.FunctionFuncs(ctx)
++			vbDump(&out, "FunctionFuncs", sortedKeys(m6), d6)
++			m7, d7 := s.ListResourceFuncs(ctx)
++			vbDump(&out, "ListResourceFuncs", sortedKeys(m7), d7)
++			fmt.Fprintf(&out, "nil-diags: %v %v %v %v %v %v %v\n", d1 == nil, d2 == nil, d3 == nil, d4 == nil, d5 == nil, d6 == nil, d7 == nil)
++		}
++	}
++	out.WriteString("# LOGS\n")
++	out.Write(logs.Bytes())
++	if p := os.Getenv("VB2_OUT"); p != "" {
++		if err := os.WriteFile(p, out.Bytes(), 0o644); err != nil {
++			t.Fatal(err)
++		}
++	}
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/proto6server/zz_vb2_dn1_test.go b/internal/proto6server/zz_vb2_dn1_test.go
+--- a/internal/proto6server/zz_vb2_dn1_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/proto6server/zz_vb2_dn1_test.go	2026-11-10 21:27:56.202397390 +0000
+@@ -0,0 +1,71 @@
++package proto6server
++
++import (
++	"context"
++	"testing"
++
++	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	"github.com/hashicorp/terraform-plugin-framework/action"
++	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
++	"github.com/hashicorp/terraform-plugin-framework/datasource"
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
++	"github.com/hashicorp/terraform-plugin-framework/provider"
++	"github.com/hashicorp/terraform-plugin-framework/resource"
++)
++
++type vbAction struct{}
++
++func (vbAction) Metadata(_ context.Context, _ action.MetadataRequest, resp *action.MetadataResponse) {
++	resp.TypeName = "vb_act"
++}
++func (vbAction) Schema(_ context.Context, _ action.SchemaRequest, resp *action.SchemaResponse) {
++	resp.Schema = actionschema.Schema{Attributes: map[string]actionschema.Attribute{
++		"wo":    actionschema.StringAttribute{Optional: true, WriteOnly: true},
++		"plain": actionschema.StringAttribute{Optional: true},
++	}}
++}
++func (vbAction) Invoke(context.Context, action.InvokeRequest, *action.InvokeResponse) {}
++
++type vbActProvider struct{}
++
++func (vbActProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
++	resp.TypeName = "vb"
++}
++func (vbActProvider) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse) {}
++func (vbActProvider) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse) {
++}
++func (vbActProvider) DataSources(context.Context) []func() datasource.DataSource { return nil }
++func (vbActProvider) Resources(context.Context) []func() resource.Resource        { return nil }
++func (vbActProvider) Actions(context.Context) []func() action.Action {
++	return []func() action.Action{func() action.Action { return vbAction{} }}
++}
++
++func TestVB2_DN1(t *testing.T) {
++	t.Parallel()
++	s := &Server{FrameworkServer: fwserver.Server{Provider: vbActProvider{}}}
++	gps, _ := s.GetProviderSchema(context.Background(), &tfprotov6.GetProviderSchemaRequest{})
++	for _, a := range gps.ActionSchemas["vb_act"].Schema.Block.Attributes {
++		t.Logf("DN1 GetProviderSchema action attr %s write_only=%v", a.Name, a.WriteOnly)
++	}
++	t.Logf("DN1 GetProviderSchema diags=%s", vbDiags(gps.Diagnostics))
++	typ := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"wo": tftypes.String, "plain": tftypes.String}}
++	for name, wo := range map[string]tftypes.Value{
++		"wo=\"secret\"": tftypes.NewValue(tftypes.String, "secret"),
++		"wo=<unknown>":  tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
++		"wo=<null>":     tftypes.NewValue(tftypes.String, nil),
++	} {
++		cfg := tftypes.NewValue(typ, map[string]tftypes.Value{"wo": wo, "plain": tftypes.NewValue(tftypes.String, "p")})
++		resp, err := s.ValidateActionConfig(context.Background(), &tfprotov6.ValidateActionConfigRequest{ActionType: "vb_act", Config: vbDV(t, typ, cfg)})
++		if err != nil {
++			t.Fatal(err)
++		}
++		for _, d := range resp.Diagnostics {
++			t.Logf("DN1 ValidateActionConfig %s: %v %q %q", name, d.Severity, d.Summary, d.Detail)
++		}
++		if len(resp.Diagnostics) == 0 {
++			t.Logf("DN1 ValidateActionConfig %s: 0 diags", name)
++		}
++	}
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/proto6server/zz_vb2_dn1cap_test.go b/internal/proto6server/zz_vb2_dn1cap_test.go
+--- a/internal/proto6server/zz_vb2_dn1cap_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/proto6server/zz_vb2_dn1cap_test.go	2026-11-10 21:49:25.375991357 +0000
+@@ -0,0 +1,60 @@
++package proto6server
++
++import (
++	"context"
++	"testing"
++
++	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	"github.com/hashicorp/terraform-plugin-framework/action"
++	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
++	"github.com/hashicorp/terraform-plugin-framework/datasource"
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
++	"github.com/hashicorp/terraform-plugin-framework/provider"
++	"github.com/hashicorp/terraform-plugin-framework/resource"
++	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
++)
++
++type vbCapValidator struct{ seen *[]bool }
++
++func (vbCapValidator) Description(context.Context) string         { return "cap" }
++func (vbCapValidator) MarkdownDescription(context.Context) string { return "cap" }
++func (v vbCapValidator) ValidateString(_ context.Context, req validator.StringRequest, _ *validator.StringResponse) {
++	*v.seen = append(*v.seen, req.ClientCapabilities.WriteOnlyAttributesAllowed)
++}
++
++type vbCapAction struct{ seen *[]bool }
++
++func (vbCapAction) Metadata(_ context.Context, _ action.MetadataRequest, resp *action.MetadataResponse) {
++	resp.TypeName = "vb_act"
++}
++func (a vbCapAction) Schema(_ context.Context, _ action.SchemaRequest, resp *action.SchemaResponse) {
++	resp.Schema = actionschema.Schema{Attributes: map[string]actionschema.Attribute{
++		"plain": actionschema.StringAttribute{Optional: true, Validators: []validator.String{vbCapValidator{a.seen}}},
++	}}
++}
++func (vbCapAction) Invoke(context.Context, action.InvokeRequest, *action.InvokeResponse) {}
++
++type vbCapProvider struct{ seen *[]bool }
++
++func (vbCapProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
++	resp.TypeName = "vb"
++}
++func (vbCapProvider) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse) {}
++func (vbCapProvider) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse) {
++}
++func (vbCapProvider) DataSources(context.Context) []func() datasource.DataSource { return nil }
++func (vbCapProvider) Resources(context.Context) []func() resource.Resource        { return nil }
++func (p vbCapProvider) Actions(context.Context) []func() action.Action {
++	return []func() action.Action{func() action.Action { return vbCapAction{p.seen} }}
++}
++
++func TestVB2_DN1Cap(t *testing.T) {
++	var seen []bool
++	s := &Server{FrameworkServer: fwserver.Server{Provider: vbCapProvider{&seen}}}
++	typ := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"plain": tftypes.String}}
++	dv, _ := tfprotov6.NewDynamicValue(typ, tftypes.NewValue(typ, map[string]tftypes.Value{"plain": tftypes.NewValue(tftypes.String, "p")}))
++	resp, _ := s.ValidateActionConfig(context.Background(), &tfprotov6.ValidateActionConfigRequest{ActionType: "vb_act", Config: &dv})
++	t.Logf("DN1CAP action attribute validator saw WriteOnlyAttributesAllowed=%v diags=%d", seen, len(resp.Diagnostics))
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/proto6server/zz_vb2_test.go b/internal/proto6server/zz_vb2_test.go
+--- a/internal/proto6server/zz_vb2_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/proto6server/zz_vb2_test.go	2026-11-10 21:20:04.081457941 +0000
+@@ -0,0 +1,303 @@
++package proto6server
++
++import (
++	"context"
++	"runtime"
++	"fmt"
++	"testing"
++
++	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	"github.com/hashicorp/terraform-plugin-framework/datasource"
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
++	"github.com/hashicorp/terraform-plugin-framework/provider"
++	"github.com/hashicorp/terraform-plugin-framework/provider/metaschema"
++	"github.com/hashicorp/terraform-plugin-framework/resource"
++	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
++	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
++	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
++	"github.com/hashicorp/terraform-plugin-framework/types"
++)
++
++// ---- resource types written for this probe (not testprovider) ----
++
++type vbPlain struct {
++	behavior  resource.ResourceBehavior
++	withID    bool
++	cfgWarn   bool
++	nilIdent  bool // Create/Read/Update set resp.Identity = nil
++	readCalls int
++}
++
++func (r *vbPlain) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
++	resp.TypeName = "vb_res"
++	resp.ResourceBehavior = r.behavior
++}
++
++type vbMarkModifier struct{}
++
++func (vbMarkModifier) Description(context.Context) string         { return "mark" }
++func (vbMarkModifier) MarkdownDescription(context.Context) string { return "mark" }
++func (vbMarkModifier) PlanModifyString(_ context.Context, _ planmodifier.StringRequest, resp *planmodifier.StringResponse) {
++	resp.PlanValue = types.StringValue("set-by-schema-plan-modifier")
++}
++
++func (r *vbPlain) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
++	resp.Schema = schema.Schema{Attributes: map[string]schema.Attribute{
++		"id":   schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{vbMarkModifier{}}},
++		"name": schema.StringAttribute{Required: true},
++	}}
++}
++
++func (r *vbPlain) Configure(_ context.Context, _ resource.ConfigureRequest, resp *resource.ConfigureResponse) {
++	if r.cfgWarn {
++		resp.Diagnostics.AddWarning("configure warning", "from resource Configure")
++	}
++}
++
++func (r *vbPlain) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
++	resp.State.Raw = req.Plan.Raw
++	if r.nilIdent {
++		resp.Identity = nil
++	}
++}
++func (r *vbPlain) Read(_ context.Context, _ resource.ReadRequest, resp *resource.ReadResponse) {
++	r.readCalls++
++	if r.nilIdent {
++		resp.Identity = nil
++	}
++}
++func (r *vbPlain) Update(_ context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
++	resp.State.Raw = req.Plan.Raw
++	if r.nilIdent {
++		resp.Identity = nil
++	}
++}
++func (r *vbPlain) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {}
++
++type vbWithModifyPlan struct{ *vbPlain }
++
++func (vbWithModifyPlan) ModifyPlan(context.Context, resource.ModifyPlanRequest, *resource.ModifyPlanResponse) {
++}
++
++type vbWithIdentity struct {
++	*vbPlain
++	manualDefer bool
++}
++
++func (vbWithIdentity) IdentitySchema(_ context.Context, _ resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
++	resp.IdentitySchema = identityschema.Schema{Attributes: map[string]identityschema.Attribute{
++		"id": identityschema.StringAttribute{RequiredForImport: true},
++	}}
++}
++
++func (r vbWithIdentity) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
++	if r.manualDefer {
++		resp.Deferred = &resource.Deferred{Reason: resource.DeferredReasonAbsentPrereq}
++		return
++	}
++}
++
++type vbProvider struct {
++	deferCfg bool
++	metaWarn bool
++	res      func() resource.Resource
++}
++
++func (p *vbProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
++	resp.TypeName = "vb"
++}
++func (p *vbProvider) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse) {}
++func (p *vbProvider) Configure(_ context.Context, _ provider.ConfigureRequest, resp *provider.ConfigureResponse) {
++	if p.deferCfg {
++		resp.Deferred = &provider.Deferred{Reason: provider.DeferredReasonProviderConfigUnknown}
++	}
++}
++func (p *vbProvider) DataSources(context.Context) []func() datasource.DataSource { return nil }
++func (p *vbProvider) Resources(context.Context) []func() resource.Resource {
++	return []func() resource.Resource{p.res}
++}
++
++type vbProviderMeta struct{ *vbProvider }
++
++func (p vbProviderMeta) MetaSchema(_ context.Context, _ provider.MetaSchemaRequest, resp *provider.MetaSchemaResponse) {
++	resp.Schema = metaschema.Schema{Attributes: map[string]metaschema.Attribute{"m": metaschema.StringAttribute{Optional: true}}}
++	if p.metaWarn {
++		resp.Diagnostics.AddWarning("meta schema warning", "from MetaSchema")
++	}
++}
++
++var vbType = tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String, "name": tftypes.String}}
++var vbIDType = tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String}}
++
++func vbDV(t *testing.T, typ tftypes.Type, v tftypes.Value) *tfprotov6.DynamicValue {
++	t.Helper()
++	dv, err := tfprotov6.NewDynamicValue(typ, v)
++	if err != nil {
++		t.Fatal(err)
++	}
++	return &dv
++}
++
++func vbConfigure(t *testing.T, s *Server) {
++	t.Helper()
++	cfg := vbDV(t, tftypes.Object{AttributeTypes: map[string]tftypes.Type{}}, tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{}}, map[string]tftypes.Value{}))
++	resp, err := s.ConfigureProvider(context.Background(), &tfprotov6.ConfigureProviderRequest{
++		Config:             cfg,
++		ClientCapabilities: &tfprotov6.ConfigureProviderClientCapabilities{DeferralAllowed: true},
++	})
++	if err != nil || len(resp.Diagnostics) > 0 {
++		t.Fatalf("configure: err=%v diags=%v", err, resp.Diagnostics)
++	}
++}
++
++func vbDiags(ds []*tfprotov6.Diagnostic) string {
++	out := ""
++	for _, d := range ds {
++		out += fmt.Sprintf("[%v %q] ", d.Severity, d.Summary)
++	}
++	return out
++}
++
++// B2-1: EnablePlanModification without ModifyPlan.
++func TestVB2_B21(t *testing.T) {
++	t.Parallel()
++	for _, tc := range []struct {
++		name   string
++		enable bool
++		modify bool
++	}{
++		{"enable=true,modifyplan=no", true, false},
++		{"enable=true,modifyplan=yes", true, true},
++		{"enable=false,modifyplan=no", false, false},
++	} {
++		plain := &vbPlain{behavior: resource.ResourceBehavior{ProviderDeferred: resource.ProviderDeferredBehavior{EnablePlanModification: tc.enable}}}
++		var mk func() resource.Resource
++		if tc.modify {
++			mk = func() resource.Resource { return vbWithModifyPlan{plain} }
++		} else {
++			mk = func() resource.Resource { return plain }
++		}
++		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{deferCfg: true, res: mk}}}
++		vbConfigure(t, s)
++		cfg := tftypes.NewValue(vbType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, nil), "name": tftypes.NewValue(tftypes.String, "n")})
++		resp, err := s.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{
++			TypeName:         "vb_res",
++			Config:           vbDV(t, vbType, cfg),
++			ProposedNewState: vbDV(t, vbType, cfg),
++			PriorState:       vbDV(t, vbType, tftypes.NewValue(vbType, nil)),
++			ClientCapabilities: &tfprotov6.PlanResourceChangeClientCapabilities{DeferralAllowed: true},
++		})
++		if err != nil {
++			t.Fatal(err)
++		}
++		planned, _ := resp.PlannedState.Unmarshal(vbType)
++		t.Logf("B2-1 %s: Deferred=%v planned=%v diags=%s", tc.name, resp.Deferred, planned, vbDiags(resp.Diagnostics))
++	}
++}
++
++// B2-2: automatic import deferral and identity.
++func TestVB2_B22(t *testing.T) {
++	t.Parallel()
++	for _, tc := range []struct {
++		name     string
++		autoDef  bool
++		manual   bool
++		identity bool
++	}{
++		{"auto deferral, identity import", true, false, true},
++		{"manual deferral, identity import", false, true, true},
++		{"auto deferral, ID import", true, false, false},
++	} {
++		plain := &vbPlain{}
++		r := vbWithIdentity{vbPlain: plain, manualDefer: tc.manual}
++		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{deferCfg: tc.autoDef, res: func() resource.Resource { return r }}}}
++		vbConfigure(t, s)
++		req := &tfprotov6.ImportResourceStateRequest{
++			TypeName:           "vb_res",
++			ClientCapabilities: &tfprotov6.ImportResourceStateClientCapabilities{DeferralAllowed: true},
++		}
++		if tc.identity {
++			req.Identity = &tfprotov6.ResourceIdentityData{IdentityData: vbDV(t, vbIDType, tftypes.NewValue(vbIDType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "abc")}))}
++		} else {
++			req.ID = "abc"
++		}
++		resp, err := s.ImportResourceState(context.Background(), req)
++		if err != nil {
++			t.Fatal(err)
++		}
++		for i, ir := range resp.ImportedResources {
++			var id any = nil
++			if ir.Identity != nil {
++				v, _ := ir.Identity.IdentityData.Unmarshal(vbIDType)
++				id = v
++			}
++			t.Logf("B2-2 %s: Deferred=%v res[%d] Identity=%v diags=%s", tc.name, resp.Deferred, i, id, vbDiags(resp.Diagnostics))
++		}
++		if len(resp.ImportedResources) == 0 {
++			t.Logf("B2-2 %s: no imported resources; diags=%s", tc.name, vbDiags(resp.Diagnostics))
++		}
++	}
++}
++
++// B2-3: resource Configure warning on ReadResource / ApplyResourceChange and meta schema warning.
++func TestVB2_B23(t *testing.T) {
++	t.Parallel()
++	state := tftypes.NewValue(vbType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x"), "name": tftypes.NewValue(tftypes.String, "n")})
++	// (a) Configure warning
++	{
++		plain := &vbPlain{cfgWarn: true}
++		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{res: func() resource.Resource { return plain }}}}
++		rr, _ := s.ReadResource(context.Background(), &tfprotov6.ReadResourceRequest{TypeName: "vb_res", CurrentState: vbDV(t, vbType, state)})
++		t.Logf("B2-3a ReadResource configure-warning diags=%s", vbDiags(rr.Diagnostics))
++		pr, _ := s.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), ProposedNewState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, state)})
++		t.Logf("B2-3a PlanResourceChange configure-warning diags=%s", vbDiags(pr.Diagnostics))
++		ar, _ := s.ApplyResourceChange(context.Background(), &tfprotov6.ApplyResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), PlannedState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, tftypes.NewValue(vbType, nil))})
++		t.Logf("B2-3a ApplyResourceChange(create) configure-warning diags=%s", vbDiags(ar.Diagnostics))
++	}
++	// (b) meta schema warning
++	{
++		plain := &vbPlain{}
++		s := &Server{FrameworkServer: fwserver.Server{Provider: vbProviderMeta{&vbProvider{metaWarn: true, res: func() resource.Resource { return plain }}}}}
++		for i := 0; i < 2; i++ {
++			rr, _ := s.ReadResource(context.Background(), &tfprotov6.ReadResourceRequest{TypeName: "vb_res", CurrentState: vbDV(t, vbType, state)})
++			t.Logf("B2-3b ReadResource#%d meta-warning diags=%s", i, vbDiags(rr.Diagnostics))
++			pr, _ := s.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), ProposedNewState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, state)})
++			t.Logf("B2-3b PlanResourceChange#%d meta-warning diags=%s", i, vbDiags(pr.Diagnostics))
++		}
++	}
++}
++
++// B2-6(5): provider sets resp.Identity = nil.
++func TestVB2_B26_5(t *testing.T) {
++	t.Parallel()
++	state := tftypes.NewValue(vbType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x"), "name": tftypes.NewValue(tftypes.String, "n")})
++	idv := tftypes.NewValue(vbIDType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x")})
++	catch := func(name string, f func()) {
++		defer func() {
++			if r := recover(); r != nil {
++				buf := make([]byte, 1<<16)
++				n := runtime.Stack(buf, false)
++				t.Logf("B2-6(5) %s: PANIC: %v\n%s", name, r, buf[:n])
++			}
++		}()
++		f()
++		t.Logf("B2-6(5) %s: no panic", name)
++	}
++	plain := &vbPlain{nilIdent: true}
++	r := vbWithIdentity{vbPlain: plain}
++	s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{res: func() resource.Resource { return r }}}}
++	catch("ReadResource", func() {
++		resp, _ := s.ReadResource(context.Background(), &tfprotov6.ReadResourceRequest{TypeName: "vb_res", CurrentState: vbDV(t, vbType, state), CurrentIdentity: &tfprotov6.ResourceIdentityData{IdentityData: vbDV(t, vbIDType, idv)}})
++		t.Logf("diags=%s", vbDiags(resp.Diagnostics))
++	})
++	catch("ApplyResourceChange(create)", func() {
++		resp, _ := s.ApplyResourceChange(context.Background(), &tfprotov6.ApplyResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), PlannedState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, tftypes.NewValue(vbType, nil)), PlannedIdentity: &tfprotov6.ResourceIdentityData{IdentityData: vbDV(t, vbIDType, idv)}})
++		t.Logf("diags=%s", vbDiags(resp.Diagnostics))
++	})
++	catch("ApplyResourceChange(update)", func() {
++		resp, _ := s.ApplyResourceChange(context.Background(), &tfprotov6.ApplyResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), PlannedState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, state), PlannedIdentity: &tfprotov6.ResourceIdentityData{IdentityData: vbDV(t, vbIDType, idv)}})
++		t.Logf("diags=%s", vbDiags(resp.Diagnostics))
++	})
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/proto6server/zz_vb2_upg_test.go b/internal/proto6server/zz_vb2_upg_test.go
+--- a/internal/proto6server/zz_vb2_upg_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/proto6server/zz_vb2_upg_test.go	2026-11-10 21:30:14.354972139 +0000
+@@ -0,0 +1,53 @@
++package proto6server
++
++import (
++	"context"
++	"testing"
++
++	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
++	"github.com/hashicorp/terraform-plugin-go/tftypes"
++
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
++	"github.com/hashicorp/terraform-plugin-framework/resource"
++	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
++)
++
++type vbWO struct {
++	*vbPlain
++	version int64
++}
++
++func (r vbWO) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
++	resp.Schema = schema.Schema{Version: r.version, Attributes: map[string]schema.Attribute{
++		"id":       schema.StringAttribute{Computed: true},
++		"password": schema.StringAttribute{Optional: true, WriteOnly: true},
++	}}
++}
++
++func (r vbWO) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
++	return map[int64]resource.StateUpgrader{0: {StateUpgrader: func(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
++		// prior schema not given: copy raw state through DynamicValue path
++		dv, _ := tfprotov6.NewDynamicValue(vbWOType, tftypes.NewValue(vbWOType, map[string]tftypes.Value{
++			"id": tftypes.NewValue(tftypes.String, "x"), "password": tftypes.NewValue(tftypes.String, "stored-secret")}))
++		resp.DynamicValue = &dv
++	}}}
++}
++
++var vbWOType = tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String, "password": tftypes.String}}
++
++func TestVB2_B27(t *testing.T) {
++	t.Parallel()
++	for _, schemaVersion := range []int64{0, 1} {
++		r := vbWO{vbPlain: &vbPlain{}, version: schemaVersion}
++		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{res: func() resource.Resource { return r }}}}
++		resp, err := s.UpgradeResourceState(context.Background(), &tfprotov6.UpgradeResourceStateRequest{
++			TypeName: "vb_res", Version: 0,
++			RawState: &tfprotov6.RawState{JSON: []byte(`{"id":"x","password":"stored-secret"}`)},
++		})
++		if err != nil {
++			t.Fatal(err)
++		}
++		v, _ := resp.UpgradedState.Unmarshal(vbWOType)
++		t.Logf("B2-7 schema version %d, state version 0: upgraded=%v diags=%s", schemaVersion, v, vbDiags(resp.Diagnostics))
++	}
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/proto6server/zz_vb2_upgid_test.go b/internal/proto6server/zz_vb2_upgid_test.go
+--- a/internal/proto6server/zz_vb2_upgid_test.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/proto6server/zz_vb2_upgid_test.go	2026-11-10 21:46:05.936365148 +0000
+@@ -0,0 +1,54 @@
++package proto6server
++
++import (
++	"context"
++	"runtime"
++	"testing"
++
++	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
++
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
++	"github.com/hashicorp/terraform-plugin-framework/resource"
++	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
++)
++
++type vbUpgID struct {
++	*vbPlain
++	setNil bool
++}
++
++func (vbUpgID) IdentitySchema(_ context.Context, _ resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
++	resp.IdentitySchema = identityschema.Schema{Version: 1, Attributes: map[string]identityschema.Attribute{
++		"id": identityschema.StringAttribute{RequiredForImport: true},
++	}}
++}
++
++func (r vbUpgID) UpgradeIdentity(context.Context) map[int64]resource.IdentityUpgrader {
++	return map[int64]resource.IdentityUpgrader{0: {IdentityUpgrader: func(_ context.Context, _ resource.UpgradeIdentityRequest, resp *resource.UpgradeIdentityResponse) {
++		if r.setNil {
++			resp.Identity = nil
++		}
++	}}}
++}
++
++func TestVB2_UpgradeIdentityNil(t *testing.T) {
++	t.Parallel()
++	for _, setNil := range []bool{false, true} {
++		r := vbUpgID{vbPlain: &vbPlain{}, setNil: setNil}
++		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{res: func() resource.Resource { return r }}}}
++		func() {
++			defer func() {
++				if rec := recover(); rec != nil {
++					buf := make([]byte, 1<<14); n := runtime.Stack(buf, false); t.Logf("UpgradeIdentity setNil=%v: PANIC %v\n%s", setNil, rec, buf[:n])
++				}
++			}()
++			resp, err := s.UpgradeResourceIdentity(context.Background(), &tfprotov6.UpgradeResourceIdentityRequest{
++				TypeName: "vb_res", Version: 0, RawIdentity: &tfprotov6.RawState{JSON: []byte(`{"id":"x"}`)},
++			})
++			if err != nil {
++				t.Fatal(err)
++			}
++			t.Logf("UpgradeIdentity setNil=%v: diags=%s", setNil, vbDiags(resp.Diagnostics))
++		}()
++	}
++}

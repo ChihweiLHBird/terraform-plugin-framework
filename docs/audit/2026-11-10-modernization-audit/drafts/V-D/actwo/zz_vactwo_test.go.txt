@@ -1,0 +1,35 @@
+package fwserver_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/action"
+	"github.com/hashicorp/terraform-plugin-framework/action/schema"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+func TestZZVActWO(t *testing.T) {
+	s := schema.Schema{Attributes: map[string]schema.Attribute{
+		"wo": schema.StringAttribute{Optional: true, WriteOnly: true},
+	}}
+	ty := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"wo": tftypes.String}}
+	for _, v := range []tftypes.Value{tftypes.NewValue(tftypes.String, "secret"), tftypes.NewValue(tftypes.String, nil)} {
+		resp := &fwserver.ValidateActionConfigResponse{}
+		srv := &fwserver.Server{Provider: &testprovider.Provider{}}
+		srv.ValidateActionConfig(context.Background(), &fwserver.ValidateActionConfigRequest{
+			Config: &tfsdk.Config{Raw: tftypes.NewValue(ty, map[string]tftypes.Value{"wo": v}), Schema: s},
+			Action: &testprovider.Action{SchemaMethod: func(_ context.Context, _ action.SchemaRequest, r *action.SchemaResponse) { r.Schema = s }},
+		}, resp)
+		fmt.Printf("VACTWO value=%v diags=%d", v, len(resp.Diagnostics))
+		for _, d := range resp.Diagnostics {
+			fmt.Printf(" | %s: %s", d.Summary(), d.Detail())
+		}
+		fmt.Println()
+	}
+}

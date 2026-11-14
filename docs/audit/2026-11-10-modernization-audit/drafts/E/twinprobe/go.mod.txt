@@ -1,0 +1,3 @@
+module twinprobe
+
+go 1.26

@@ -1,0 +1,154 @@
+package fwserver_test
+
+import (
+	"context"
+	"fmt"
+	"sort"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+type vb1rec struct {
+	mu    sync.Mutex
+	lines []string
+}
+
+func (r *vb1rec) add(s string) { r.mu.Lock(); r.lines = append(r.lines, s); r.mu.Unlock() }
+
+func vb1diags(d diag.Diagnostics) string {
+	var out []string
+	for _, x := range d {
+		out = append(out, x.Severity().String()+":"+x.Summary())
+	}
+	return strings.Join(out, "|")
+}
+
+var vb1rel = path.MatchRelative().AtParent().AtName("sibling")
+
+func vb1pm(rec *vb1rec, label string) planmodifier.String {
+	return testplanmodifier.String{PlanModifyStringMethod: func(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+		paths, diags := req.Plan.PathMatches(ctx, req.PathExpression.Merge(vb1rel))
+		rec.add(fmt.Sprintf("PM  %-6s path=%-14s expr=%-16q siblingMatch=%-18v diags=%s", label, req.Path, req.PathExpression.String(), paths, vb1diags(diags)))
+	}}
+}
+
+func vb1v(rec *vb1rec, label string) validator.String {
+	return testvalidator.String{ValidateStringMethod: func(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+		paths, diags := req.Config.PathMatches(ctx, req.PathExpression.Merge(vb1rel))
+		rec.add(fmt.Sprintf("VAL %-6s path=%-14s expr=%-16q siblingMatch=%-18v diags=%s", label, req.Path, req.PathExpression.String(), paths, vb1diags(diags)))
+	}}
+}
+
+func vb1objpm(rec *vb1rec, label string) planmodifier.Object {
+	return testplanmodifier.Object{PlanModifyObjectMethod: func(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+		rec.add(fmt.Sprintf("PMO %-6s path=%-14s expr=%q", label, req.Path, req.PathExpression.String()))
+	}}
+}
+
+func vb1listpm(rec *vb1rec, label string) planmodifier.List {
+	return testplanmodifier.List{PlanModifyListMethod: func(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+		rec.add(fmt.Sprintf("PML %-6s path=%-14s expr=%q", label, req.Path, req.PathExpression.String()))
+	}}
+}
+
+func vb1run(t *testing.T, withRootSibling bool) []string {
+	rec := &vb1rec{}
+	str := func(label string) schema.StringAttribute {
+		return schema.StringAttribute{Optional: true, PlanModifiers: []planmodifier.String{vb1pm(rec, label)}, Validators: []validator.String{vb1v(rec, label)}}
+	}
+	attrs := map[string]schema.Attribute{
+		"top": str("top"),
+		"outer": schema.SingleNestedAttribute{Optional: true, PlanModifiers: []planmodifier.Object{vb1objpm(rec, "outer")}, Attributes: map[string]schema.Attribute{
+			"inner":   str("inner"),
+			"sibling": schema.StringAttribute{Optional: true},
+		}},
+		"lst": schema.ListNestedAttribute{Optional: true, NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+			"le":      str("le"),
+			"sibling": schema.StringAttribute{Optional: true},
+		}}},
+	}
+	if withRootSibling {
+		attrs["sibling"] = schema.StringAttribute{Optional: true}
+	}
+	s := schema.Schema{
+		Attributes: attrs,
+		Blocks: map[string]schema.Block{
+			"blk": schema.SingleNestedBlock{PlanModifiers: []planmodifier.Object{vb1objpm(rec, "blk")}, Attributes: map[string]schema.Attribute{
+				"battr":   str("battr"),
+				"sibling": schema.StringAttribute{Optional: true},
+			}},
+			"lblk": schema.ListNestedBlock{PlanModifiers: []planmodifier.List{vb1listpm(rec, "lblk")}, NestedObject: schema.NestedBlockObject{
+				PlanModifiers: []planmodifier.Object{vb1objpm(rec, "lblk[]")},
+				Attributes: map[string]schema.Attribute{
+					"lbe":     str("lbe"),
+					"sibling": schema.StringAttribute{Optional: true},
+				}}},
+		},
+	}
+	sv := func(v string) tftypes.Value { return tftypes.NewValue(tftypes.String, v) }
+	objT := func(n string) tftypes.Object {
+		return tftypes.Object{AttributeTypes: map[string]tftypes.Type{n: tftypes.String, "sibling": tftypes.String}}
+	}
+	obj := func(n string) tftypes.Value {
+		return tftypes.NewValue(objT(n), map[string]tftypes.Value{n: sv("x"), "sibling": sv("nested")})
+	}
+	rootTypes := map[string]tftypes.Type{
+		"top":   tftypes.String,
+		"outer": objT("inner"),
+		"lst":   tftypes.List{ElementType: objT("le")},
+		"blk":   objT("battr"),
+		"lblk":  tftypes.List{ElementType: objT("lbe")},
+	}
+	rootVals := map[string]tftypes.Value{
+		"top":   sv("t"),
+		"outer": obj("inner"),
+		"lst":   tftypes.NewValue(tftypes.List{ElementType: objT("le")}, []tftypes.Value{obj("le")}),
+		"blk":   obj("battr"),
+		"lblk":  tftypes.NewValue(tftypes.List{ElementType: objT("lbe")}, []tftypes.Value{obj("lbe")}),
+	}
+	if withRootSibling {
+		rootTypes["sibling"] = tftypes.String
+		rootVals["sibling"] = sv("root-level")
+	}
+	rootT := tftypes.Object{AttributeTypes: rootTypes}
+	val := tftypes.NewValue(rootT, rootVals)
+
+	server := &fwserver.Server{Provider: &testprovider.Provider{}}
+	vresp := &fwserver.ValidateResourceConfigResponse{}
+	server.ValidateResourceConfig(context.Background(), &fwserver.ValidateResourceConfigRequest{
+		Config: &tfsdk.Config{Raw: val, Schema: s}, Resource: &testprovider.Resource{},
+	}, vresp)
+	presp := &fwserver.PlanResourceChangeResponse{}
+	server.PlanResourceChange(context.Background(), &fwserver.PlanResourceChangeRequest{
+		Config: &tfsdk.Config{Raw: val, Schema: s}, ProposedNewState: &tfsdk.Plan{Raw: val, Schema: s},
+		PriorState: &tfsdk.State{Raw: tftypes.NewValue(rootT, nil), Schema: s}, ResourceSchema: s, Resource: &testprovider.Resource{},
+	}, presp)
+	out := append([]string(nil), rec.lines...)
+	sort.Strings(out)
+	out = append(out, "validate resp diags: "+vb1diags(vresp.Diagnostics), "plan resp diags: "+vb1diags(presp.Diagnostics))
+	return out
+}
+
+func TestVB1PathExpression(t *testing.T) {
+	t.Parallel()
+	for _, withRoot := range []bool{true, false} {
+		fmt.Printf("=== schema with root-level 'sibling' attribute: %v\n", withRoot)
+		for _, l := range vb1run(t, withRoot) {
+			fmt.Println(l)
+		}
+	}
+}

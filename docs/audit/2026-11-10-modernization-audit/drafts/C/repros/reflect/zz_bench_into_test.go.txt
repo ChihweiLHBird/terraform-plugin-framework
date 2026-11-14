@@ -1,0 +1,59 @@
+package reflect_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	refl "github.com/hashicorp/terraform-plugin-framework/internal/reflect"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type benchIntoModel struct {
+	A types.String `tfsdk:"a"`
+	B types.String `tfsdk:"b"`
+	C types.String `tfsdk:"c"`
+	D types.String `tfsdk:"d"`
+	E types.String `tfsdk:"e"`
+	F int64        `tfsdk:"f"`
+	G int64        `tfsdk:"g"`
+	H float64      `tfsdk:"h"`
+	I string       `tfsdk:"i"`
+	J bool         `tfsdk:"j"`
+}
+
+func benchObj() (types.ObjectType, tftypes.Value) {
+	ctx := context.Background()
+	ot := types.ObjectType{AttrTypes: map[string]attr.Type{
+		"a": types.StringType, "b": types.StringType, "c": types.StringType, "d": types.StringType, "e": types.StringType,
+		"f": types.Int64Type, "g": types.Int64Type, "h": types.Float64Type, "i": types.StringType, "j": types.BoolType,
+	}}
+	v := tftypes.NewValue(ot.TerraformType(ctx), map[string]tftypes.Value{
+		"a": tftypes.NewValue(tftypes.String, "a"), "b": tftypes.NewValue(tftypes.String, "b"), "c": tftypes.NewValue(tftypes.String, "c"),
+		"d": tftypes.NewValue(tftypes.String, "d"), "e": tftypes.NewValue(tftypes.String, "e"), "f": tftypes.NewValue(tftypes.Number, 1),
+		"g": tftypes.NewValue(tftypes.Number, 2), "h": tftypes.NewValue(tftypes.Number, 1.5), "i": tftypes.NewValue(tftypes.String, "i"),
+		"j": tftypes.NewValue(tftypes.Bool, true),
+	})
+	return ot, v
+}
+
+func BenchmarkIntoStruct10Fields(b *testing.B) {
+	ctx := context.Background()
+	ot, v := benchObj()
+	for b.Loop() {
+		var m benchIntoModel
+		_ = refl.Into(ctx, ot, v, &m, refl.Options{}, path.Empty())
+	}
+}
+
+func BenchmarkFromValueStruct10Fields(b *testing.B) {
+	ctx := context.Background()
+	ot, _ := benchObj()
+	m := benchIntoModel{A: types.StringValue("a"), F: 1, H: 1.5, I: "i", J: true}
+	for b.Loop() {
+		_, _ = refl.FromValue(ctx, ot, m, path.Empty())
+	}
+}

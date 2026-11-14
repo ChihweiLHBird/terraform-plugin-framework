@@ -1,0 +1,5 @@
+package vcprobe
+
+import "github.com/hashicorp/terraform-plugin-framework/path"
+
+func pathRoot(s string) path.Path { return path.Root(s) }

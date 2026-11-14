@@ -1,0 +1,585 @@
+AttributePlanModifyBool/chain-error: call m1 req: path="test" expr="test" config=<null> plan=true state=<unknown> private(nil=false) | resp0: plan=true private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyBool/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyBool/chain-error: plan=basetypes.BoolValue <null>
+AttributePlanModifyBool/chain-error: diags(nil=false len=2)
+AttributePlanModifyBool/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyBool/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyBool/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyBool/chain-error: log @level=trace @message=Calling provider defined planmodifier.Bool @module=sdk.framework description=desc-m1
+AttributePlanModifyBool/chain-error: log @level=trace @message=Called provider defined planmodifier.Bool @module=sdk.framework description=desc-m1
+AttributePlanModifyBool/chain-error: log @level=trace @message=Calling provider defined planmodifier.Bool @module=sdk.framework description=desc-m2
+AttributePlanModifyBool/chain-error: log @level=trace @message=Called provider defined planmodifier.Bool @module=sdk.framework description=desc-m2
+AttributePlanModifyBool/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=true state=<unknown> private(nil=false) | resp0: plan=true private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyBool/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyBool/chain-ok: plan=basetypes.BoolValue <unknown>
+AttributePlanModifyBool/chain-ok: diags(nil=true len=0)
+AttributePlanModifyBool/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyBool/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Bool @module=sdk.framework description=desc-m1
+AttributePlanModifyBool/chain-ok: log @level=trace @message=Called provider defined planmodifier.Bool @module=sdk.framework description=desc-m1
+AttributePlanModifyBool/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Bool @module=sdk.framework description=desc-m2
+AttributePlanModifyBool/chain-ok: log @level=trace @message=Called provider defined planmodifier.Bool @module=sdk.framework description=desc-m2
+AttributePlanModifyBool/nil-config: plan=basetypes.BoolValue true
+AttributePlanModifyBool/nil-config: diags(nil=false len=1)
+AttributePlanModifyBool/nil-config:   diag.withPath Error "Invalid Bool Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Bool attribute plan modification. The value type must implement the basetypes.BoolValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyBool/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyBool/no-modifiers: plan=basetypes.BoolValue true
+AttributePlanModifyBool/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyBool/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyBool/wrong-config: plan=basetypes.BoolValue true
+AttributePlanModifyBool/wrong-config: diags(nil=false len=1)
+AttributePlanModifyBool/wrong-config:   diag.withPath Error "Invalid Bool Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Bool attribute plan modification. The value type must implement the basetypes.BoolValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyBool/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyBool/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyBool/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyBool/wrong-plan:   diag.withPath Error "Invalid Bool Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Bool attribute plan modification. The value type must implement the basetypes.BoolValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyBool/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyBool/wrong-state: plan=basetypes.BoolValue true
+AttributePlanModifyBool/wrong-state: diags(nil=false len=1)
+AttributePlanModifyBool/wrong-state:   diag.withPath Error "Invalid Bool Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Bool attribute plan modification. The value type must implement the basetypes.BoolValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyBool/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat32/chain-error: call m1 req: path="test" expr="test" config=<null> plan=1.500000 state=<unknown> private(nil=false) | resp0: plan=1.500000 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyFloat32/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyFloat32/chain-error: plan=basetypes.Float32Value <null>
+AttributePlanModifyFloat32/chain-error: diags(nil=false len=2)
+AttributePlanModifyFloat32/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyFloat32/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyFloat32/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyFloat32/chain-error: log @level=trace @message=Calling provider defined planmodifier.Float32 @module=sdk.framework description=desc-m1
+AttributePlanModifyFloat32/chain-error: log @level=trace @message=Called provider defined planmodifier.Float32 @module=sdk.framework description=desc-m1
+AttributePlanModifyFloat32/chain-error: log @level=trace @message=Calling provider defined planmodifier.Float32 @module=sdk.framework description=desc-m2
+AttributePlanModifyFloat32/chain-error: log @level=trace @message=Called provider defined planmodifier.Float32 @module=sdk.framework description=desc-m2
+AttributePlanModifyFloat32/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=1.500000 state=<unknown> private(nil=false) | resp0: plan=1.500000 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyFloat32/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyFloat32/chain-ok: plan=basetypes.Float32Value <unknown>
+AttributePlanModifyFloat32/chain-ok: diags(nil=true len=0)
+AttributePlanModifyFloat32/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyFloat32/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Float32 @module=sdk.framework description=desc-m1
+AttributePlanModifyFloat32/chain-ok: log @level=trace @message=Called provider defined planmodifier.Float32 @module=sdk.framework description=desc-m1
+AttributePlanModifyFloat32/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Float32 @module=sdk.framework description=desc-m2
+AttributePlanModifyFloat32/chain-ok: log @level=trace @message=Called provider defined planmodifier.Float32 @module=sdk.framework description=desc-m2
+AttributePlanModifyFloat32/nil-config: plan=basetypes.Float32Value 1.500000
+AttributePlanModifyFloat32/nil-config: diags(nil=false len=1)
+AttributePlanModifyFloat32/nil-config:   diag.withPath Error "Invalid Float32 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Float32 attribute plan modification. The value type must implement the basetypes.Float32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyFloat32/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat32/no-modifiers: plan=basetypes.Float32Value 1.500000
+AttributePlanModifyFloat32/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyFloat32/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat32/wrong-config: plan=basetypes.Float32Value 1.500000
+AttributePlanModifyFloat32/wrong-config: diags(nil=false len=1)
+AttributePlanModifyFloat32/wrong-config:   diag.withPath Error "Invalid Float32 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Float32 attribute plan modification. The value type must implement the basetypes.Float32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyFloat32/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat32/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyFloat32/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyFloat32/wrong-plan:   diag.withPath Error "Invalid Float32 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Float32 attribute plan modification. The value type must implement the basetypes.Float32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyFloat32/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat32/wrong-state: plan=basetypes.Float32Value 1.500000
+AttributePlanModifyFloat32/wrong-state: diags(nil=false len=1)
+AttributePlanModifyFloat32/wrong-state:   diag.withPath Error "Invalid Float32 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Float32 attribute plan modification. The value type must implement the basetypes.Float32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyFloat32/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat64/chain-error: call m1 req: path="test" expr="test" config=<null> plan=1.500000 state=<unknown> private(nil=false) | resp0: plan=1.500000 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyFloat64/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyFloat64/chain-error: plan=basetypes.Float64Value <null>
+AttributePlanModifyFloat64/chain-error: diags(nil=false len=2)
+AttributePlanModifyFloat64/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyFloat64/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyFloat64/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyFloat64/chain-error: log @level=trace @message=Calling provider defined planmodifier.Float64 @module=sdk.framework description=desc-m1
+AttributePlanModifyFloat64/chain-error: log @level=trace @message=Called provider defined planmodifier.Float64 @module=sdk.framework description=desc-m1
+AttributePlanModifyFloat64/chain-error: log @level=trace @message=Calling provider defined planmodifier.Float64 @module=sdk.framework description=desc-m2
+AttributePlanModifyFloat64/chain-error: log @level=trace @message=Called provider defined planmodifier.Float64 @module=sdk.framework description=desc-m2
+AttributePlanModifyFloat64/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=1.500000 state=<unknown> private(nil=false) | resp0: plan=1.500000 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyFloat64/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyFloat64/chain-ok: plan=basetypes.Float64Value <unknown>
+AttributePlanModifyFloat64/chain-ok: diags(nil=true len=0)
+AttributePlanModifyFloat64/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyFloat64/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Float64 @module=sdk.framework description=desc-m1
+AttributePlanModifyFloat64/chain-ok: log @level=trace @message=Called provider defined planmodifier.Float64 @module=sdk.framework description=desc-m1
+AttributePlanModifyFloat64/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Float64 @module=sdk.framework description=desc-m2
+AttributePlanModifyFloat64/chain-ok: log @level=trace @message=Called provider defined planmodifier.Float64 @module=sdk.framework description=desc-m2
+AttributePlanModifyFloat64/nil-config: plan=basetypes.Float64Value 1.500000
+AttributePlanModifyFloat64/nil-config: diags(nil=false len=1)
+AttributePlanModifyFloat64/nil-config:   diag.withPath Error "Invalid Float64 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Float64 attribute plan modification. The value type must implement the basetypes.Float64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyFloat64/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat64/no-modifiers: plan=basetypes.Float64Value 1.500000
+AttributePlanModifyFloat64/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyFloat64/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat64/wrong-config: plan=basetypes.Float64Value 1.500000
+AttributePlanModifyFloat64/wrong-config: diags(nil=false len=1)
+AttributePlanModifyFloat64/wrong-config:   diag.withPath Error "Invalid Float64 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Float64 attribute plan modification. The value type must implement the basetypes.Float64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyFloat64/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat64/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyFloat64/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyFloat64/wrong-plan:   diag.withPath Error "Invalid Float64 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Float64 attribute plan modification. The value type must implement the basetypes.Float64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyFloat64/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyFloat64/wrong-state: plan=basetypes.Float64Value 1.500000
+AttributePlanModifyFloat64/wrong-state: diags(nil=false len=1)
+AttributePlanModifyFloat64/wrong-state:   diag.withPath Error "Invalid Float64 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Float64 attribute plan modification. The value type must implement the basetypes.Float64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyFloat64/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt32/chain-error: call m1 req: path="test" expr="test" config=<null> plan=1 state=<unknown> private(nil=false) | resp0: plan=1 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyInt32/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyInt32/chain-error: plan=basetypes.Int32Value <null>
+AttributePlanModifyInt32/chain-error: diags(nil=false len=2)
+AttributePlanModifyInt32/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyInt32/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyInt32/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyInt32/chain-error: log @level=trace @message=Calling provider defined planmodifier.Int32 @module=sdk.framework description=desc-m1
+AttributePlanModifyInt32/chain-error: log @level=trace @message=Called provider defined planmodifier.Int32 @module=sdk.framework description=desc-m1
+AttributePlanModifyInt32/chain-error: log @level=trace @message=Calling provider defined planmodifier.Int32 @module=sdk.framework description=desc-m2
+AttributePlanModifyInt32/chain-error: log @level=trace @message=Called provider defined planmodifier.Int32 @module=sdk.framework description=desc-m2
+AttributePlanModifyInt32/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=1 state=<unknown> private(nil=false) | resp0: plan=1 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyInt32/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyInt32/chain-ok: plan=basetypes.Int32Value <unknown>
+AttributePlanModifyInt32/chain-ok: diags(nil=true len=0)
+AttributePlanModifyInt32/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyInt32/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Int32 @module=sdk.framework description=desc-m1
+AttributePlanModifyInt32/chain-ok: log @level=trace @message=Called provider defined planmodifier.Int32 @module=sdk.framework description=desc-m1
+AttributePlanModifyInt32/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Int32 @module=sdk.framework description=desc-m2
+AttributePlanModifyInt32/chain-ok: log @level=trace @message=Called provider defined planmodifier.Int32 @module=sdk.framework description=desc-m2
+AttributePlanModifyInt32/nil-config: plan=basetypes.Int32Value 1
+AttributePlanModifyInt32/nil-config: diags(nil=false len=1)
+AttributePlanModifyInt32/nil-config:   diag.withPath Error "Invalid Int32 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Int32 attribute plan modification. The value type must implement the basetypes.Int32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyInt32/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt32/no-modifiers: plan=basetypes.Int32Value 1
+AttributePlanModifyInt32/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyInt32/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt32/wrong-config: plan=basetypes.Int32Value 1
+AttributePlanModifyInt32/wrong-config: diags(nil=false len=1)
+AttributePlanModifyInt32/wrong-config:   diag.withPath Error "Invalid Int32 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Int32 attribute plan modification. The value type must implement the basetypes.Int32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyInt32/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt32/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyInt32/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyInt32/wrong-plan:   diag.withPath Error "Invalid Int32 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Int32 attribute plan modification. The value type must implement the basetypes.Int32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyInt32/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt32/wrong-state: plan=basetypes.Int32Value 1
+AttributePlanModifyInt32/wrong-state: diags(nil=false len=1)
+AttributePlanModifyInt32/wrong-state:   diag.withPath Error "Invalid Int32 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Int32 attribute plan modification. The value type must implement the basetypes.Int32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyInt32/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt64/chain-error: call m1 req: path="test" expr="test" config=<null> plan=1 state=<unknown> private(nil=false) | resp0: plan=1 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyInt64/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyInt64/chain-error: plan=basetypes.Int64Value <null>
+AttributePlanModifyInt64/chain-error: diags(nil=false len=2)
+AttributePlanModifyInt64/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyInt64/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyInt64/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyInt64/chain-error: log @level=trace @message=Calling provider defined planmodifier.Int64 @module=sdk.framework description=desc-m1
+AttributePlanModifyInt64/chain-error: log @level=trace @message=Called provider defined planmodifier.Int64 @module=sdk.framework description=desc-m1
+AttributePlanModifyInt64/chain-error: log @level=trace @message=Calling provider defined planmodifier.Int64 @module=sdk.framework description=desc-m2
+AttributePlanModifyInt64/chain-error: log @level=trace @message=Called provider defined planmodifier.Int64 @module=sdk.framework description=desc-m2
+AttributePlanModifyInt64/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=1 state=<unknown> private(nil=false) | resp0: plan=1 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyInt64/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyInt64/chain-ok: plan=basetypes.Int64Value <unknown>
+AttributePlanModifyInt64/chain-ok: diags(nil=true len=0)
+AttributePlanModifyInt64/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyInt64/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Int64 @module=sdk.framework description=desc-m1
+AttributePlanModifyInt64/chain-ok: log @level=trace @message=Called provider defined planmodifier.Int64 @module=sdk.framework description=desc-m1
+AttributePlanModifyInt64/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Int64 @module=sdk.framework description=desc-m2
+AttributePlanModifyInt64/chain-ok: log @level=trace @message=Called provider defined planmodifier.Int64 @module=sdk.framework description=desc-m2
+AttributePlanModifyInt64/nil-config: plan=basetypes.Int64Value 1
+AttributePlanModifyInt64/nil-config: diags(nil=false len=1)
+AttributePlanModifyInt64/nil-config:   diag.withPath Error "Invalid Int64 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Int64 attribute plan modification. The value type must implement the basetypes.Int64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyInt64/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt64/no-modifiers: plan=basetypes.Int64Value 1
+AttributePlanModifyInt64/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyInt64/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt64/wrong-config: plan=basetypes.Int64Value 1
+AttributePlanModifyInt64/wrong-config: diags(nil=false len=1)
+AttributePlanModifyInt64/wrong-config:   diag.withPath Error "Invalid Int64 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Int64 attribute plan modification. The value type must implement the basetypes.Int64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyInt64/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt64/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyInt64/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyInt64/wrong-plan:   diag.withPath Error "Invalid Int64 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Int64 attribute plan modification. The value type must implement the basetypes.Int64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyInt64/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyInt64/wrong-state: plan=basetypes.Int64Value 1
+AttributePlanModifyInt64/wrong-state: diags(nil=false len=1)
+AttributePlanModifyInt64/wrong-state:   diag.withPath Error "Invalid Int64 Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Int64 attribute plan modification. The value type must implement the basetypes.Int64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyInt64/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyList/chain-error: call m1 req: path="test" expr="test" config=<null> plan=["a"] state=<unknown> private(nil=false) | resp0: plan=["a"] private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyList/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyList/chain-error: plan=basetypes.ListValue <null>
+AttributePlanModifyList/chain-error: diags(nil=false len=2)
+AttributePlanModifyList/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyList/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyList/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyList/chain-error: log @level=trace @message=Calling provider defined planmodifier.List @module=sdk.framework description=desc-m1
+AttributePlanModifyList/chain-error: log @level=trace @message=Called provider defined planmodifier.List @module=sdk.framework description=desc-m1
+AttributePlanModifyList/chain-error: log @level=trace @message=Calling provider defined planmodifier.List @module=sdk.framework description=desc-m2
+AttributePlanModifyList/chain-error: log @level=trace @message=Called provider defined planmodifier.List @module=sdk.framework description=desc-m2
+AttributePlanModifyList/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=["a"] state=<unknown> private(nil=false) | resp0: plan=["a"] private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyList/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyList/chain-ok: plan=basetypes.ListValue <unknown>
+AttributePlanModifyList/chain-ok: diags(nil=true len=0)
+AttributePlanModifyList/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyList/chain-ok: log @level=trace @message=Calling provider defined planmodifier.List @module=sdk.framework description=desc-m1
+AttributePlanModifyList/chain-ok: log @level=trace @message=Called provider defined planmodifier.List @module=sdk.framework description=desc-m1
+AttributePlanModifyList/chain-ok: log @level=trace @message=Calling provider defined planmodifier.List @module=sdk.framework description=desc-m2
+AttributePlanModifyList/chain-ok: log @level=trace @message=Called provider defined planmodifier.List @module=sdk.framework description=desc-m2
+AttributePlanModifyList/nil-config: plan=basetypes.ListValue ["a"]
+AttributePlanModifyList/nil-config: diags(nil=false len=1)
+AttributePlanModifyList/nil-config:   diag.withPath Error "Invalid List Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform List attribute plan modification. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyList/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyList/no-modifiers: plan=basetypes.ListValue ["a"]
+AttributePlanModifyList/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyList/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyList/wrong-config: plan=basetypes.ListValue ["a"]
+AttributePlanModifyList/wrong-config: diags(nil=false len=1)
+AttributePlanModifyList/wrong-config:   diag.withPath Error "Invalid List Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform List attribute plan modification. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyList/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyList/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyList/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyList/wrong-plan:   diag.withPath Error "Invalid List Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform List attribute plan modification. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyList/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyList/wrong-state: plan=basetypes.ListValue ["a"]
+AttributePlanModifyList/wrong-state: diags(nil=false len=1)
+AttributePlanModifyList/wrong-state:   diag.withPath Error "Invalid List Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform List attribute plan modification. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyList/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyMap/chain-error: call m1 req: path="test" expr="test" config=<null> plan={"k":"a"} state=<unknown> private(nil=false) | resp0: plan={"k":"a"} private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyMap/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyMap/chain-error: plan=basetypes.MapValue <null>
+AttributePlanModifyMap/chain-error: diags(nil=false len=2)
+AttributePlanModifyMap/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyMap/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyMap/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyMap/chain-error: log @level=trace @message=Calling provider defined planmodifier.Map @module=sdk.framework description=desc-m1
+AttributePlanModifyMap/chain-error: log @level=trace @message=Called provider defined planmodifier.Map @module=sdk.framework description=desc-m1
+AttributePlanModifyMap/chain-error: log @level=trace @message=Calling provider defined planmodifier.Map @module=sdk.framework description=desc-m2
+AttributePlanModifyMap/chain-error: log @level=trace @message=Called provider defined planmodifier.Map @module=sdk.framework description=desc-m2
+AttributePlanModifyMap/chain-ok: call m1 req: path="test" expr="test" config=<null> plan={"k":"a"} state=<unknown> private(nil=false) | resp0: plan={"k":"a"} private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyMap/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyMap/chain-ok: plan=basetypes.MapValue <unknown>
+AttributePlanModifyMap/chain-ok: diags(nil=true len=0)
+AttributePlanModifyMap/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyMap/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Map @module=sdk.framework description=desc-m1
+AttributePlanModifyMap/chain-ok: log @level=trace @message=Called provider defined planmodifier.Map @module=sdk.framework description=desc-m1
+AttributePlanModifyMap/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Map @module=sdk.framework description=desc-m2
+AttributePlanModifyMap/chain-ok: log @level=trace @message=Called provider defined planmodifier.Map @module=sdk.framework description=desc-m2
+AttributePlanModifyMap/nil-config: plan=basetypes.MapValue {"k":"a"}
+AttributePlanModifyMap/nil-config: diags(nil=false len=1)
+AttributePlanModifyMap/nil-config:   diag.withPath Error "Invalid Map Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Map attribute plan modification. The value type must implement the basetypes.MapValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyMap/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyMap/no-modifiers: plan=basetypes.MapValue {"k":"a"}
+AttributePlanModifyMap/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyMap/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyMap/wrong-config: plan=basetypes.MapValue {"k":"a"}
+AttributePlanModifyMap/wrong-config: diags(nil=false len=1)
+AttributePlanModifyMap/wrong-config:   diag.withPath Error "Invalid Map Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Map attribute plan modification. The value type must implement the basetypes.MapValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyMap/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyMap/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyMap/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyMap/wrong-plan:   diag.withPath Error "Invalid Map Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Map attribute plan modification. The value type must implement the basetypes.MapValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyMap/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyMap/wrong-state: plan=basetypes.MapValue {"k":"a"}
+AttributePlanModifyMap/wrong-state: diags(nil=false len=1)
+AttributePlanModifyMap/wrong-state:   diag.withPath Error "Invalid Map Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Map attribute plan modification. The value type must implement the basetypes.MapValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyMap/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyNumber/chain-error: call m1 req: path="test" expr="test" config=<null> plan=1 state=<unknown> private(nil=false) | resp0: plan=1 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyNumber/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyNumber/chain-error: plan=basetypes.NumberValue <null>
+AttributePlanModifyNumber/chain-error: diags(nil=false len=2)
+AttributePlanModifyNumber/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyNumber/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyNumber/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyNumber/chain-error: log @level=trace @message=Calling provider defined planmodifier.Number @module=sdk.framework description=desc-m1
+AttributePlanModifyNumber/chain-error: log @level=trace @message=Called provider defined planmodifier.Number @module=sdk.framework description=desc-m1
+AttributePlanModifyNumber/chain-error: log @level=trace @message=Calling provider defined planmodifier.Number @module=sdk.framework description=desc-m2
+AttributePlanModifyNumber/chain-error: log @level=trace @message=Called provider defined planmodifier.Number @module=sdk.framework description=desc-m2
+AttributePlanModifyNumber/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=1 state=<unknown> private(nil=false) | resp0: plan=1 private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyNumber/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyNumber/chain-ok: plan=basetypes.NumberValue <unknown>
+AttributePlanModifyNumber/chain-ok: diags(nil=true len=0)
+AttributePlanModifyNumber/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyNumber/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Number @module=sdk.framework description=desc-m1
+AttributePlanModifyNumber/chain-ok: log @level=trace @message=Called provider defined planmodifier.Number @module=sdk.framework description=desc-m1
+AttributePlanModifyNumber/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Number @module=sdk.framework description=desc-m2
+AttributePlanModifyNumber/chain-ok: log @level=trace @message=Called provider defined planmodifier.Number @module=sdk.framework description=desc-m2
+AttributePlanModifyNumber/nil-config: plan=basetypes.NumberValue 1
+AttributePlanModifyNumber/nil-config: diags(nil=false len=1)
+AttributePlanModifyNumber/nil-config:   diag.withPath Error "Invalid Number Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Number attribute plan modification. The value type must implement the basetypes.NumberValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyNumber/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyNumber/no-modifiers: plan=basetypes.NumberValue 1
+AttributePlanModifyNumber/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyNumber/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyNumber/wrong-config: plan=basetypes.NumberValue 1
+AttributePlanModifyNumber/wrong-config: diags(nil=false len=1)
+AttributePlanModifyNumber/wrong-config:   diag.withPath Error "Invalid Number Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Number attribute plan modification. The value type must implement the basetypes.NumberValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyNumber/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyNumber/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyNumber/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyNumber/wrong-plan:   diag.withPath Error "Invalid Number Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Number attribute plan modification. The value type must implement the basetypes.NumberValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyNumber/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyNumber/wrong-state: plan=basetypes.NumberValue 1
+AttributePlanModifyNumber/wrong-state: diags(nil=false len=1)
+AttributePlanModifyNumber/wrong-state:   diag.withPath Error "Invalid Number Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Number attribute plan modification. The value type must implement the basetypes.NumberValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyNumber/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyObject/chain-error: call m1 req: path="test" expr="test" config=<null> plan={"a":"x"} state=<unknown> private(nil=false) | resp0: plan={"a":"x"} private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyObject/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyObject/chain-error: plan=basetypes.ObjectValue <null>
+AttributePlanModifyObject/chain-error: diags(nil=false len=2)
+AttributePlanModifyObject/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyObject/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyObject/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyObject/chain-error: log @level=trace @message=Calling provider defined planmodifier.Object @module=sdk.framework description=desc-m1
+AttributePlanModifyObject/chain-error: log @level=trace @message=Called provider defined planmodifier.Object @module=sdk.framework description=desc-m1
+AttributePlanModifyObject/chain-error: log @level=trace @message=Calling provider defined planmodifier.Object @module=sdk.framework description=desc-m2
+AttributePlanModifyObject/chain-error: log @level=trace @message=Called provider defined planmodifier.Object @module=sdk.framework description=desc-m2
+AttributePlanModifyObject/chain-ok: call m1 req: path="test" expr="test" config=<null> plan={"a":"x"} state=<unknown> private(nil=false) | resp0: plan={"a":"x"} private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyObject/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyObject/chain-ok: plan=basetypes.ObjectValue <unknown>
+AttributePlanModifyObject/chain-ok: diags(nil=true len=0)
+AttributePlanModifyObject/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyObject/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Object @module=sdk.framework description=desc-m1
+AttributePlanModifyObject/chain-ok: log @level=trace @message=Called provider defined planmodifier.Object @module=sdk.framework description=desc-m1
+AttributePlanModifyObject/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Object @module=sdk.framework description=desc-m2
+AttributePlanModifyObject/chain-ok: log @level=trace @message=Called provider defined planmodifier.Object @module=sdk.framework description=desc-m2
+AttributePlanModifyObject/nil-config: plan=basetypes.ObjectValue {"a":"x"}
+AttributePlanModifyObject/nil-config: diags(nil=false len=1)
+AttributePlanModifyObject/nil-config:   diag.withPath Error "Invalid Object Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Object attribute plan modification. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyObject/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyObject/no-modifiers: plan=basetypes.ObjectValue {"a":"x"}
+AttributePlanModifyObject/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyObject/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyObject/wrong-config: plan=basetypes.ObjectValue {"a":"x"}
+AttributePlanModifyObject/wrong-config: diags(nil=false len=1)
+AttributePlanModifyObject/wrong-config:   diag.withPath Error "Invalid Object Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Object attribute plan modification. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyObject/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyObject/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyObject/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyObject/wrong-plan:   diag.withPath Error "Invalid Object Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Object attribute plan modification. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyObject/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyObject/wrong-state: plan=basetypes.ObjectValue {"a":"x"}
+AttributePlanModifyObject/wrong-state: diags(nil=false len=1)
+AttributePlanModifyObject/wrong-state:   diag.withPath Error "Invalid Object Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Object attribute plan modification. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyObject/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifySet/chain-error: call m1 req: path="test" expr="test" config=<null> plan=["a"] state=<unknown> private(nil=false) | resp0: plan=["a"] private(nil=false) diags(nil=true) rr=false
+AttributePlanModifySet/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifySet/chain-error: plan=basetypes.SetValue <null>
+AttributePlanModifySet/chain-error: diags(nil=false len=2)
+AttributePlanModifySet/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifySet/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifySet/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifySet/chain-error: log @level=trace @message=Calling provider defined planmodifier.Set @module=sdk.framework description=desc-m1
+AttributePlanModifySet/chain-error: log @level=trace @message=Called provider defined planmodifier.Set @module=sdk.framework description=desc-m1
+AttributePlanModifySet/chain-error: log @level=trace @message=Calling provider defined planmodifier.Set @module=sdk.framework description=desc-m2
+AttributePlanModifySet/chain-error: log @level=trace @message=Called provider defined planmodifier.Set @module=sdk.framework description=desc-m2
+AttributePlanModifySet/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=["a"] state=<unknown> private(nil=false) | resp0: plan=["a"] private(nil=false) diags(nil=true) rr=false
+AttributePlanModifySet/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifySet/chain-ok: plan=basetypes.SetValue <unknown>
+AttributePlanModifySet/chain-ok: diags(nil=true len=0)
+AttributePlanModifySet/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifySet/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Set @module=sdk.framework description=desc-m1
+AttributePlanModifySet/chain-ok: log @level=trace @message=Called provider defined planmodifier.Set @module=sdk.framework description=desc-m1
+AttributePlanModifySet/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Set @module=sdk.framework description=desc-m2
+AttributePlanModifySet/chain-ok: log @level=trace @message=Called provider defined planmodifier.Set @module=sdk.framework description=desc-m2
+AttributePlanModifySet/nil-config: plan=basetypes.SetValue ["a"]
+AttributePlanModifySet/nil-config: diags(nil=false len=1)
+AttributePlanModifySet/nil-config:   diag.withPath Error "Invalid Set Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Set attribute plan modification. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifySet/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifySet/no-modifiers: plan=basetypes.SetValue ["a"]
+AttributePlanModifySet/no-modifiers: diags(nil=true len=0)
+AttributePlanModifySet/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifySet/wrong-config: plan=basetypes.SetValue ["a"]
+AttributePlanModifySet/wrong-config: diags(nil=false len=1)
+AttributePlanModifySet/wrong-config:   diag.withPath Error "Invalid Set Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Set attribute plan modification. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifySet/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifySet/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifySet/wrong-plan: diags(nil=false len=1)
+AttributePlanModifySet/wrong-plan:   diag.withPath Error "Invalid Set Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Set attribute plan modification. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifySet/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifySet/wrong-state: plan=basetypes.SetValue ["a"]
+AttributePlanModifySet/wrong-state: diags(nil=false len=1)
+AttributePlanModifySet/wrong-state:   diag.withPath Error "Invalid Set Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Set attribute plan modification. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifySet/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyString/chain-error: call m1 req: path="test" expr="test" config=<null> plan="a" state=<unknown> private(nil=false) | resp0: plan="a" private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyString/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyString/chain-error: plan=basetypes.StringValue <null>
+AttributePlanModifyString/chain-error: diags(nil=false len=2)
+AttributePlanModifyString/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyString/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyString/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyString/chain-error: log @level=trace @message=Calling provider defined planmodifier.String @module=sdk.framework description=desc-m1
+AttributePlanModifyString/chain-error: log @level=trace @message=Called provider defined planmodifier.String @module=sdk.framework description=desc-m1
+AttributePlanModifyString/chain-error: log @level=trace @message=Calling provider defined planmodifier.String @module=sdk.framework description=desc-m2
+AttributePlanModifyString/chain-error: log @level=trace @message=Called provider defined planmodifier.String @module=sdk.framework description=desc-m2
+AttributePlanModifyString/chain-ok: call m1 req: path="test" expr="test" config=<null> plan="a" state=<unknown> private(nil=false) | resp0: plan="a" private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyString/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyString/chain-ok: plan=basetypes.StringValue <unknown>
+AttributePlanModifyString/chain-ok: diags(nil=true len=0)
+AttributePlanModifyString/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyString/chain-ok: log @level=trace @message=Calling provider defined planmodifier.String @module=sdk.framework description=desc-m1
+AttributePlanModifyString/chain-ok: log @level=trace @message=Called provider defined planmodifier.String @module=sdk.framework description=desc-m1
+AttributePlanModifyString/chain-ok: log @level=trace @message=Calling provider defined planmodifier.String @module=sdk.framework description=desc-m2
+AttributePlanModifyString/chain-ok: log @level=trace @message=Called provider defined planmodifier.String @module=sdk.framework description=desc-m2
+AttributePlanModifyString/nil-config: plan=basetypes.StringValue "a"
+AttributePlanModifyString/nil-config: diags(nil=false len=1)
+AttributePlanModifyString/nil-config:   diag.withPath Error "Invalid String Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform String attribute plan modification. The value type must implement the basetypes.StringValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyString/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyString/no-modifiers: plan=basetypes.StringValue "a"
+AttributePlanModifyString/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyString/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyString/wrong-config: plan=basetypes.StringValue "a"
+AttributePlanModifyString/wrong-config: diags(nil=false len=1)
+AttributePlanModifyString/wrong-config:   diag.withPath Error "Invalid String Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform String attribute plan modification. The value type must implement the basetypes.StringValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.BoolValue" path="test"
+AttributePlanModifyString/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyString/wrong-plan: plan=basetypes.BoolValue true
+AttributePlanModifyString/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyString/wrong-plan:   diag.withPath Error "Invalid String Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform String attribute plan modification. The value type must implement the basetypes.StringValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.BoolValue" path="test"
+AttributePlanModifyString/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyString/wrong-state: plan=basetypes.StringValue "a"
+AttributePlanModifyString/wrong-state: diags(nil=false len=1)
+AttributePlanModifyString/wrong-state:   diag.withPath Error "Invalid String Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform String attribute plan modification. The value type must implement the basetypes.StringValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.BoolValue" path="test"
+AttributePlanModifyString/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyDynamic/chain-error: call m1 req: path="test" expr="test" config=<null> plan="a" state=<unknown> private(nil=false) | resp0: plan="a" private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyDynamic/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyDynamic/chain-error: plan=basetypes.DynamicValue <null>
+AttributePlanModifyDynamic/chain-error: diags(nil=false len=2)
+AttributePlanModifyDynamic/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributePlanModifyDynamic/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributePlanModifyDynamic/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+AttributePlanModifyDynamic/chain-error: log @level=trace @message=Calling provider defined planmodifier.Dynamic @module=sdk.framework description=desc-m1
+AttributePlanModifyDynamic/chain-error: log @level=trace @message=Called provider defined planmodifier.Dynamic @module=sdk.framework description=desc-m1
+AttributePlanModifyDynamic/chain-error: log @level=trace @message=Calling provider defined planmodifier.Dynamic @module=sdk.framework description=desc-m2
+AttributePlanModifyDynamic/chain-error: log @level=trace @message=Called provider defined planmodifier.Dynamic @module=sdk.framework description=desc-m2
+AttributePlanModifyDynamic/chain-ok: call m1 req: path="test" expr="test" config=<null> plan="a" state=<unknown> private(nil=false) | resp0: plan="a" private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyDynamic/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+AttributePlanModifyDynamic/chain-ok: plan=basetypes.DynamicValue <unknown>
+AttributePlanModifyDynamic/chain-ok: diags(nil=true len=0)
+AttributePlanModifyDynamic/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+AttributePlanModifyDynamic/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Dynamic @module=sdk.framework description=desc-m1
+AttributePlanModifyDynamic/chain-ok: log @level=trace @message=Called provider defined planmodifier.Dynamic @module=sdk.framework description=desc-m1
+AttributePlanModifyDynamic/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Dynamic @module=sdk.framework description=desc-m2
+AttributePlanModifyDynamic/chain-ok: log @level=trace @message=Called provider defined planmodifier.Dynamic @module=sdk.framework description=desc-m2
+AttributePlanModifyDynamic/nil-config: plan=basetypes.DynamicValue "a"
+AttributePlanModifyDynamic/nil-config: diags(nil=false len=1)
+AttributePlanModifyDynamic/nil-config:   diag.withPath Error "Invalid Dynamic Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Dynamic attribute plan modification. The value type must implement the basetypes.DynamicValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributePlanModifyDynamic/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyDynamic/no-modifiers: plan=basetypes.DynamicValue "a"
+AttributePlanModifyDynamic/no-modifiers: diags(nil=true len=0)
+AttributePlanModifyDynamic/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyDynamic/wrong-config: plan=basetypes.DynamicValue "a"
+AttributePlanModifyDynamic/wrong-config: diags(nil=false len=1)
+AttributePlanModifyDynamic/wrong-config:   diag.withPath Error "Invalid Dynamic Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Dynamic attribute plan modification. The value type must implement the basetypes.DynamicValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyDynamic/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyDynamic/wrong-plan: plan=basetypes.StringValue "wrong"
+AttributePlanModifyDynamic/wrong-plan: diags(nil=false len=1)
+AttributePlanModifyDynamic/wrong-plan:   diag.withPath Error "Invalid Dynamic Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Dynamic attribute plan modification. The value type must implement the basetypes.DynamicValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyDynamic/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+AttributePlanModifyDynamic/wrong-state: plan=basetypes.DynamicValue "a"
+AttributePlanModifyDynamic/wrong-state: diags(nil=false len=1)
+AttributePlanModifyDynamic/wrong-state:   diag.withPath Error "Invalid Dynamic Attribute Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Dynamic attribute plan modification. The value type must implement the basetypes.DynamicValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributePlanModifyDynamic/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyList/chain-error: call m1 req: path="test" expr="test" config=<null> plan=["a"] state=<unknown> private(nil=false) | resp0: plan=["a"] private(nil=false) diags(nil=true) rr=false
+BlockPlanModifyList/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+BlockPlanModifyList/chain-error: plan=basetypes.ListValue <null>
+BlockPlanModifyList/chain-error: diags(nil=false len=2)
+BlockPlanModifyList/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+BlockPlanModifyList/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+BlockPlanModifyList/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+BlockPlanModifyList/chain-error: log @level=trace @message=Calling provider defined planmodifier.List @module=sdk.framework description=desc-m1
+BlockPlanModifyList/chain-error: log @level=trace @message=Called provider defined planmodifier.List @module=sdk.framework description=desc-m1
+BlockPlanModifyList/chain-error: log @level=trace @message=Calling provider defined planmodifier.List @module=sdk.framework description=desc-m2
+BlockPlanModifyList/chain-error: log @level=trace @message=Called provider defined planmodifier.List @module=sdk.framework description=desc-m2
+BlockPlanModifyList/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=["a"] state=<unknown> private(nil=false) | resp0: plan=["a"] private(nil=false) diags(nil=true) rr=false
+BlockPlanModifyList/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+BlockPlanModifyList/chain-ok: plan=basetypes.ListValue <unknown>
+BlockPlanModifyList/chain-ok: diags(nil=true len=0)
+BlockPlanModifyList/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+BlockPlanModifyList/chain-ok: log @level=trace @message=Calling provider defined planmodifier.List @module=sdk.framework description=desc-m1
+BlockPlanModifyList/chain-ok: log @level=trace @message=Called provider defined planmodifier.List @module=sdk.framework description=desc-m1
+BlockPlanModifyList/chain-ok: log @level=trace @message=Calling provider defined planmodifier.List @module=sdk.framework description=desc-m2
+BlockPlanModifyList/chain-ok: log @level=trace @message=Called provider defined planmodifier.List @module=sdk.framework description=desc-m2
+BlockPlanModifyList/nil-config: plan=basetypes.ListValue ["a"]
+BlockPlanModifyList/nil-config: diags(nil=false len=1)
+BlockPlanModifyList/nil-config:   diag.withPath Error "Invalid List Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform List block plan modification. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+BlockPlanModifyList/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyList/no-modifiers: plan=basetypes.ListValue ["a"]
+BlockPlanModifyList/no-modifiers: diags(nil=true len=0)
+BlockPlanModifyList/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyList/wrong-config: plan=basetypes.ListValue ["a"]
+BlockPlanModifyList/wrong-config: diags(nil=false len=1)
+BlockPlanModifyList/wrong-config:   diag.withPath Error "Invalid List Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform List block plan modification. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifyList/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyList/wrong-plan: plan=basetypes.StringValue "wrong"
+BlockPlanModifyList/wrong-plan: diags(nil=false len=1)
+BlockPlanModifyList/wrong-plan:   diag.withPath Error "Invalid List Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform List block plan modification. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifyList/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyList/wrong-state: plan=basetypes.ListValue ["a"]
+BlockPlanModifyList/wrong-state: diags(nil=false len=1)
+BlockPlanModifyList/wrong-state:   diag.withPath Error "Invalid List Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform List block plan modification. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifyList/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyObject/chain-error: call m1 req: path="test" expr="test" config=<null> plan={"a":"x"} state=<unknown> private(nil=false) | resp0: plan={"a":"x"} private(nil=false) diags(nil=true) rr=false
+BlockPlanModifyObject/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+BlockPlanModifyObject/chain-error: plan=basetypes.ObjectValue <null>
+BlockPlanModifyObject/chain-error: diags(nil=false len=2)
+BlockPlanModifyObject/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+BlockPlanModifyObject/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+BlockPlanModifyObject/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+BlockPlanModifyObject/chain-error: log @level=trace @message=Calling provider defined planmodifier.Object @module=sdk.framework description=desc-m1
+BlockPlanModifyObject/chain-error: log @level=trace @message=Called provider defined planmodifier.Object @module=sdk.framework description=desc-m1
+BlockPlanModifyObject/chain-error: log @level=trace @message=Calling provider defined planmodifier.Object @module=sdk.framework description=desc-m2
+BlockPlanModifyObject/chain-error: log @level=trace @message=Called provider defined planmodifier.Object @module=sdk.framework description=desc-m2
+BlockPlanModifyObject/chain-ok: call m1 req: path="test" expr="test" config=<null> plan={"a":"x"} state=<unknown> private(nil=false) | resp0: plan={"a":"x"} private(nil=false) diags(nil=true) rr=false
+BlockPlanModifyObject/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+BlockPlanModifyObject/chain-ok: plan=basetypes.ObjectValue <unknown>
+BlockPlanModifyObject/chain-ok: diags(nil=true len=0)
+BlockPlanModifyObject/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+BlockPlanModifyObject/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Object @module=sdk.framework description=desc-m1
+BlockPlanModifyObject/chain-ok: log @level=trace @message=Called provider defined planmodifier.Object @module=sdk.framework description=desc-m1
+BlockPlanModifyObject/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Object @module=sdk.framework description=desc-m2
+BlockPlanModifyObject/chain-ok: log @level=trace @message=Called provider defined planmodifier.Object @module=sdk.framework description=desc-m2
+BlockPlanModifyObject/nil-config: plan=basetypes.ObjectValue {"a":"x"}
+BlockPlanModifyObject/nil-config: diags(nil=false len=1)
+BlockPlanModifyObject/nil-config:   diag.withPath Error "Invalid Object Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Object block plan modification. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+BlockPlanModifyObject/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyObject/no-modifiers: plan=basetypes.ObjectValue {"a":"x"}
+BlockPlanModifyObject/no-modifiers: diags(nil=true len=0)
+BlockPlanModifyObject/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyObject/wrong-config: plan=basetypes.ObjectValue {"a":"x"}
+BlockPlanModifyObject/wrong-config: diags(nil=false len=1)
+BlockPlanModifyObject/wrong-config:   diag.withPath Error "Invalid Object Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Object block plan modification. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifyObject/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyObject/wrong-plan: plan=basetypes.StringValue "wrong"
+BlockPlanModifyObject/wrong-plan: diags(nil=false len=1)
+BlockPlanModifyObject/wrong-plan:   diag.withPath Error "Invalid Object Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Object block plan modification. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifyObject/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifyObject/wrong-state: plan=basetypes.ObjectValue {"a":"x"}
+BlockPlanModifyObject/wrong-state: diags(nil=false len=1)
+BlockPlanModifyObject/wrong-state:   diag.withPath Error "Invalid Object Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Object block plan modification. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifyObject/wrong-state: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifySet/chain-error: call m1 req: path="test" expr="test" config=<null> plan=["a"] state=<unknown> private(nil=false) | resp0: plan=["a"] private(nil=false) diags(nil=true) rr=false
+BlockPlanModifySet/chain-error: call m2 req: path="test" expr="test" config=<null> plan=<null> state=<unknown> private(nil=false) | resp0: plan=<null> private(nil=false) diags(nil=true) rr=false
+BlockPlanModifySet/chain-error: plan=basetypes.SetValue <null>
+BlockPlanModifySet/chain-error: diags(nil=false len=2)
+BlockPlanModifySet/chain-error:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+BlockPlanModifySet/chain-error:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+BlockPlanModifySet/chain-error: requiresReplace(nil=false)=[test] private(nil=true)
+BlockPlanModifySet/chain-error: log @level=trace @message=Calling provider defined planmodifier.Set @module=sdk.framework description=desc-m1
+BlockPlanModifySet/chain-error: log @level=trace @message=Called provider defined planmodifier.Set @module=sdk.framework description=desc-m1
+BlockPlanModifySet/chain-error: log @level=trace @message=Calling provider defined planmodifier.Set @module=sdk.framework description=desc-m2
+BlockPlanModifySet/chain-error: log @level=trace @message=Called provider defined planmodifier.Set @module=sdk.framework description=desc-m2
+BlockPlanModifySet/chain-ok: call m1 req: path="test" expr="test" config=<null> plan=["a"] state=<unknown> private(nil=false) | resp0: plan=["a"] private(nil=false) diags(nil=true) rr=false
+BlockPlanModifySet/chain-ok: call m2 req: path="test" expr="test" config=<null> plan=<unknown> state=<unknown> private(nil=false) | resp0: plan=<unknown> private(nil=false) diags(nil=true) rr=false
+BlockPlanModifySet/chain-ok: plan=basetypes.SetValue <unknown>
+BlockPlanModifySet/chain-ok: diags(nil=true len=0)
+BlockPlanModifySet/chain-ok: requiresReplace(nil=false)=[test] private(nil=false)
+BlockPlanModifySet/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Set @module=sdk.framework description=desc-m1
+BlockPlanModifySet/chain-ok: log @level=trace @message=Called provider defined planmodifier.Set @module=sdk.framework description=desc-m1
+BlockPlanModifySet/chain-ok: log @level=trace @message=Calling provider defined planmodifier.Set @module=sdk.framework description=desc-m2
+BlockPlanModifySet/chain-ok: log @level=trace @message=Called provider defined planmodifier.Set @module=sdk.framework description=desc-m2
+BlockPlanModifySet/nil-config: plan=basetypes.SetValue ["a"]
+BlockPlanModifySet/nil-config: diags(nil=false len=1)
+BlockPlanModifySet/nil-config:   diag.withPath Error "Invalid Set Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Set block plan modification. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+BlockPlanModifySet/nil-config: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifySet/no-modifiers: plan=basetypes.SetValue ["a"]
+BlockPlanModifySet/no-modifiers: diags(nil=true len=0)
+BlockPlanModifySet/no-modifiers: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifySet/wrong-config: plan=basetypes.SetValue ["a"]
+BlockPlanModifySet/wrong-config: diags(nil=false len=1)
+BlockPlanModifySet/wrong-config:   diag.withPath Error "Invalid Set Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Set block plan modification. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifySet/wrong-config: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifySet/wrong-plan: plan=basetypes.StringValue "wrong"
+BlockPlanModifySet/wrong-plan: diags(nil=false len=1)
+BlockPlanModifySet/wrong-plan:   diag.withPath Error "Invalid Set Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Set block plan modification. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifySet/wrong-plan: requiresReplace(nil=true)=[] private(nil=false)
+BlockPlanModifySet/wrong-state: plan=basetypes.SetValue ["a"]
+BlockPlanModifySet/wrong-state: diags(nil=false len=1)
+BlockPlanModifySet/wrong-state:   diag.withPath Error "Invalid Set Block Plan Modifier Value Type" "An unexpected value type was encountered while attempting to perform Set block plan modification. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockPlanModifySet/wrong-state: requiresReplace(nil=true)=[] private(nil=false)

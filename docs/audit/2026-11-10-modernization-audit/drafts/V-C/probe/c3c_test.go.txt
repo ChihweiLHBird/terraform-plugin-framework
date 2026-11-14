@@ -1,0 +1,21 @@
+package vcprobe
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func TestC3Nested(t *testing.T) {
+	ctx := context.Background()
+	type o struct {
+		S string `tfsdk:"s"`
+	}
+	vCalls.Store(0)
+	_, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: map[string]attr.Type{"s": vStrType{}}}, []o{{S: "a"}})
+	t.Logf("SetValueFrom set(object{s}) calls=%d n=%d %s", vCalls.Load(), len(d), dump(d))
+	var _ diag.Diagnostics
+}

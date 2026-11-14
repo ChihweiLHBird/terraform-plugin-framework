@@ -1,0 +1,25 @@
+package main
+
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/google/go-cmp/cmp"
+	"neq/lib"
+)
+
+func main() {
+	fmt.Println("NumField today", reflect.TypeOf(lib.BoolAttribute{}).NumField(), "helper", reflect.TypeOf(lib.BoolAttributeHelper{}).NumField())
+	fmt.Printf("%%T alias: %T\n", lib.BoolAttributeAlias{})
+	func() {
+		defer func() { fmt.Println("cmp.Diff on helper struct panics:", recover() != nil) }()
+		_ = cmp.Diff(lib.BoolAttributeHelper{Required: true}, lib.BoolAttributeHelper{})
+	}()
+	fmt.Println("cmp.Diff today ok:", cmp.Diff(lib.BoolAttribute{Required: true}, lib.BoolAttribute{}) != "")
+	s := lib.Single{CustomType: "custom", Attributes: map[string]lib.Attr{"a": nil}}
+	fmt.Println("GetType today:", s.GetTypeToday())
+	func() {
+		defer func() { fmt.Println("GetType eager panics:", recover() != nil) }()
+		fmt.Println(s.GetTypeEager())
+	}()
+}

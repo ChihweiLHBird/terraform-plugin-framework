@@ -1,0 +1,47 @@
+package proto6server
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/metaschema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+)
+
+func TestProbeMetaSchemaWarning(t *testing.T) {
+	ctx := context.Background()
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{"id": schema.StringAttribute{Computed: true}}}
+	ty := sch.Type().TerraformType(ctx)
+	newRes := func() resource.Resource {
+		return &testprovider.Resource{
+			MetadataMethod: func(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) { resp.TypeName = "test_r" },
+			SchemaMethod:   func(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) { resp.Schema = sch },
+			ReadMethod:     func(context.Context, resource.ReadRequest, *resource.ReadResponse) {},
+		}
+	}
+	s := &Server{FrameworkServer: fwserver.Server{Provider: &testprovider.ProviderWithMetaSchema{
+		Provider: &testprovider.Provider{ResourcesMethod: func(context.Context) []func() resource.Resource { return []func() resource.Resource{newRes} }},
+		MetaSchemaMethod: func(_ context.Context, _ provider.MetaSchemaRequest, resp *provider.MetaSchemaResponse) {
+			resp.Schema = metaschema.Schema{Attributes: map[string]metaschema.Attribute{"m": metaschema.StringAttribute{Optional: true}}}
+			resp.Diagnostics.AddWarning("meta schema warning", "detail")
+		},
+	}}}
+	state, _ := tfprotov6.NewDynamicValue(ty, tftypes.NewValue(ty, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x")}))
+	rr, err := s.ReadResource(ctx, &tfprotov6.ReadResourceRequest{TypeName: "test_r", CurrentState: &state})
+	t.Logf("ReadResource diags: %d %v", len(rr.Diagnostics), err)
+	for _, d := range rr.Diagnostics {
+		t.Logf("  %s: %s", d.Severity, d.Summary)
+	}
+	pr, err := s.PlanResourceChange(ctx, &tfprotov6.PlanResourceChangeRequest{TypeName: "test_r", PriorState: &state, ProposedNewState: &state, Config: &state})
+	t.Logf("PlanResourceChange diags: %d %v", len(pr.Diagnostics), err)
+	for _, d := range pr.Diagnostics {
+		t.Logf("  %s: %s", d.Severity, d.Summary)
+	}
+}

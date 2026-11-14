@@ -1,0 +1,75 @@
+// Copyright IBM Corp. 2021, 2026
+// SPDX-License-Identifier: MPL-2.0
+
+package toproto6
+
+import (
+	"context"
+	"maps"
+	"slices"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+// Schema returns the *tfprotov6.Schema equivalent of a Schema.
+func Schema(ctx context.Context, s fwschema.Schema) (*tfprotov6.Schema, error) {
+	if s == nil {
+		return nil, nil
+	}
+
+	result := &tfprotov6.Schema{
+		Version: s.GetVersion(),
+	}
+
+	var attrs []*tfprotov6.SchemaAttribute
+	var protoBlocks []*tfprotov6.SchemaNestedBlock
+
+	attributes := s.GetAttributes()
+
+	for _, name := range slices.Sorted(maps.Keys(attributes)) {
+		attr := attributes[name]
+		a, err := SchemaAttribute(ctx, name, tftypes.NewAttributePath().WithAttributeName(name), attr)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attrs = append(attrs, a)
+	}
+
+	blocks := s.GetBlocks()
+
+	for _, name := range slices.Sorted(maps.Keys(blocks)) {
+		block := blocks[name]
+		proto6, err := Block(ctx, name, tftypes.NewAttributePath().WithAttributeName(name), block)
+
+		if err != nil {
+			return nil, err
+		}
+
+		protoBlocks = append(protoBlocks, proto6)
+	}
+
+	result.Block = &tfprotov6.SchemaBlock{
+		// core doesn't do anything with version, as far as I can tell,
+		// so let's not set it.
+		Attributes:         attrs,
+		BlockTypes:         protoBlocks,
+		Deprecated:         s.GetDeprecationMessage() != "",
+		DeprecationMessage: s.GetDeprecationMessage(),
+	}
+
+	if s.GetDescription() != "" {
+		result.Block.Description = s.GetDescription()
+		result.Block.DescriptionKind = tfprotov6.StringKindPlain
+	}
+
+	if s.GetMarkdownDescription() != "" {
+		result.Block.Description = s.GetMarkdownDescription()
+		result.Block.DescriptionKind = tfprotov6.StringKindMarkdown
+	}
+
+	return result, nil
+}

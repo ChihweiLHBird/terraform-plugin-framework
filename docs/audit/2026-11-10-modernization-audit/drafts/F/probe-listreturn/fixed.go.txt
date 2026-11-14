@@ -1,0 +1,62 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+// FixedListType: custom value whose Type() is FIXED (does not derive from the embedded value).
+type FixedListType struct{ basetypes.ListType }
+
+func (t FixedListType) Equal(o attr.Type) bool { _, ok := o.(FixedListType); return ok }
+func (t FixedListType) String() string        { return "FixedListType" }
+func (t FixedListType) ValueFromList(ctx context.Context, in basetypes.ListValue) (basetypes.ListValuable, diag.Diagnostics) {
+	return FixedListValue{ListValue: in}, nil
+}
+func (t FixedListType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	v, err := t.ListType.ValueFromTerraform(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	lv, _ := v.(basetypes.ListValue)
+	return FixedListValue{ListValue: lv}, nil
+}
+func (t FixedListType) ValueType(ctx context.Context) attr.Value { return FixedListValue{} }
+
+type FixedListValue struct{ basetypes.ListValue }
+
+func (v FixedListValue) Type(ctx context.Context) attr.Type {
+	return FixedListType{ListType: basetypes.ListType{ElemType: types.StringType}}
+}
+func (v FixedListValue) Equal(o attr.Value) bool {
+	other, ok := o.(FixedListValue)
+	return ok && v.ListValue.Equal(other.ListValue)
+}
+
+type errFn struct{}
+
+func safe(name string, f func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("%s: PANIC: %v\n", name, r)
+		}
+	}()
+	f()
+}
+
+func runFixed() {
+	ct := FixedListType{ListType: basetypes.ListType{ElemType: types.StringType}}
+	safe("Fixed: set []string", func() { e2e("Fixed: set []string", function.ListReturn{CustomType: ct}, []string{"a"}) })
+	safe("Fixed: Run error path (Set rejects int)", func() { e2e("Fixed: Set(int) error", function.ListReturn{CustomType: ct}, 42) })
+	safe("Fixed+ElementType: Run error path", func() { e2e("Fixed+ElementType: Set(int) error", function.ListReturn{CustomType: ct, ElementType: types.StringType}, 42) })
+	safe("Plain ElementType: Run error path", func() { e2e("Plain: Set(int) error", function.ListReturn{ElementType: types.StringType}, 42) })
+	dt := MyListType{ListType: basetypes.ListType{ElemType: types.StringType}}
+	safe("Derived: set []string", func() { e2e("Derived: set []string", function.ListReturn{CustomType: dt}, []string{"a"}) })
+}

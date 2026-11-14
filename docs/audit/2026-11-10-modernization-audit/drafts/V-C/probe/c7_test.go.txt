@@ -1,0 +1,33 @@
+package vcprobe
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+func TestC7(t *testing.T) {
+	ctx := context.Background()
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{"id": schema.StringAttribute{Computed: true}}}
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String}}
+	raw := tftypes.NewValue(objT, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x")})
+	r := tfsdk.Resource{Schema: sch, Raw: raw}
+	d := r.SetAttribute(ctx, pathRoot("missing"), "x")
+	for _, x := range d {
+		t.Logf("Resource.SetAttribute missing: %q / %q", x.Summary(), x.Detail())
+	}
+	var s types.String
+	d = r.GetAttribute(ctx, pathRoot("missing"), &s)
+	for _, x := range d {
+		t.Logf("Resource.GetAttribute missing: %q / %.120q", x.Summary(), x.Detail())
+	}
+	st := tfsdk.State{Schema: sch, Raw: raw}
+	d = st.SetAttribute(ctx, pathRoot("missing"), "x")
+	for _, x := range d {
+		t.Logf("State.SetAttribute missing: %q", x.Summary())
+	}
+}

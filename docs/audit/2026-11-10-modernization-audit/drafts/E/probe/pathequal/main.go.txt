@@ -1,0 +1,48 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+func main() {
+	var zero path.Path
+	fmt.Println("Path{}.Equal(Empty())       =", zero.Equal(path.Empty()))
+	fmt.Println("Empty().Equal(Path{})       =", path.Empty().Equal(zero))
+	fmt.Println("Path{}.Equal(Path{}.Copy()) =", zero.Equal(zero.Copy()))
+	fmt.Println("Path{}.Copy().Equal(Path{}) =", zero.Copy().Equal(zero))
+	fmt.Println("Root(a).ParentPath().Equal(Path{}) =", path.Root("a").ParentPath().Equal(zero), " Path{}.Equal(Root(a).ParentPath()) =", zero.Equal(path.Root("a").ParentPath()))
+	var zeroE path.Expression
+	fmt.Println("Expression{}.Equal(MatchRelative()) =", zeroE.Equal(path.MatchRelative()))
+	fmt.Println("MatchRelative().Equal(Expression{}) =", path.MatchRelative().Equal(zeroE))
+	fmt.Println("Expression{}.Equal(Expression{}.Copy()) =", zeroE.Equal(zeroE.Copy()))
+
+	// diag dedup order dependence
+	a := diag.NewAttributeErrorDiagnostic(zero, "s", "d")
+	b := diag.NewAttributeErrorDiagnostic(path.Empty(), "s", "d")
+	var d1, d2 diag.Diagnostics
+	d1.Append(a, b)
+	d2.Append(b, a)
+	fmt.Println("Append(zeroPathDiag, emptyPathDiag) len =", len(d1), "; Append(emptyPathDiag, zeroPathDiag) len =", len(d2))
+
+	// ImportStatePassthroughID guard
+	ctx := context.Background()
+	s := schema.Schema{Attributes: map[string]schema.Attribute{"id": schema.StringAttribute{Computed: true}}}
+	for name, p := range map[string]path.Path{"path.Empty()": path.Empty(), "path.Path{}": zero} {
+		resp := &resource.ImportStateResponse{State: tfsdk.State{Schema: s, Raw: tftypes.NewValue(s.Type().TerraformType(ctx), nil)}}
+		resource.ImportStatePassthroughID(ctx, p, resource.ImportStateRequest{ID: "abc"}, resp)
+		for _, d := range resp.Diagnostics {
+			fmt.Printf("ImportStatePassthroughID(%s): %s: %q\n", name, d.Severity(), d.Summary())
+		}
+		if len(resp.Diagnostics) == 0 {
+			fmt.Printf("ImportStatePassthroughID(%s): no diagnostics; state=%s\n", name, resp.State.Raw)
+		}
+	}
+}

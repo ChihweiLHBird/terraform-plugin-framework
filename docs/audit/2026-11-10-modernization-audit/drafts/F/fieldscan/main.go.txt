@@ -1,0 +1,126 @@
+// fieldscan: for exported struct types named *Request in the given public packages,
+// report which exported fields are set by composite literals or field assignments in internal/ (non-test) code.
+package main
+
+import (
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+)
+
+func main() {
+	if os.Getenv("MODE") == "resp" {
+		scanResponses(os.Args[1], os.Args[2:])
+		return
+	}
+	repo := os.Args[1]
+	pkgs := os.Args[2:]
+	fset := token.NewFileSet()
+	// 1. collect struct fields for *Request and *Response types
+	type key struct{ pkg, typ string }
+	fields := map[key][]string{}
+	for _, p := range pkgs {
+		dir := filepath.Join(repo, p)
+		ents, _ := os.ReadDir(dir)
+		for _, e := range ents {
+			n := e.Name()
+			if !strings.HasSuffix(n, ".go") || strings.HasSuffix(n, "_test.go") {
+				continue
+			}
+			f, err := parser.ParseFile(fset, filepath.Join(dir, n), nil, 0)
+			if err != nil {
+				panic(err)
+			}
+			for _, d := range f.Decls {
+				gd, ok := d.(*ast.GenDecl)
+				if !ok || gd.Tok != token.TYPE {
+					continue
+				}
+				for _, s := range gd.Specs {
+					ts := s.(*ast.TypeSpec)
+					st, ok := ts.Type.(*ast.StructType)
+					if !ok || !ts.Name.IsExported() {
+						continue
+					}
+					if !strings.HasSuffix(ts.Name.Name, "Request") {
+						continue
+					}
+					for _, fl := range st.Fields.List {
+						for _, nm := range fl.Names {
+							if nm.IsExported() {
+								fields[key{filepath.Base(p), ts.Name.Name}] = append(fields[key{filepath.Base(p), ts.Name.Name}], nm.Name)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	// 2. scan internal/ non-test files for composite literals pkg.Type{Key: ...}
+	set := map[key]map[string]bool{}
+	lits := map[key]int{}
+	filepath.WalkDir(filepath.Join(repo, "internal"), func(path string, d os.DirEntry, err error) error {
+		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		f, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			panic(err)
+		}
+		ast.Inspect(f, func(n ast.Node) bool {
+			cl, ok := n.(*ast.CompositeLit)
+			if !ok {
+				return true
+			}
+			se, ok := cl.Type.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			id, ok := se.X.(*ast.Ident)
+			if !ok {
+				return true
+			}
+			k := key{id.Name, se.Sel.Name}
+			if _, ok := fields[k]; !ok {
+				return true
+			}
+			lits[k]++
+			if set[k] == nil {
+				set[k] = map[string]bool{}
+			}
+			for _, el := range cl.Elts {
+				if kv, ok := el.(*ast.KeyValueExpr); ok {
+					if kid, ok := kv.Key.(*ast.Ident); ok {
+						set[k][kid.Name] = true
+					}
+				}
+			}
+			return true
+		})
+		return nil
+	})
+	var keys []key
+	for k := range fields {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].pkg != keys[j].pkg {
+			return keys[i].pkg < keys[j].pkg
+		}
+		return keys[i].typ < keys[j].typ
+	})
+	for _, k := range keys {
+		var missing []string
+		for _, fl := range fields[k] {
+			if !set[k][fl] {
+				missing = append(missing, fl)
+			}
+		}
+		fmt.Printf("%s.%s literals=%d fields=%v notSetInLiterals=%v\n", k.pkg, k.typ, lits[k], fields[k], missing)
+	}
+}

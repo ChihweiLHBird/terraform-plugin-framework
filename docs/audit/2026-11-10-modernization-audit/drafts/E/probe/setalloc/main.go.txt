@@ -1,0 +1,38 @@
+package main
+
+import (
+	"fmt"
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
+func main() {
+	for _, n := range []int{10, 100, 1000, 3000} {
+		elems := make([]attr.Value, n)
+		m := make(map[string]attr.Value, n)
+		for i := range n {
+			elems[i] = basetypes.NewStringValue(strconv.Itoa(i))
+			m[strconv.Itoa(i)] = basetypes.NewStringValue(strconv.Itoa(i))
+		}
+		s1 := basetypes.NewSetValueMust(basetypes.StringType{}, elems)
+		s2 := basetypes.NewSetValueMust(basetypes.StringType{}, append([]attr.Value(nil), elems...))
+		mv := basetypes.NewMapValueMust(basetypes.StringType{}, m)
+		start := time.Now()
+		setAllocs := testing.AllocsPerRun(3, func() { _ = s1.Equal(s2) })
+		setDur := time.Since(start) / 4
+		start = time.Now()
+		mapAllocs := testing.AllocsPerRun(3, func() { _ = mv.String() })
+		mapDur := time.Since(start) / 4
+		res := testing.Benchmark(func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				_ = s1.Equal(s2)
+			}
+		})
+		fmt.Printf("n=%5d SetValue.Equal allocs/op=%.0f (~%v/op, %s)  MapValue.String allocs/op=%.0f (~%v/op)\n", n, setAllocs, setDur, res.MemString(), mapAllocs, mapDur)
+	}
+}

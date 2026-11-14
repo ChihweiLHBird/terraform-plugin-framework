@@ -1,0 +1,47 @@
+package fwserver_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+func TestProbeImportDeferralIdentity(t *testing.T) {
+	ctx := context.Background()
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{"id": schema.StringAttribute{Computed: true}}}
+	isch := identityschema.Schema{Attributes: map[string]identityschema.Attribute{"id": identityschema.StringAttribute{RequiredForImport: true}}}
+	identity := &tfsdk.ResourceIdentity{Schema: isch, Raw: tftypes.NewValue(isch.Type().TerraformType(ctx), map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "abc")})}
+	emptyState := tfsdk.State{Schema: sch, Raw: tftypes.NewValue(sch.Type().TerraformType(ctx), nil)}
+
+	// automatic (provider-level) deferral
+	s := &fwserver.Server{Provider: &testprovider.Provider{ConfigureMethod: func(_ context.Context, _ provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+		resp.Deferred = &provider.Deferred{Reason: provider.DeferredReasonProviderConfigUnknown}
+	}}}
+	s.ConfigureProvider(ctx, &provider.ConfigureRequest{ClientCapabilities: provider.ConfigureProviderClientCapabilities{DeferralAllowed: true}}, &provider.ConfigureResponse{})
+	r1 := &fwserver.ImportResourceStateResponse{}
+	s.ImportResourceState(ctx, &fwserver.ImportResourceStateRequest{Identity: identity, IdentitySchema: isch, EmptyState: emptyState, TypeName: "t", Resource: &testprovider.ResourceWithImportState{Resource: &testprovider.Resource{}}}, r1)
+	t.Logf("automatic deferral: Deferred=%v Identity=%v", r1.Deferred, r1.ImportedResources[0].Identity)
+
+	// manual (resource-level) deferral
+	s2 := &fwserver.Server{Provider: &testprovider.Provider{}}
+	r2 := &fwserver.ImportResourceStateResponse{}
+	s2.ImportResourceState(ctx, &fwserver.ImportResourceStateRequest{Identity: identity, IdentitySchema: isch, EmptyState: emptyState, TypeName: "t",
+		ClientCapabilities: resource.ImportStateClientCapabilities{DeferralAllowed: true},
+		Resource: &testprovider.ResourceWithImportState{Resource: &testprovider.Resource{}, ImportStateMethod: func(_ context.Context, _ resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+			resp.Deferred = &resource.Deferred{Reason: resource.DeferredReasonAbsentPrereq}
+		}}}, r2)
+	var id2 any
+	if len(r2.ImportedResources) > 0 {
+		id2 = r2.ImportedResources[0].Identity.Raw
+	}
+	t.Logf("manual deferral: Deferred=%v Identity=%v diags=%v", r2.Deferred, id2, r2.Diagnostics)
+}

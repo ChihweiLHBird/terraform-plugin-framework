@@ -1,0 +1,38 @@
+import os, sys, json, re
+R, D = sys.argv[1], sys.argv[2]
+A = "resource/schema datasource/schema provider/schema provider/metaschema ephemeral/schema action/schema list/schema statestore/schema resource/identityschema".split()
+edits = {}  # path -> list of (old,new,count)
+def e(path, old, new, cnt=1):
+    edits.setdefault(path, []).append((old, new, cnt))
+for p in A:
+    e(f"{p}/bool_attribute.go", "// GetType returns types.StringType or the CustomType field value if defined.", "// GetType returns types.BoolType or the CustomType field value if defined.")
+    if os.path.exists(f"{R}/{p}/single_nested_attribute.go"):
+        e(f"{p}/single_nested_attribute.go", "// GetType returns ListType of ObjectType or CustomType.", "// GetType returns ObjectType or CustomType.")
+    if os.path.exists(f"{R}/{p}/nested_block_object.go"):
+        e(f"{p}/nested_block_object.go", "// GetAttributes returns the Blocks field value.", "// GetBlocks returns the Blocks field value.")
+    # AttributeAtTerraformPath doc: replace the 3-line copy preceding the func
+    s = open(f"{R}/{p}/schema.go").read()
+    m = re.search(r"// AttributeAtPath returns the Attribute at the passed path\. If the path points\n// to an element or attribute of a complex type, rather than to an Attribute,\n// it will return an ErrPathInsideAtomicAttribute error\.\nfunc \(s Schema\) AttributeAtTerraformPath", s)
+    assert m, p
+    e(f"{p}/schema.go", m.group(0), "// AttributeAtTerraformPath returns the Attribute at the passed tftypes path.\n// If the path points to an element or attribute of a complex type, rather\n// than to an Attribute, it will return an ErrPathInsideAtomicAttribute error.\nfunc (s Schema) AttributeAtTerraformPath")
+e("action/schema/object_attribute.go", "// IsWriteOnly always returns false as action schema attributes cannot be WriteOnly.\nfunc (a ObjectAttribute) IsSensitive", "// IsSensitive always returns false as action schema attributes cannot be Sensitive.\nfunc (a ObjectAttribute) IsSensitive")
+e("provider/schema/doc.go", "// Package schema contains all available schema functionality for data sources.\n// Data source schemas define the structure and value types for configuration\n// and state data. Schemas are implemented via the datasource.DataSource type\n// Schema method.", "// Package schema contains all available schema functionality for providers.\n// Provider schemas define the structure and value types for provider\n// configuration data. Schemas are implemented via the provider.Provider type\n// Schema method.")
+e("schema/doc.go", "// Package schema contains functionality common to all schemas. Refer to the\n// datasource/schema, provider/schema, and resource/schema packages for concept\n// specific implementations.", "// Package schema contains functionality common to all schemas. Refer to the\n// action/schema, datasource/schema, ephemeral/schema, list/schema,\n// provider/metaschema, provider/schema, resource/identityschema,\n// resource/schema, and statestore/schema packages for concept specific\n// implementations.")
+e("schema/validator/doc.go", "// Each attr.Type has a corresponding {TYPE}Validator interface which\n// implements concretely typed Validate{TYPE} methods, such as\n// StringValidator and ValidateString.", "// Each attr.Type has a corresponding {TYPE} interface which\n// implements concretely typed Validate{TYPE} methods, such as\n// String and ValidateString.")
+e("schema/validator/doc.go", "// custom value basetypes. such as basetypes.BoolValuable.", "// custom value basetypes, such as basetypes.BoolValuable.")
+e("schema/validator/doc.go", "convert to a concreate", "convert to a concrete")
+e("schema/validator/doc.go", "// types or call the type's ValueFrom{TYPE} method to get the desired\n// desired custom type in a validator.", "// types or call the type's ValueFrom{TYPE} method to get the desired\n// custom type in a validator.")
+e("resource/schema/planmodifier/doc.go", "// StringPlanModifier and PlanModifyString.", "// String and PlanModifyString.")
+e("resource/schema/planmodifier/doc.go", "// PlanModifers that are not", "// PlanModifiers that are not")
+e("resource/schema/defaults/doc.go", "// StringDefault and DefaultString.", "// String and DefaultString.")
+overlay = {}
+for path, lst in edits.items():
+    s = open(f"{R}/{path}").read()
+    for old, new, cnt in lst:
+        assert s.count(old) == cnt, (path, old[:60], s.count(old))
+        s = s.replace(old, new)
+    out = os.path.join(D, path.replace("/", "__"))
+    open(out, "w").write(s)
+    overlay[f"{R}/{path}"] = out
+json.dump({"Replace": overlay}, open(os.path.join(D, "overlay.json"), "w"))
+print(len(edits), "files")

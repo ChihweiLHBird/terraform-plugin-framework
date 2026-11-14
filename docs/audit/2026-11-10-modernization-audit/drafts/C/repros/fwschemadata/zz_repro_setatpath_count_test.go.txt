@@ -1,0 +1,56 @@
+package fwschemadata_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwschemadata"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testschema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
+var calls int
+
+type cType struct{ basetypes.StringType }
+
+func (t cType) Equal(o attr.Type) bool { _, ok := o.(cType); return ok }
+func (t cType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	v, err := t.StringType.ValueFromTerraform(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return cVal{StringValue: v.(basetypes.StringValue)}, nil
+}
+
+type cVal struct{ basetypes.StringValue }
+
+func (v cVal) Type(context.Context) attr.Type { return cType{} }
+func (v cVal) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	calls++
+}
+
+// C2: SetAtPath validates the top-level value twice (reflect.FromValue + SetAtPath).
+func TestReproSetAtPathCount(t *testing.T) {
+	ctx := context.Background()
+	for name, typ := range map[string]attr.Type{"string": cType{}, "list of 2": types.ListType{ElemType: cType{}}} {
+		data := fwschemadata.Data{
+			Schema:         testschema.Schema{Attributes: map[string]fwschema.Attribute{"a": testschema.Attribute{Type: typ, Optional: true}}},
+			TerraformValue: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{"a": typ.TerraformType(ctx)}}, map[string]tftypes.Value{"a": tftypes.NewValue(typ.TerraformType(ctx), nil)}),
+		}
+		calls = 0
+		var val any = "x"
+		if name != "string" {
+			val = []string{"a", "b"}
+		}
+		diags := data.SetAtPath(ctx, path.Root("a"), val)
+		fmt.Printf("SetAtPath %s: ValidateAttribute calls=%d diags=%v\n", name, calls, diags)
+	}
+}

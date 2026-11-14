@@ -1,0 +1,53 @@
+package schema_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testtypes"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
+// loose custom type: does NOT override Equal
+type looseObjectType struct{ basetypes.ObjectType }
+
+func TestZZVD1(t *testing.T) {
+	ctx := context.Background()
+	at := map[string]attr.Type{"a": types.StringType}
+	bt := map[string]attr.Type{"b": types.StringType}
+	defA := objectdefault.StaticValue(types.ObjectValueMust(at, map[string]attr.Value{"a": types.StringValue("x")}))
+	defB := objectdefault.StaticValue(types.ObjectValueMust(bt, map[string]attr.Value{"b": types.StringValue("x")}))
+	cases := []struct {
+		name string
+		a    schema.ObjectAttribute
+	}{
+		{"1 strict custom(a)+AttrTypes(a)+default(a) [valid]", schema.ObjectAttribute{CustomType: testtypes.ObjectType{ObjectType: basetypes.ObjectType{AttrTypes: at}}, AttributeTypes: at, Computed: true, Default: defA}},
+		{"2 strict custom(a)+no AttrTypes+default(a) [valid]", schema.ObjectAttribute{CustomType: testtypes.ObjectType{ObjectType: basetypes.ObjectType{AttrTypes: at}}, Computed: true, Default: defA}},
+		{"3 no custom+AttrTypes(a)+default(a) [valid]", schema.ObjectAttribute{AttributeTypes: at, Computed: true, Default: defA}},
+		{"4 no custom+AttrTypes(a)+default(b) [mismatch]", schema.ObjectAttribute{AttributeTypes: at, Computed: true, Default: defB}},
+		{"5 strict custom(a)+AttrTypes(a)+default(b) [mismatch]", schema.ObjectAttribute{CustomType: testtypes.ObjectType{ObjectType: basetypes.ObjectType{AttrTypes: at}}, AttributeTypes: at, Computed: true, Default: defB}},
+		{"6 strict custom(b)+AttrTypes(a)+default(a) [mismatch vs effective type]", schema.ObjectAttribute{CustomType: testtypes.ObjectType{ObjectType: basetypes.ObjectType{AttrTypes: bt}}, AttributeTypes: at, Computed: true, Default: defA}},
+		{"7 loose custom(a)+AttrTypes(a)+default(a) [valid]", schema.ObjectAttribute{CustomType: looseObjectType{basetypes.ObjectType{AttrTypes: at}}, AttributeTypes: at, Computed: true, Default: defA}},
+		{"8 loose custom(b)+AttrTypes(a)+default(a) [mismatch vs effective]", schema.ObjectAttribute{CustomType: looseObjectType{basetypes.ObjectType{AttrTypes: bt}}, AttributeTypes: at, Computed: true, Default: defA}},
+	}
+	for _, c := range cases {
+		resp := &fwschema.ValidateImplementationResponse{}
+		c.a.ValidateImplementation(ctx, fwschema.ValidateImplementationRequest{Name: "test", Path: path.Root("test")}, resp)
+		fmt.Printf("VD1 %-70s diags=%d", c.name, len(resp.Diagnostics))
+		for _, d := range resp.Diagnostics {
+			fmt.Printf(" | %s", d.Detail()[len("When validating the schema, an implementation issue was found. This is always an issue with the provider and should be reported to the provider developers.\n\n"):])
+		}
+		fmt.Println()
+	}
+	// Through the Schema (as GetProviderSchema does)
+	s := schema.Schema{Attributes: map[string]schema.Attribute{"test": schema.ObjectAttribute{CustomType: testtypes.ObjectType{ObjectType: basetypes.ObjectType{AttrTypes: at}}, AttributeTypes: at, Computed: true, Default: defA}}}
+	d := s.ValidateImplementation(ctx)
+	fmt.Printf("VD1 via Schema.ValidateImplementation: diags=%d haserror=%v\n", len(d), d.HasError())
+}

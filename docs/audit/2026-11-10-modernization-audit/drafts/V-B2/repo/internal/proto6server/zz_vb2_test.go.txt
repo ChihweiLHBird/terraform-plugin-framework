@@ -1,0 +1,303 @@
+package proto6server
+
+import (
+	"context"
+	"runtime"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/metaschema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+// ---- resource types written for this probe (not testprovider) ----
+
+type vbPlain struct {
+	behavior  resource.ResourceBehavior
+	withID    bool
+	cfgWarn   bool
+	nilIdent  bool // Create/Read/Update set resp.Identity = nil
+	readCalls int
+}
+
+func (r *vbPlain) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "vb_res"
+	resp.ResourceBehavior = r.behavior
+}
+
+type vbMarkModifier struct{}
+
+func (vbMarkModifier) Description(context.Context) string         { return "mark" }
+func (vbMarkModifier) MarkdownDescription(context.Context) string { return "mark" }
+func (vbMarkModifier) PlanModifyString(_ context.Context, _ planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	resp.PlanValue = types.StringValue("set-by-schema-plan-modifier")
+}
+
+func (r *vbPlain) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{Attributes: map[string]schema.Attribute{
+		"id":   schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{vbMarkModifier{}}},
+		"name": schema.StringAttribute{Required: true},
+	}}
+}
+
+func (r *vbPlain) Configure(_ context.Context, _ resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if r.cfgWarn {
+		resp.Diagnostics.AddWarning("configure warning", "from resource Configure")
+	}
+}
+
+func (r *vbPlain) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	resp.State.Raw = req.Plan.Raw
+	if r.nilIdent {
+		resp.Identity = nil
+	}
+}
+func (r *vbPlain) Read(_ context.Context, _ resource.ReadRequest, resp *resource.ReadResponse) {
+	r.readCalls++
+	if r.nilIdent {
+		resp.Identity = nil
+	}
+}
+func (r *vbPlain) Update(_ context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.State.Raw = req.Plan.Raw
+	if r.nilIdent {
+		resp.Identity = nil
+	}
+}
+func (r *vbPlain) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {}
+
+type vbWithModifyPlan struct{ *vbPlain }
+
+func (vbWithModifyPlan) ModifyPlan(context.Context, resource.ModifyPlanRequest, *resource.ModifyPlanResponse) {
+}
+
+type vbWithIdentity struct {
+	*vbPlain
+	manualDefer bool
+}
+
+func (vbWithIdentity) IdentitySchema(_ context.Context, _ resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
+	resp.IdentitySchema = identityschema.Schema{Attributes: map[string]identityschema.Attribute{
+		"id": identityschema.StringAttribute{RequiredForImport: true},
+	}}
+}
+
+func (r vbWithIdentity) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	if r.manualDefer {
+		resp.Deferred = &resource.Deferred{Reason: resource.DeferredReasonAbsentPrereq}
+		return
+	}
+}
+
+type vbProvider struct {
+	deferCfg bool
+	metaWarn bool
+	res      func() resource.Resource
+}
+
+func (p *vbProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "vb"
+}
+func (p *vbProvider) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse) {}
+func (p *vbProvider) Configure(_ context.Context, _ provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	if p.deferCfg {
+		resp.Deferred = &provider.Deferred{Reason: provider.DeferredReasonProviderConfigUnknown}
+	}
+}
+func (p *vbProvider) DataSources(context.Context) []func() datasource.DataSource { return nil }
+func (p *vbProvider) Resources(context.Context) []func() resource.Resource {
+	return []func() resource.Resource{p.res}
+}
+
+type vbProviderMeta struct{ *vbProvider }
+
+func (p vbProviderMeta) MetaSchema(_ context.Context, _ provider.MetaSchemaRequest, resp *provider.MetaSchemaResponse) {
+	resp.Schema = metaschema.Schema{Attributes: map[string]metaschema.Attribute{"m": metaschema.StringAttribute{Optional: true}}}
+	if p.metaWarn {
+		resp.Diagnostics.AddWarning("meta schema warning", "from MetaSchema")
+	}
+}
+
+var vbType = tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String, "name": tftypes.String}}
+var vbIDType = tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String}}
+
+func vbDV(t *testing.T, typ tftypes.Type, v tftypes.Value) *tfprotov6.DynamicValue {
+	t.Helper()
+	dv, err := tfprotov6.NewDynamicValue(typ, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &dv
+}
+
+func vbConfigure(t *testing.T, s *Server) {
+	t.Helper()
+	cfg := vbDV(t, tftypes.Object{AttributeTypes: map[string]tftypes.Type{}}, tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{}}, map[string]tftypes.Value{}))
+	resp, err := s.ConfigureProvider(context.Background(), &tfprotov6.ConfigureProviderRequest{
+		Config:             cfg,
+		ClientCapabilities: &tfprotov6.ConfigureProviderClientCapabilities{DeferralAllowed: true},
+	})
+	if err != nil || len(resp.Diagnostics) > 0 {
+		t.Fatalf("configure: err=%v diags=%v", err, resp.Diagnostics)
+	}
+}
+
+func vbDiags(ds []*tfprotov6.Diagnostic) string {
+	out := ""
+	for _, d := range ds {
+		out += fmt.Sprintf("[%v %q] ", d.Severity, d.Summary)
+	}
+	return out
+}
+
+// B2-1: EnablePlanModification without ModifyPlan.
+func TestVB2_B21(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name   string
+		enable bool
+		modify bool
+	}{
+		{"enable=true,modifyplan=no", true, false},
+		{"enable=true,modifyplan=yes", true, true},
+		{"enable=false,modifyplan=no", false, false},
+	} {
+		plain := &vbPlain{behavior: resource.ResourceBehavior{ProviderDeferred: resource.ProviderDeferredBehavior{EnablePlanModification: tc.enable}}}
+		var mk func() resource.Resource
+		if tc.modify {
+			mk = func() resource.Resource { return vbWithModifyPlan{plain} }
+		} else {
+			mk = func() resource.Resource { return plain }
+		}
+		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{deferCfg: true, res: mk}}}
+		vbConfigure(t, s)
+		cfg := tftypes.NewValue(vbType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, nil), "name": tftypes.NewValue(tftypes.String, "n")})
+		resp, err := s.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{
+			TypeName:         "vb_res",
+			Config:           vbDV(t, vbType, cfg),
+			ProposedNewState: vbDV(t, vbType, cfg),
+			PriorState:       vbDV(t, vbType, tftypes.NewValue(vbType, nil)),
+			ClientCapabilities: &tfprotov6.PlanResourceChangeClientCapabilities{DeferralAllowed: true},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		planned, _ := resp.PlannedState.Unmarshal(vbType)
+		t.Logf("B2-1 %s: Deferred=%v planned=%v diags=%s", tc.name, resp.Deferred, planned, vbDiags(resp.Diagnostics))
+	}
+}
+
+// B2-2: automatic import deferral and identity.
+func TestVB2_B22(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name     string
+		autoDef  bool
+		manual   bool
+		identity bool
+	}{
+		{"auto deferral, identity import", true, false, true},
+		{"manual deferral, identity import", false, true, true},
+		{"auto deferral, ID import", true, false, false},
+	} {
+		plain := &vbPlain{}
+		r := vbWithIdentity{vbPlain: plain, manualDefer: tc.manual}
+		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{deferCfg: tc.autoDef, res: func() resource.Resource { return r }}}}
+		vbConfigure(t, s)
+		req := &tfprotov6.ImportResourceStateRequest{
+			TypeName:           "vb_res",
+			ClientCapabilities: &tfprotov6.ImportResourceStateClientCapabilities{DeferralAllowed: true},
+		}
+		if tc.identity {
+			req.Identity = &tfprotov6.ResourceIdentityData{IdentityData: vbDV(t, vbIDType, tftypes.NewValue(vbIDType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "abc")}))}
+		} else {
+			req.ID = "abc"
+		}
+		resp, err := s.ImportResourceState(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, ir := range resp.ImportedResources {
+			var id any = nil
+			if ir.Identity != nil {
+				v, _ := ir.Identity.IdentityData.Unmarshal(vbIDType)
+				id = v
+			}
+			t.Logf("B2-2 %s: Deferred=%v res[%d] Identity=%v diags=%s", tc.name, resp.Deferred, i, id, vbDiags(resp.Diagnostics))
+		}
+		if len(resp.ImportedResources) == 0 {
+			t.Logf("B2-2 %s: no imported resources; diags=%s", tc.name, vbDiags(resp.Diagnostics))
+		}
+	}
+}
+
+// B2-3: resource Configure warning on ReadResource / ApplyResourceChange and meta schema warning.
+func TestVB2_B23(t *testing.T) {
+	t.Parallel()
+	state := tftypes.NewValue(vbType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x"), "name": tftypes.NewValue(tftypes.String, "n")})
+	// (a) Configure warning
+	{
+		plain := &vbPlain{cfgWarn: true}
+		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{res: func() resource.Resource { return plain }}}}
+		rr, _ := s.ReadResource(context.Background(), &tfprotov6.ReadResourceRequest{TypeName: "vb_res", CurrentState: vbDV(t, vbType, state)})
+		t.Logf("B2-3a ReadResource configure-warning diags=%s", vbDiags(rr.Diagnostics))
+		pr, _ := s.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), ProposedNewState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, state)})
+		t.Logf("B2-3a PlanResourceChange configure-warning diags=%s", vbDiags(pr.Diagnostics))
+		ar, _ := s.ApplyResourceChange(context.Background(), &tfprotov6.ApplyResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), PlannedState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, tftypes.NewValue(vbType, nil))})
+		t.Logf("B2-3a ApplyResourceChange(create) configure-warning diags=%s", vbDiags(ar.Diagnostics))
+	}
+	// (b) meta schema warning
+	{
+		plain := &vbPlain{}
+		s := &Server{FrameworkServer: fwserver.Server{Provider: vbProviderMeta{&vbProvider{metaWarn: true, res: func() resource.Resource { return plain }}}}}
+		for i := 0; i < 2; i++ {
+			rr, _ := s.ReadResource(context.Background(), &tfprotov6.ReadResourceRequest{TypeName: "vb_res", CurrentState: vbDV(t, vbType, state)})
+			t.Logf("B2-3b ReadResource#%d meta-warning diags=%s", i, vbDiags(rr.Diagnostics))
+			pr, _ := s.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), ProposedNewState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, state)})
+			t.Logf("B2-3b PlanResourceChange#%d meta-warning diags=%s", i, vbDiags(pr.Diagnostics))
+		}
+	}
+}
+
+// B2-6(5): provider sets resp.Identity = nil.
+func TestVB2_B26_5(t *testing.T) {
+	t.Parallel()
+	state := tftypes.NewValue(vbType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x"), "name": tftypes.NewValue(tftypes.String, "n")})
+	idv := tftypes.NewValue(vbIDType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x")})
+	catch := func(name string, f func()) {
+		defer func() {
+			if r := recover(); r != nil {
+				buf := make([]byte, 1<<16)
+				n := runtime.Stack(buf, false)
+				t.Logf("B2-6(5) %s: PANIC: %v\n%s", name, r, buf[:n])
+			}
+		}()
+		f()
+		t.Logf("B2-6(5) %s: no panic", name)
+	}
+	plain := &vbPlain{nilIdent: true}
+	r := vbWithIdentity{vbPlain: plain}
+	s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{res: func() resource.Resource { return r }}}}
+	catch("ReadResource", func() {
+		resp, _ := s.ReadResource(context.Background(), &tfprotov6.ReadResourceRequest{TypeName: "vb_res", CurrentState: vbDV(t, vbType, state), CurrentIdentity: &tfprotov6.ResourceIdentityData{IdentityData: vbDV(t, vbIDType, idv)}})
+		t.Logf("diags=%s", vbDiags(resp.Diagnostics))
+	})
+	catch("ApplyResourceChange(create)", func() {
+		resp, _ := s.ApplyResourceChange(context.Background(), &tfprotov6.ApplyResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), PlannedState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, tftypes.NewValue(vbType, nil)), PlannedIdentity: &tfprotov6.ResourceIdentityData{IdentityData: vbDV(t, vbIDType, idv)}})
+		t.Logf("diags=%s", vbDiags(resp.Diagnostics))
+	})
+	catch("ApplyResourceChange(update)", func() {
+		resp, _ := s.ApplyResourceChange(context.Background(), &tfprotov6.ApplyResourceChangeRequest{TypeName: "vb_res", Config: vbDV(t, vbType, state), PlannedState: vbDV(t, vbType, state), PriorState: vbDV(t, vbType, state), PlannedIdentity: &tfprotov6.ResourceIdentityData{IdentityData: vbDV(t, vbIDType, idv)}})
+		t.Logf("diags=%s", vbDiags(resp.Diagnostics))
+	})
+}

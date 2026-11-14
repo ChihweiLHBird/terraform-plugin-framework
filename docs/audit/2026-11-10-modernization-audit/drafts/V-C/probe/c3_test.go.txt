@@ -1,0 +1,113 @@
+package vcprobe
+
+import (
+	"context"
+	"fmt"
+	"sync/atomic"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+var vCalls atomic.Int64
+
+// Custom string type whose value validates: warns for every value, errors for "bad".
+type vStrType struct{ basetypes.StringType }
+type vStr struct{ basetypes.StringValue }
+
+func (t vStrType) Equal(o attr.Type) bool { _, ok := o.(vStrType); return ok }
+func (t vStrType) String() string         { return "vStrType" }
+func (t vStrType) ValueType(ctx context.Context) attr.Value { return vStr{} }
+func (t vStrType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+	return vStr{in}, nil
+}
+func (t vStrType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	v, err := t.StringType.ValueFromTerraform(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return vStr{v.(basetypes.StringValue)}, nil
+}
+func (v vStr) Type(ctx context.Context) attr.Type { return vStrType{} }
+func (v vStr) Equal(o attr.Value) bool {
+	ov, ok := o.(vStr)
+	return ok && v.StringValue.Equal(ov.StringValue)
+}
+func (v vStr) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	vCalls.Add(1)
+	if v.IsNull() || v.IsUnknown() {
+		return
+	}
+	if v.ValueString() == "bad" {
+		resp.Diagnostics.AddAttributeError(req.Path, "bad value", "value is bad")
+		return
+	}
+	resp.Diagnostics.AddAttributeWarning(req.Path, "warn", "value "+v.ValueString())
+}
+
+var _ xattr.ValidateableAttribute = vStr{}
+
+func dump(d diag.Diagnostics) string {
+	s := ""
+	for _, x := range d {
+		p := ""
+		if wp, ok := x.(diag.DiagnosticWithPath); ok {
+			p = wp.Path().String()
+		}
+		s += fmt.Sprintf("[%s %q @ %s] ", x.Severity(), x.Summary(), p)
+	}
+	return s
+}
+
+func TestC3(t *testing.T) {
+	ctx := context.Background()
+	run := func(label string, f func() diag.Diagnostics) {
+		vCalls.Store(0)
+		d := f()
+		t.Logf("%-34s calls=%d n=%d %s", label, vCalls.Load(), len(d), dump(d))
+	}
+	run("SetValueFrom {a,b}", func() diag.Diagnostics { _, d := types.SetValueFrom(ctx, vStrType{}, []string{"a", "b"}); return d })
+	run("SetValueFrom {bad}", func() diag.Diagnostics { _, d := types.SetValueFrom(ctx, vStrType{}, []string{"bad"}); return d })
+	run("ListValueFrom {a,b}", func() diag.Diagnostics { _, d := types.ListValueFrom(ctx, vStrType{}, []string{"a", "b"}); return d })
+	run("ListValueFrom {bad}", func() diag.Diagnostics { _, d := types.ListValueFrom(ctx, vStrType{}, []string{"bad"}); return d })
+	run("MapValueFrom {k:a}", func() diag.Diagnostics { _, d := types.MapValueFrom(ctx, vStrType{}, map[string]string{"k": "a"}); return d })
+	run("ObjectValueFrom {s:a}", func() diag.Diagnostics {
+		type o struct {
+			S string `tfsdk:"s"`
+		}
+		_, d := types.ObjectValueFrom(ctx, map[string]attr.Type{"s": vStrType{}}, o{S: "a"})
+		return d
+	})
+
+	// SetAttribute on a resource state with a set attribute of custom type
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{
+		"tags": schema.SetAttribute{ElementType: vStrType{}, Optional: true},
+		"name": schema.StringAttribute{CustomType: vStrType{}, Optional: true},
+	}}
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"tags": tftypes.Set{ElementType: tftypes.String}, "name": tftypes.String}}
+	raw := tftypes.NewValue(objT, map[string]tftypes.Value{"tags": tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, nil), "name": tftypes.NewValue(tftypes.String, nil)})
+	run("State.SetAttribute set {a}", func() diag.Diagnostics {
+		st := tfsdk.State{Schema: sch, Raw: raw}
+		return st.SetAttribute(ctx, path.Root("tags"), []string{"a"})
+	})
+	run("State.SetAttribute set {bad}", func() diag.Diagnostics {
+		st := tfsdk.State{Schema: sch, Raw: raw}
+		return st.SetAttribute(ctx, path.Root("tags"), []string{"bad"})
+	})
+	run("State.SetAttribute name a", func() diag.Diagnostics {
+		st := tfsdk.State{Schema: sch, Raw: raw}
+		return st.SetAttribute(ctx, path.Root("name"), "a")
+	})
+	run("State.SetAttribute name vStr", func() diag.Diagnostics {
+		st := tfsdk.State{Schema: sch, Raw: raw}
+		return st.SetAttribute(ctx, path.Root("name"), vStr{basetypes.NewStringValue("a")})
+	})
+}

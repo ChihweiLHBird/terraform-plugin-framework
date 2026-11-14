@@ -1,0 +1,8 @@
+package main
+
+import "neq/lib"
+
+func main() {
+	_ = lib.BoolAttribute{Required: true}
+	_ = lib.BoolAttributeEmbedded{Required: true}
+}

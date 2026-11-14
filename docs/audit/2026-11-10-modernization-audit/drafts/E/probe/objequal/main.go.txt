@@ -1,0 +1,24 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
+func main() {
+	ctx := context.Background()
+	a := map[string]attr.Type{"a": basetypes.StringType{}}
+	b := map[string]attr.Type{"b": basetypes.BoolType{}}
+	on1, on2 := basetypes.NewObjectNull(a), basetypes.NewObjectNull(b)
+	ou1, ou2 := basetypes.NewObjectUnknown(a), basetypes.NewObjectUnknown(b)
+	fmt.Println("ObjectNull(a).Equal(ObjectNull(b))       =", on1.Equal(on2), "; types equal:", on1.Type(ctx).Equal(on2.Type(ctx)))
+	fmt.Println("ObjectUnknown(a).Equal(ObjectUnknown(b)) =", ou1.Equal(ou2))
+	fmt.Println("ListNull(String).Equal(ListNull(Bool))   =", basetypes.NewListNull(basetypes.StringType{}).Equal(basetypes.NewListNull(basetypes.BoolType{})))
+	fmt.Println("MapNull(String).Equal(MapNull(Bool))     =", basetypes.NewMapNull(basetypes.StringType{}).Equal(basetypes.NewMapNull(basetypes.BoolType{})))
+	fmt.Println("SetNull(String).Equal(SetNull(Bool))     =", basetypes.NewSetNull(basetypes.StringType{}).Equal(basetypes.NewSetNull(basetypes.BoolType{})))
+	fmt.Println("TupleNull([S]).Equal(TupleNull([B]))     =", basetypes.NewTupleNull([]attr.Type{basetypes.StringType{}}).Equal(basetypes.NewTupleNull([]attr.Type{basetypes.BoolType{}})))
+	fmt.Println("ObjectNull(nil).Equal(ObjectNull(a))     =", basetypes.NewObjectNull(nil).Equal(on1))
+}

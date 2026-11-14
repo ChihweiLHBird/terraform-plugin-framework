@@ -1,0 +1,39 @@
+package reflect_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	refl "github.com/hashicorp/terraform-plugin-framework/internal/reflect"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testtypes"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+// C2: set elements are validated at a list-index path and at the set-value path.
+func TestReproSetElemValidate(t *testing.T) {
+	ctx := context.Background()
+	for name, elemType := range map[string]attr.Type{
+		"warning-attr": testtypes.StringTypeWithValidateAttributeWarning{StringType: testtypes.StringType{}},
+		"error-attr":   testtypes.StringTypeWithValidateAttributeError{StringType: testtypes.StringType{}},
+		"warning-type": testtypes.StringTypeWithValidateWarning{StringType: testtypes.StringType{}},
+		"error-type":   testtypes.StringTypeWithValidateError{StringType: testtypes.StringType{}},
+	} {
+		for kind, typ := range map[string]attr.Type{
+			"set":  types.SetType{ElemType: elemType},
+			"list": types.ListType{ElemType: elemType},
+		} {
+			_, diags := refl.FromValue(ctx, typ, []string{"a", "b"}, path.Root("attr"))
+			fmt.Printf("%s/%s: %d diags\n", kind, name, len(diags))
+			for _, d := range diags {
+				p := "?"
+				if dp, ok := d.(interface{ Path() path.Path }); ok {
+					p = dp.Path().String()
+				}
+				fmt.Printf("   %s %q path=%s\n", d.Severity(), d.Summary(), p)
+			}
+		}
+	}
+}

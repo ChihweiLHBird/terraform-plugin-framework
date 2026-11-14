@@ -1,0 +1,213 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/attr_type.go b/internal/fwserver/attr_type.go
+--- a/internal/fwserver/attr_type.go	2026-10-24 21:30:10.508094224 +0000
++++ b/internal/fwserver/attr_type.go	2026-11-10 20:59:41.077114239 +0000
+@@ -6,124 +6,22 @@
+ import (
+ 	"context"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+-func coerceBoolTypable(ctx context.Context, schemaPath path.Path, valuable basetypes.BoolValuable) (basetypes.BoolTypable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.BoolTypable)
++// coerceTypable returns the Type of valuable as T. Type() of a Valuable
++// should always be a Typable to recreate the Valuable, but if for some reason
++// it is not, raise an implementation error instead of a panic.
++func coerceTypable[V attr.Value, T attr.Type](ctx context.Context, schemaPath path.Path, valuable V) (T, diag.Diagnostics) {
++	typable, ok := valuable.Type(ctx).(T)
+ 
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+ 	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceFloat32Typable(ctx context.Context, schemaPath path.Path, valuable basetypes.Float32Valuable) (basetypes.Float32Typable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.Float32Typable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceFloat64Typable(ctx context.Context, schemaPath path.Path, valuable basetypes.Float64Valuable) (basetypes.Float64Typable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.Float64Typable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceInt32Typable(ctx context.Context, schemaPath path.Path, valuable basetypes.Int32Valuable) (basetypes.Int32Typable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.Int32Typable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceInt64Typable(ctx context.Context, schemaPath path.Path, valuable basetypes.Int64Valuable) (basetypes.Int64Typable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.Int64Typable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceListTypable(ctx context.Context, schemaPath path.Path, valuable basetypes.ListValuable) (basetypes.ListTypable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.ListTypable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
++		var zero T
+ 
+-func coerceMapTypable(ctx context.Context, schemaPath path.Path, valuable basetypes.MapValuable) (basetypes.MapTypable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.MapTypable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceNumberTypable(ctx context.Context, schemaPath path.Path, valuable basetypes.NumberValuable) (basetypes.NumberTypable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.NumberTypable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
++		return zero, diag.Diagnostics{
+ 			attributePlanModificationTypableError(schemaPath, valuable),
+ 		}
+ 	}
+@@ -131,62 +29,17 @@
+ 	return typable, nil
+ }
+ 
+-func coerceObjectTypable(ctx context.Context, schemaPath path.Path, valuable basetypes.ObjectValuable) (basetypes.ObjectTypable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.ObjectTypable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceSetTypable(ctx context.Context, schemaPath path.Path, valuable basetypes.SetValuable) (basetypes.SetTypable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.SetTypable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceStringTypable(ctx context.Context, schemaPath path.Path, valuable basetypes.StringValuable) (basetypes.StringTypable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.StringTypable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
+-
+-func coerceDynamicTypable(ctx context.Context, schemaPath path.Path, valuable basetypes.DynamicValuable) (basetypes.DynamicTypable, diag.Diagnostics) {
+-	typable, ok := valuable.Type(ctx).(basetypes.DynamicTypable)
+-
+-	// Type() of a Valuable should always be a Typable to recreate the Valuable,
+-	// but if for some reason it is not, raise an implementation error instead
+-	// of a panic.
+-	if !ok {
+-		return nil, diag.Diagnostics{
+-			attributePlanModificationTypableError(schemaPath, valuable),
+-		}
+-	}
+-
+-	return typable, nil
+-}
++var (
++	coerceBoolTypable    = coerceTypable[basetypes.BoolValuable, basetypes.BoolTypable]
++	coerceFloat32Typable = coerceTypable[basetypes.Float32Valuable, basetypes.Float32Typable]
++	coerceFloat64Typable = coerceTypable[basetypes.Float64Valuable, basetypes.Float64Typable]
++	coerceInt32Typable   = coerceTypable[basetypes.Int32Valuable, basetypes.Int32Typable]
++	coerceInt64Typable   = coerceTypable[basetypes.Int64Valuable, basetypes.Int64Typable]
++	coerceListTypable    = coerceTypable[basetypes.ListValuable, basetypes.ListTypable]
++	coerceMapTypable     = coerceTypable[basetypes.MapValuable, basetypes.MapTypable]
++	coerceNumberTypable  = coerceTypable[basetypes.NumberValuable, basetypes.NumberTypable]
++	coerceObjectTypable  = coerceTypable[basetypes.ObjectValuable, basetypes.ObjectTypable]
++	coerceSetTypable     = coerceTypable[basetypes.SetValuable, basetypes.SetTypable]
++	coerceStringTypable  = coerceTypable[basetypes.StringValuable, basetypes.StringTypable]
++	coerceDynamicTypable = coerceTypable[basetypes.DynamicValuable, basetypes.DynamicTypable]
++)

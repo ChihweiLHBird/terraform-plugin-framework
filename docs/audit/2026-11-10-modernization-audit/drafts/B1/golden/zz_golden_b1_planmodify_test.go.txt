@@ -1,0 +1,1240 @@
+package fwserver
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"math/big"
+	"os"
+	"sort"
+	"strings"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-log/tfsdklogtest"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+	"github.com/hashicorp/terraform-plugin-framework/internal/privatestate"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testschema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var _ = big.NewFloat
+
+func goldenDumpResp(b *strings.Builder, label string, resp *ModifyAttributePlanResponse) {
+	fmt.Fprintf(b, "%s: plan=%T %v\n", label, resp.AttributePlan, resp.AttributePlan)
+	fmt.Fprintf(b, "%s: diags(nil=%v len=%d)\n", label, resp.Diagnostics == nil, len(resp.Diagnostics))
+	for _, d := range resp.Diagnostics {
+		p := ""
+		if dp, ok := d.(diag.DiagnosticWithPath); ok {
+			p = dp.Path().String()
+		}
+		fmt.Fprintf(b, "%s:   %T %v %q %q path=%q\n", label, d, d.Severity(), d.Summary(), d.Detail(), p)
+	}
+	fmt.Fprintf(b, "%s: requiresReplace(nil=%v)=%v private(nil=%v)\n", label, resp.RequiresReplace == nil, resp.RequiresReplace, resp.Private == nil)
+}
+
+func goldenLogs(b *strings.Builder, label string, out *bytes.Buffer) {
+	entries, err := tfsdklogtest.MultilineJSONDecode(out)
+	if err != nil {
+		panic(err)
+	}
+	for _, e := range entries {
+		keys := make([]string, 0, len(e))
+		for k := range e {
+			if k == "@caller" || k == "@timestamp" {
+				continue
+			}
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		fmt.Fprintf(b, "%s: log", label)
+		for _, k := range keys {
+			fmt.Fprintf(b, " %s=%v", k, e[k])
+		}
+		fmt.Fprintln(b)
+	}
+}
+
+func TestGoldenB1PlanModify(t *testing.T) {
+	var b strings.Builder
+	priv := privatestate.EmptyProviderData(context.Background())
+
+	{
+		// AttributePlanModifyBool
+		var calls []string
+		mk := func(name string, f func(planmodifier.BoolRequest, *planmodifier.BoolResponse)) planmodifier.Bool {
+			return testplanmodifier.Bool{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyBoolMethod: func(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Bool" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.BoolNull(),
+			AttributePlan:           types.BoolValue(true),
+			AttributeState:          types.BoolUnknown(),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Bool){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Bool) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Bool) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Bool) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Bool) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Bool) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Bool) {
+				return base, []planmodifier.Bool{
+					mk("m1", func(req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Bool) {
+				return base, []planmodifier.Bool{
+					mk("m1", func(req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyBool(ctx, testschema.AttributeWithBoolPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyBool/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyFloat32
+		var calls []string
+		mk := func(name string, f func(planmodifier.Float32Request, *planmodifier.Float32Response)) planmodifier.Float32 {
+			return testplanmodifier.Float32{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyFloat32Method: func(ctx context.Context, req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Float32" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.Float32Null(),
+			AttributePlan:           types.Float32Value(1.5),
+			AttributeState:          types.Float32Unknown(),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Float32){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Float32) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Float32) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Float32) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Float32) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Float32) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Float32) {
+				return base, []planmodifier.Float32{
+					mk("m1", func(req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.Float32Request, resp *planmodifier.Float32Response) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Float32) {
+				return base, []planmodifier.Float32{
+					mk("m1", func(req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyFloat32(ctx, testschema.AttributeWithFloat32PlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyFloat32/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyFloat64
+		var calls []string
+		mk := func(name string, f func(planmodifier.Float64Request, *planmodifier.Float64Response)) planmodifier.Float64 {
+			return testplanmodifier.Float64{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyFloat64Method: func(ctx context.Context, req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Float64" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.Float64Null(),
+			AttributePlan:           types.Float64Value(1.5),
+			AttributeState:          types.Float64Unknown(),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Float64){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Float64) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Float64) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Float64) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Float64) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Float64) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Float64) {
+				return base, []planmodifier.Float64{
+					mk("m1", func(req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.Float64Request, resp *planmodifier.Float64Response) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Float64) {
+				return base, []planmodifier.Float64{
+					mk("m1", func(req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyFloat64(ctx, testschema.AttributeWithFloat64PlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyFloat64/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyInt32
+		var calls []string
+		mk := func(name string, f func(planmodifier.Int32Request, *planmodifier.Int32Response)) planmodifier.Int32 {
+			return testplanmodifier.Int32{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyInt32Method: func(ctx context.Context, req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Int32" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.Int32Null(),
+			AttributePlan:           types.Int32Value(1),
+			AttributeState:          types.Int32Unknown(),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Int32){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Int32) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Int32) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Int32) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Int32) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Int32) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Int32) {
+				return base, []planmodifier.Int32{
+					mk("m1", func(req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.Int32Request, resp *planmodifier.Int32Response) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Int32) {
+				return base, []planmodifier.Int32{
+					mk("m1", func(req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyInt32(ctx, testschema.AttributeWithInt32PlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyInt32/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyInt64
+		var calls []string
+		mk := func(name string, f func(planmodifier.Int64Request, *planmodifier.Int64Response)) planmodifier.Int64 {
+			return testplanmodifier.Int64{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyInt64Method: func(ctx context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Int64" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.Int64Null(),
+			AttributePlan:           types.Int64Value(1),
+			AttributeState:          types.Int64Unknown(),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Int64){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Int64) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Int64) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Int64) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Int64) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Int64) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Int64) {
+				return base, []planmodifier.Int64{
+					mk("m1", func(req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.Int64Request, resp *planmodifier.Int64Response) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Int64) {
+				return base, []planmodifier.Int64{
+					mk("m1", func(req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyInt64(ctx, testschema.AttributeWithInt64PlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyInt64/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyList
+		var calls []string
+		mk := func(name string, f func(planmodifier.ListRequest, *planmodifier.ListResponse)) planmodifier.List {
+			return testplanmodifier.List{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyListMethod: func(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "List" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.ListNull(types.StringType),
+			AttributePlan:           types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			AttributeState:          types.ListUnknown(types.StringType),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.List){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.List) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.List) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.List) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.List) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.List) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.List) {
+				return base, []planmodifier.List{
+					mk("m1", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.List) {
+				return base, []planmodifier.List{
+					mk("m1", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyList(ctx, testschema.AttributeWithListPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyList/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyMap
+		var calls []string
+		mk := func(name string, f func(planmodifier.MapRequest, *planmodifier.MapResponse)) planmodifier.Map {
+			return testplanmodifier.Map{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyMapMethod: func(ctx context.Context, req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Map" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.MapNull(types.StringType),
+			AttributePlan:           types.MapValueMust(types.StringType, map[string]attr.Value{"k": types.StringValue("a")}),
+			AttributeState:          types.MapUnknown(types.StringType),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Map){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Map) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Map) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Map) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Map) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Map) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Map) {
+				return base, []planmodifier.Map{
+					mk("m1", func(req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.MapRequest, resp *planmodifier.MapResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Map) {
+				return base, []planmodifier.Map{
+					mk("m1", func(req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyMap(ctx, testschema.AttributeWithMapPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyMap/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyNumber
+		var calls []string
+		mk := func(name string, f func(planmodifier.NumberRequest, *planmodifier.NumberResponse)) planmodifier.Number {
+			return testplanmodifier.Number{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyNumberMethod: func(ctx context.Context, req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Number" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.NumberNull(),
+			AttributePlan:           types.NumberValue(big.NewFloat(1)),
+			AttributeState:          types.NumberUnknown(),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Number){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Number) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Number) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Number) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Number) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Number) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Number) {
+				return base, []planmodifier.Number{
+					mk("m1", func(req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Number) {
+				return base, []planmodifier.Number{
+					mk("m1", func(req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyNumber(ctx, testschema.AttributeWithNumberPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyNumber/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyObject
+		var calls []string
+		mk := func(name string, f func(planmodifier.ObjectRequest, *planmodifier.ObjectResponse)) planmodifier.Object {
+			return testplanmodifier.Object{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyObjectMethod: func(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Object" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.ObjectNull(map[string]attr.Type{"a": types.StringType}),
+			AttributePlan:           types.ObjectValueMust(map[string]attr.Type{"a": types.StringType}, map[string]attr.Value{"a": types.StringValue("x")}),
+			AttributeState:          types.ObjectUnknown(map[string]attr.Type{"a": types.StringType}),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Object){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Object) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Object) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Object) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Object) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Object) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Object) {
+				return base, []planmodifier.Object{
+					mk("m1", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Object) {
+				return base, []planmodifier.Object{
+					mk("m1", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyObject(ctx, testschema.AttributeWithObjectPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyObject/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifySet
+		var calls []string
+		mk := func(name string, f func(planmodifier.SetRequest, *planmodifier.SetResponse)) planmodifier.Set {
+			return testplanmodifier.Set{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifySetMethod: func(ctx context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Set" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.SetNull(types.StringType),
+			AttributePlan:           types.SetValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			AttributeState:          types.SetUnknown(types.StringType),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Set){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Set) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Set) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Set) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Set) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Set) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Set) {
+				return base, []planmodifier.Set{
+					mk("m1", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Set) {
+				return base, []planmodifier.Set{
+					mk("m1", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifySet(ctx, testschema.AttributeWithSetPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifySet/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyString
+		var calls []string
+		mk := func(name string, f func(planmodifier.StringRequest, *planmodifier.StringResponse)) planmodifier.String {
+			return testplanmodifier.String{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyStringMethod: func(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "String" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.StringNull(),
+			AttributePlan:           types.StringValue("a"),
+			AttributeState:          types.StringUnknown(),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.String){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.String) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.String) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.String) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.String) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.String) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.String) {
+				return base, []planmodifier.String{
+					mk("m1", func(req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.StringRequest, resp *planmodifier.StringResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.String) {
+				return base, []planmodifier.String{
+					mk("m1", func(req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyString(ctx, testschema.AttributeWithStringPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyString/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// AttributePlanModifyDynamic
+		var calls []string
+		mk := func(name string, f func(planmodifier.DynamicRequest, *planmodifier.DynamicResponse)) planmodifier.Dynamic {
+			return testplanmodifier.Dynamic{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyDynamicMethod: func(ctx context.Context, req planmodifier.DynamicRequest, resp *planmodifier.DynamicResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Dynamic" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.DynamicNull(),
+			AttributePlan:           types.DynamicValue(types.StringValue("a")),
+			AttributeState:          types.DynamicUnknown(),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Dynamic){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Dynamic) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Dynamic) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Dynamic) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Dynamic) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Dynamic) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Dynamic) {
+				return base, []planmodifier.Dynamic{
+					mk("m1", func(req planmodifier.DynamicRequest, resp *planmodifier.DynamicResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.DynamicRequest, resp *planmodifier.DynamicResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.DynamicRequest, resp *planmodifier.DynamicResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Dynamic) {
+				return base, []planmodifier.Dynamic{
+					mk("m1", func(req planmodifier.DynamicRequest, resp *planmodifier.DynamicResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.DynamicRequest, resp *planmodifier.DynamicResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			AttributePlanModifyDynamic(ctx, testschema.AttributeWithDynamicPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "AttributePlanModifyDynamic/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// BlockPlanModifyList
+		var calls []string
+		mk := func(name string, f func(planmodifier.ListRequest, *planmodifier.ListResponse)) planmodifier.List {
+			return testplanmodifier.List{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyListMethod: func(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "List" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.ListNull(types.StringType),
+			AttributePlan:           types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			AttributeState:          types.ListUnknown(types.StringType),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.List){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.List) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.List) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.List) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.List) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.List) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.List) {
+				return base, []planmodifier.List{
+					mk("m1", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.List) {
+				return base, []planmodifier.List{
+					mk("m1", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			BlockPlanModifyList(ctx, testschema.BlockWithListPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "BlockPlanModifyList/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// BlockPlanModifyObject
+		var calls []string
+		mk := func(name string, f func(planmodifier.ObjectRequest, *planmodifier.ObjectResponse)) planmodifier.Object {
+			return testplanmodifier.Object{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifyObjectMethod: func(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Object" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.ObjectNull(map[string]attr.Type{"a": types.StringType}),
+			AttributePlan:           types.ObjectValueMust(map[string]attr.Type{"a": types.StringType}, map[string]attr.Value{"a": types.StringValue("x")}),
+			AttributeState:          types.ObjectUnknown(map[string]attr.Type{"a": types.StringType}),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Object){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Object) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Object) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Object) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Object) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Object) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Object) {
+				return base, []planmodifier.Object{
+					mk("m1", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Object) {
+				return base, []planmodifier.Object{
+					mk("m1", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			BlockPlanModifyObject(ctx, testschema.BlockWithObjectPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "BlockPlanModifyObject/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	{
+		// BlockPlanModifySet
+		var calls []string
+		mk := func(name string, f func(planmodifier.SetRequest, *planmodifier.SetResponse)) planmodifier.Set {
+			return testplanmodifier.Set{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				PlanModifySetMethod: func(ctx context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v plan=%v state=%v private(nil=%v) | resp0: plan=%v private(nil=%v) diags(nil=%v) rr=%v", name, req.Path, req.PathExpression, req.ConfigValue, req.PlanValue, req.StateValue, req.Private == nil, resp.PlanValue, resp.Private == nil, resp.Diagnostics == nil, resp.RequiresReplace))
+					f(req, resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Set" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ModifyAttributePlanRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.SetNull(types.StringType),
+			AttributePlan:           types.SetValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			AttributeState:          types.SetUnknown(types.StringType),
+			Private:                 priv,
+		}
+		scen := map[string]func() (ModifyAttributePlanRequest, []planmodifier.Set){
+			"wrong-config": func() (ModifyAttributePlanRequest, []planmodifier.Set) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"wrong-plan":   func() (ModifyAttributePlanRequest, []planmodifier.Set) { r := base; r.AttributePlan = wrong; return r, nil },
+			"wrong-state":  func() (ModifyAttributePlanRequest, []planmodifier.Set) { r := base; r.AttributeState = wrong; return r, nil },
+			"nil-config":   func() (ModifyAttributePlanRequest, []planmodifier.Set) { r := base; r.AttributeConfig = nil; return r, nil },
+			"no-modifiers": func() (ModifyAttributePlanRequest, []planmodifier.Set) { return base, nil },
+			"chain-error": func() (ModifyAttributePlanRequest, []planmodifier.Set) {
+				return base, []planmodifier.Set{
+					mk("m1", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+						resp.Diagnostics.AddWarning("w1", "d1")
+						resp.RequiresReplace = true
+						resp.PlanValue = req.ConfigValue
+					}),
+					mk("m2", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+						resp.Diagnostics.AddError("e2", "d2")
+						resp.Private = nil
+					}),
+					mk("m3", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {}),
+				}
+			},
+			"chain-ok": func() (ModifyAttributePlanRequest, []planmodifier.Set) {
+				return base, []planmodifier.Set{
+					mk("m1", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+						resp.PlanValue = req.StateValue
+						resp.RequiresReplace = true
+					}),
+					mk("m2", func(req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+						resp.RequiresReplace = true
+						resp.Diagnostics = diag.Diagnostics{}
+					}),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, mods := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ModifyAttributePlanResponse{AttributePlan: req.AttributePlan, Private: req.Private}
+			BlockPlanModifySet(ctx, testschema.BlockWithSetPlanModifiers{PlanModifiers: mods}, req, resp)
+			label := "BlockPlanModifySet/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenDumpResp(&b, label, resp)
+			goldenLogs(&b, label, &logOut)
+		}
+	}
+
+	if err := os.WriteFile(os.Getenv("GOLDEN_OUT"), []byte(b.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}

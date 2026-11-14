@@ -1,0 +1,45 @@
+package probe
+
+import (
+	"math/big"
+	"reflect"
+	"testing"
+)
+
+var sink bool
+var target = reflect.TypeOf(int64(0))
+
+func BenchmarkTypeOfBigNew(b *testing.B) {
+	for b.Loop() {
+		sink = target == reflect.TypeOf(big.NewFloat(0)) || target == reflect.TypeOf(big.NewInt(0))
+	}
+}
+
+func BenchmarkTypeFor(b *testing.B) {
+	for b.Loop() {
+		sink = target == reflect.TypeFor[*big.Float]() || target == reflect.TypeFor[*big.Int]()
+	}
+}
+
+type Iface interface{ M() }
+
+func BenchmarkTypeOfNilElem(b *testing.B) {
+	for b.Loop() {
+		sink = target.Implements(reflect.TypeOf((*Iface)(nil)).Elem())
+	}
+}
+
+func BenchmarkTypeForIface(b *testing.B) {
+	for b.Loop() {
+		sink = target.Implements(reflect.TypeFor[Iface]())
+	}
+}
+
+func TestSame(t *testing.T) {
+	if reflect.TypeOf(big.NewFloat(0)) != reflect.TypeFor[*big.Float]() || reflect.TypeOf(big.NewInt(0)) != reflect.TypeFor[*big.Int]() {
+		t.Fatal("big types differ")
+	}
+	if reflect.TypeOf((*Iface)(nil)).Elem() != reflect.TypeFor[Iface]() {
+		t.Fatal("iface types differ")
+	}
+}

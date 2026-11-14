@@ -1,0 +1,163 @@
+package vcprobe
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+type Port int64
+type Ratio float64
+type Name string
+type Flag bool
+type Key string
+
+func c1Schema() schema.Schema {
+	return schema.Schema{Attributes: map[string]schema.Attribute{
+		"port":   schema.Int64Attribute{Optional: true},
+		"ratio":  schema.Float64Attribute{Optional: true},
+		"name":   schema.StringAttribute{Optional: true},
+		"flag":   schema.BoolAttribute{Optional: true},
+		"ports":  schema.ListAttribute{ElementType: types.Int64Type, Optional: true},
+		"labels": schema.MapAttribute{ElementType: types.StringType, Optional: true},
+	}}
+}
+
+func c1Raw() tftypes.Value {
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"port": tftypes.Number, "ratio": tftypes.Number, "name": tftypes.String, "flag": tftypes.Bool,
+		"ports": tftypes.List{ElementType: tftypes.Number}, "labels": tftypes.Map{ElementType: tftypes.String},
+	}}
+	return tftypes.NewValue(objT, map[string]tftypes.Value{
+		"port":   tftypes.NewValue(tftypes.Number, 8080),
+		"ratio":  tftypes.NewValue(tftypes.Number, 0.5),
+		"name":   tftypes.NewValue(tftypes.String, "n"),
+		"flag":   tftypes.NewValue(tftypes.Bool, true),
+		"ports":  tftypes.NewValue(tftypes.List{ElementType: tftypes.Number}, []tftypes.Value{tftypes.NewValue(tftypes.Number, 1), tftypes.NewValue(tftypes.Number, 2)}),
+		"labels": tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{"a": tftypes.NewValue(tftypes.String, "x")}),
+	})
+}
+
+func try(t *testing.T, label string, f func() string) {
+	t.Helper()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Logf("%-40s PANIC: %v", label, r)
+		}
+	}()
+	t.Logf("%-40s %s", label, f())
+}
+
+// Already-working model: plain int64, named string, named bool.
+type workingModel struct {
+	Port   int64             `tfsdk:"port"`
+	Ratio  float64           `tfsdk:"ratio"`
+	Name   Name              `tfsdk:"name"`
+	Flag   Flag              `tfsdk:"flag"`
+	Ports  []int64           `tfsdk:"ports"`
+	Labels map[string]string `tfsdk:"labels"`
+}
+
+type namedIntModel struct {
+	Port   Port              `tfsdk:"port"`
+	Ratio  float64           `tfsdk:"ratio"`
+	Name   string            `tfsdk:"name"`
+	Flag   bool              `tfsdk:"flag"`
+	Ports  []int64           `tfsdk:"ports"`
+	Labels map[string]string `tfsdk:"labels"`
+}
+
+type namedFloatModel struct {
+	Port   int64             `tfsdk:"port"`
+	Ratio  Ratio             `tfsdk:"ratio"`
+	Name   string            `tfsdk:"name"`
+	Flag   bool              `tfsdk:"flag"`
+	Ports  []int64           `tfsdk:"ports"`
+	Labels map[string]string `tfsdk:"labels"`
+}
+
+type namedElemModel struct {
+	Port   int64             `tfsdk:"port"`
+	Ratio  float64           `tfsdk:"ratio"`
+	Name   string            `tfsdk:"name"`
+	Flag   bool              `tfsdk:"flag"`
+	Ports  []Port            `tfsdk:"ports"`
+	Labels map[string]string `tfsdk:"labels"`
+}
+
+type namedKeyModel struct {
+	Port   int64          `tfsdk:"port"`
+	Ratio  float64        `tfsdk:"ratio"`
+	Name   string         `tfsdk:"name"`
+	Flag   bool           `tfsdk:"flag"`
+	Ports  []int64        `tfsdk:"ports"`
+	Labels map[Key]string `tfsdk:"labels"`
+}
+
+type ptrNamedModel struct {
+	Port   *Port             `tfsdk:"port"`
+	Ratio  float64           `tfsdk:"ratio"`
+	Name   string            `tfsdk:"name"`
+	Flag   bool              `tfsdk:"flag"`
+	Ports  []int64           `tfsdk:"ports"`
+	Labels map[string]string `tfsdk:"labels"`
+}
+
+func TestC1(t *testing.T) {
+	ctx := context.Background()
+	st := tfsdk.State{Schema: c1Schema(), Raw: c1Raw()}
+	cfg := tfsdk.Config{Schema: c1Schema(), Raw: c1Raw()}
+
+	try(t, "State.Get working model", func() string { var m workingModel; d := st.Get(ctx, &m); return fmt.Sprintf("diags=%d %+v", len(d), m) })
+	try(t, "State.Get named int field", func() string { var m namedIntModel; d := st.Get(ctx, &m); return fmt.Sprintf("diags=%d %+v", len(d), m) })
+	try(t, "Config.Get named int field", func() string { var m namedIntModel; d := cfg.Get(ctx, &m); return fmt.Sprintf("diags=%d %+v", len(d), m) })
+	try(t, "State.Get named float field", func() string { var m namedFloatModel; d := st.Get(ctx, &m); return fmt.Sprintf("diags=%d %+v", len(d), m) })
+	try(t, "State.Get []Port element", func() string { var m namedElemModel; d := st.Get(ctx, &m); return fmt.Sprintf("diags=%d %+v", len(d), m) })
+	try(t, "State.Get map[Key]string", func() string { var m namedKeyModel; d := st.Get(ctx, &m); return fmt.Sprintf("diags=%d %+v", len(d), m) })
+	try(t, "State.Get *Port", func() string { var m ptrNamedModel; d := st.Get(ctx, &m); return fmt.Sprintf("diags=%d %+v", len(d), m) })
+	try(t, "GetAttribute *Port target", func() string { var p Port; d := st.GetAttribute(ctx, path.Root("port"), &p); return fmt.Sprintf("diags=%d %v", len(d), p) })
+	try(t, "GetAttribute int64 target", func() string { var p int64; d := st.GetAttribute(ctx, path.Root("port"), &p); return fmt.Sprintf("diags=%d %v", len(d), p) })
+	try(t, "GetAttribute map[int]string", func() string { var m map[int]string; d := st.GetAttribute(ctx, path.Root("labels"), &m); return fmt.Sprintf("diags=%d %v", len(d), m) })
+	try(t, "GetAttribute map[Key]string", func() string { var m map[Key]string; d := st.GetAttribute(ctx, path.Root("labels"), &m); return fmt.Sprintf("diags=%d %v", len(d), m) })
+	try(t, "ElementsAs []Port", func() string {
+		var l types.List
+		d := st.GetAttribute(ctx, path.Root("ports"), &l)
+		var ps []Port
+		d.Append(l.ElementsAs(ctx, &ps, false)...)
+		return fmt.Sprintf("diags=%d %v", len(d), ps)
+	})
+	// Set direction with named numerics (claimed to work already)
+	try(t, "State.Set named int model", func() string {
+		s2 := tfsdk.State{Schema: c1Schema(), Raw: c1Raw()}
+		m := namedIntModel{Port: 9, Ports: []int64{1}, Labels: map[string]string{"a": "b"}}
+		d := s2.Set(ctx, &m)
+		return fmt.Sprintf("diags=%d %v", len(d), d)
+	})
+	try(t, "SetAttribute map[Key]string", func() string {
+		s2 := tfsdk.State{Schema: c1Schema(), Raw: c1Raw()}
+		d := s2.SetAttribute(ctx, path.Root("labels"), map[Key]string{"k": "v"})
+		return fmt.Sprintf("diags=%d %v", len(d), d)
+	})
+	try(t, "SetAttribute map[int]string", func() string {
+		s2 := tfsdk.State{Schema: c1Schema(), Raw: c1Raw()}
+		d := s2.SetAttribute(ctx, path.Root("labels"), map[int]string{1: "v"})
+		return fmt.Sprintf("diags=%d %v", len(d), d)
+	})
+	// Empty map into map[int]string
+	try(t, "GetAttribute empty map into map[int]", func() string {
+		raw := c1Raw()
+		var vals map[string]tftypes.Value
+		_ = raw.As(&vals)
+		vals["labels"] = tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{})
+		s2 := tfsdk.State{Schema: c1Schema(), Raw: tftypes.NewValue(raw.Type(), vals)}
+		var m map[int]string
+		d := s2.GetAttribute(ctx, path.Root("labels"), &m)
+		return fmt.Sprintf("diags=%d %v nil=%v", len(d), m, m == nil)
+	})
+}

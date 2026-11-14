@@ -1,0 +1,855 @@
+package fwserver
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"sort"
+	"strings"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-log/tfsdklogtest"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testschema"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func goldenVDump(b *strings.Builder, label string, resp *ValidateAttributeResponse, out *bytes.Buffer) {
+	fmt.Fprintf(b, "%s: diags(nil=%v len=%d)\n", label, resp.Diagnostics == nil, len(resp.Diagnostics))
+	for _, d := range resp.Diagnostics {
+		p := ""
+		if dp, ok := d.(diag.DiagnosticWithPath); ok {
+			p = dp.Path().String()
+		}
+		fmt.Fprintf(b, "%s:   %T %v %q %q path=%q\n", label, d, d.Severity(), d.Summary(), d.Detail(), p)
+	}
+	entries, err := tfsdklogtest.MultilineJSONDecode(out)
+	if err != nil {
+		panic(err)
+	}
+	for _, e := range entries {
+		keys := make([]string, 0, len(e))
+		for k := range e {
+			if k == "@caller" || k == "@timestamp" {
+				continue
+			}
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		fmt.Fprintf(b, "%s: log", label)
+		for _, k := range keys {
+			fmt.Fprintf(b, " %s=%v", k, e[k])
+		}
+		fmt.Fprintln(b)
+	}
+}
+
+func TestGoldenB1Validate(t *testing.T) {
+	var b strings.Builder
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.BoolResponse)) validator.Bool {
+			return testvalidator.Bool{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateBoolMethod: func(ctx context.Context, req validator.BoolRequest, resp *validator.BoolResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Bool" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.BoolNull(),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Bool){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Bool) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Bool) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Bool) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Bool) {
+				return base, []validator.Bool{
+					mk("v1", func(resp *validator.BoolResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.BoolResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.BoolResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateBool(ctx, testschema.AttributeWithBoolValidators{Validators: vs}, req, resp)
+			label := "AttributeValidateBool/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.Float32Response)) validator.Float32 {
+			return testvalidator.Float32{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateFloat32Method: func(ctx context.Context, req validator.Float32Request, resp *validator.Float32Response) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Float32" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.Float32Null(),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Float32){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Float32) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Float32) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Float32) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Float32) {
+				return base, []validator.Float32{
+					mk("v1", func(resp *validator.Float32Response) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.Float32Response) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.Float32Response) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateFloat32(ctx, testschema.AttributeWithFloat32Validators{Validators: vs}, req, resp)
+			label := "AttributeValidateFloat32/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.Float64Response)) validator.Float64 {
+			return testvalidator.Float64{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateFloat64Method: func(ctx context.Context, req validator.Float64Request, resp *validator.Float64Response) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Float64" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.Float64Null(),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Float64){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Float64) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Float64) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Float64) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Float64) {
+				return base, []validator.Float64{
+					mk("v1", func(resp *validator.Float64Response) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.Float64Response) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.Float64Response) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateFloat64(ctx, testschema.AttributeWithFloat64Validators{Validators: vs}, req, resp)
+			label := "AttributeValidateFloat64/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.Int32Response)) validator.Int32 {
+			return testvalidator.Int32{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateInt32Method: func(ctx context.Context, req validator.Int32Request, resp *validator.Int32Response) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Int32" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.Int32Null(),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Int32){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Int32) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Int32) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Int32) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Int32) {
+				return base, []validator.Int32{
+					mk("v1", func(resp *validator.Int32Response) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.Int32Response) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.Int32Response) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateInt32(ctx, testschema.AttributeWithInt32Validators{Validators: vs}, req, resp)
+			label := "AttributeValidateInt32/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.Int64Response)) validator.Int64 {
+			return testvalidator.Int64{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateInt64Method: func(ctx context.Context, req validator.Int64Request, resp *validator.Int64Response) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Int64" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.Int64Null(),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Int64){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Int64) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Int64) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Int64) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Int64) {
+				return base, []validator.Int64{
+					mk("v1", func(resp *validator.Int64Response) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.Int64Response) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.Int64Response) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateInt64(ctx, testschema.AttributeWithInt64Validators{Validators: vs}, req, resp)
+			label := "AttributeValidateInt64/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.ListResponse)) validator.List {
+			return testvalidator.List{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateListMethod: func(ctx context.Context, req validator.ListRequest, resp *validator.ListResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "List" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.ListNull(types.StringType),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.List){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.List) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.List) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.List) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.List) {
+				return base, []validator.List{
+					mk("v1", func(resp *validator.ListResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.ListResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.ListResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateList(ctx, testschema.AttributeWithListValidators{Validators: vs}, req, resp)
+			label := "AttributeValidateList/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.MapResponse)) validator.Map {
+			return testvalidator.Map{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateMapMethod: func(ctx context.Context, req validator.MapRequest, resp *validator.MapResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Map" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.MapNull(types.StringType),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Map){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Map) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Map) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Map) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Map) {
+				return base, []validator.Map{
+					mk("v1", func(resp *validator.MapResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.MapResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.MapResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateMap(ctx, testschema.AttributeWithMapValidators{Validators: vs}, req, resp)
+			label := "AttributeValidateMap/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.NumberResponse)) validator.Number {
+			return testvalidator.Number{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateNumberMethod: func(ctx context.Context, req validator.NumberRequest, resp *validator.NumberResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Number" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.NumberNull(),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Number){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Number) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Number) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Number) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Number) {
+				return base, []validator.Number{
+					mk("v1", func(resp *validator.NumberResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.NumberResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.NumberResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateNumber(ctx, testschema.AttributeWithNumberValidators{Validators: vs}, req, resp)
+			label := "AttributeValidateNumber/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.ObjectResponse)) validator.Object {
+			return testvalidator.Object{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateObjectMethod: func(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Object" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.ObjectNull(map[string]attr.Type{"a": types.StringType}),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Object){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Object) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Object) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Object) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Object) {
+				return base, []validator.Object{
+					mk("v1", func(resp *validator.ObjectResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.ObjectResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.ObjectResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateObject(ctx, testschema.AttributeWithObjectValidators{Validators: vs}, req, resp)
+			label := "AttributeValidateObject/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.SetResponse)) validator.Set {
+			return testvalidator.Set{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateSetMethod: func(ctx context.Context, req validator.SetRequest, resp *validator.SetResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Set" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.SetNull(types.StringType),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Set){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Set) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Set) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Set) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Set) {
+				return base, []validator.Set{
+					mk("v1", func(resp *validator.SetResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.SetResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.SetResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateSet(ctx, testschema.AttributeWithSetValidators{Validators: vs}, req, resp)
+			label := "AttributeValidateSet/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.StringResponse)) validator.String {
+			return testvalidator.String{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateStringMethod: func(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "String" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.StringNull(),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.String){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.String) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.String) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.String) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.String) {
+				return base, []validator.String{
+					mk("v1", func(resp *validator.StringResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.StringResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.StringResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateString(ctx, testschema.AttributeWithStringValidators{Validators: vs}, req, resp)
+			label := "AttributeValidateString/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.DynamicResponse)) validator.Dynamic {
+			return testvalidator.Dynamic{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateDynamicMethod: func(ctx context.Context, req validator.DynamicRequest, resp *validator.DynamicResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Dynamic" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.DynamicNull(),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Dynamic){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Dynamic) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Dynamic) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Dynamic) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Dynamic) {
+				return base, []validator.Dynamic{
+					mk("v1", func(resp *validator.DynamicResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.DynamicResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.DynamicResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			AttributeValidateDynamic(ctx, testschema.AttributeWithDynamicValidators{Validators: vs}, req, resp)
+			label := "AttributeValidateDynamic/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.ListResponse)) validator.List {
+			return testvalidator.List{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateListMethod: func(ctx context.Context, req validator.ListRequest, resp *validator.ListResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "List" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.ListNull(types.StringType),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.List){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.List) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.List) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.List) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.List) {
+				return base, []validator.List{
+					mk("v1", func(resp *validator.ListResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.ListResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.ListResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			BlockValidateList(ctx, testschema.BlockWithListValidators{Validators: vs}, req, resp)
+			label := "BlockValidateList/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.ObjectResponse)) validator.Object {
+			return testvalidator.Object{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateObjectMethod: func(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Object" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.ObjectNull(map[string]attr.Type{"a": types.StringType}),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Object){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Object) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Object) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Object) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Object) {
+				return base, []validator.Object{
+					mk("v1", func(resp *validator.ObjectResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.ObjectResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.ObjectResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			BlockValidateObject(ctx, testschema.BlockWithObjectValidators{Validators: vs}, req, resp)
+			label := "BlockValidateObject/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	{
+		var calls []string
+		mk := func(name string, f func(*validator.SetResponse)) validator.Set {
+			return testvalidator.Set{
+				DescriptionMethod: func(context.Context) string { return "desc-" + name },
+				ValidateSetMethod: func(ctx context.Context, req validator.SetRequest, resp *validator.SetResponse) {
+					calls = append(calls, fmt.Sprintf("%s req: path=%q expr=%q config=%v caps=%+v | resp0 diags(nil=%v)", name, req.Path, req.PathExpression, req.ConfigValue, req.ClientCapabilities, resp.Diagnostics == nil))
+					f(resp)
+				},
+			}
+		}
+		wrong := attr.Value(types.StringValue("wrong"))
+		if "Set" == "String" {
+			wrong = types.BoolValue(true)
+		}
+		base := ValidateAttributeRequest{
+			AttributePath:           path.Root("test"),
+			AttributePathExpression: path.MatchRoot("test"),
+			AttributeConfig:         types.SetNull(types.StringType),
+			ClientCapabilities:      validator.ValidateSchemaClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}
+		scen := map[string]func() (ValidateAttributeRequest, []validator.Set){
+			"wrong-config": func() (ValidateAttributeRequest, []validator.Set) { r := base; r.AttributeConfig = wrong; return r, nil },
+			"nil-config":   func() (ValidateAttributeRequest, []validator.Set) { r := base; r.AttributeConfig = nil; return r, nil },
+			"none":         func() (ValidateAttributeRequest, []validator.Set) { return base, nil },
+			"chain": func() (ValidateAttributeRequest, []validator.Set) {
+				return base, []validator.Set{
+					mk("v1", func(resp *validator.SetResponse) { resp.Diagnostics.AddWarning("w1", "d1") }),
+					mk("v2", func(resp *validator.SetResponse) { resp.Diagnostics.AddError("e2", "d2") }),
+					mk("v3", func(resp *validator.SetResponse) { resp.Diagnostics = diag.Diagnostics{} }),
+				}
+			},
+		}
+		names := make([]string, 0, len(scen))
+		for k := range scen {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, sn := range names {
+			calls = nil
+			req, vs := scen[sn]()
+			var logOut bytes.Buffer
+			ctx := logging.InitContext(tfsdklogtest.RootLogger(context.Background(), &logOut))
+			resp := &ValidateAttributeResponse{}
+			BlockValidateSet(ctx, testschema.BlockWithSetValidators{Validators: vs}, req, resp)
+			label := "BlockValidateSet/" + sn
+			for _, c := range calls {
+				fmt.Fprintf(&b, "%s: call %s\n", label, c)
+			}
+			goldenVDump(&b, label, resp, &logOut)
+		}
+	}
+
+	if err := os.WriteFile(os.Getenv("GOLDEN_OUT"), []byte(b.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}

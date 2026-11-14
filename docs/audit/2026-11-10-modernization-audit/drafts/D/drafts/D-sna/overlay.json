@@ -1,0 +1,6 @@
+{
+ "Replace": {
+  "resource/schema/single_nested_attribute.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-sna/single_nested_attribute.go.txt"
+ },
+ "Note": "Replacements for existing repository files are not shipped; apply the matching .diff in this folder instead. go -overlay ignores this key."
+}

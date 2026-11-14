@@ -1,0 +1,9 @@
+{
+ "Replace": {
+  "action/schema/single_nested_attribute.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-action-wo/single_nested_attribute.go.txt",
+  "action/schema/set_nested_attribute.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-action-wo/set_nested_attribute.go.txt",
+  "action/schema/set_nested_block.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-action-wo/set_nested_block.go.txt",
+  "action/schema/zz_vd45_test.go": "docs/audit/2026-11-10-modernization-audit/drafts/V-D/d45/zz_vd45_test.go.txt"
+ },
+ "Note": "Replacements for existing repository files are not shipped; apply the matching .diff in this folder instead. go -overlay ignores this key."
+}

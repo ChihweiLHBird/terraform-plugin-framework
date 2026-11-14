@@ -1,0 +1,21 @@
+package main
+
+import "fmt"
+
+type parameterBase struct {
+	Name           string
+	AllowNullValue bool
+}
+
+func (b parameterBase) GetName() string { return b.Name }
+
+// BoolParameter after a hypothetical "shared getters via embedding" refactor.
+type BoolParameter struct {
+	parameterBase
+	CustomType any
+}
+
+func main() {
+	p := BoolParameter{Name: "x"} // how providers write it today
+	fmt.Println(p.GetName())
+}

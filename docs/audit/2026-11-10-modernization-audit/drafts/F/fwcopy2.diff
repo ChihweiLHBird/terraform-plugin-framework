@@ -1,0 +1,292 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/list_parameter.go b/function/list_parameter.go
+--- a/function/list_parameter.go	2026-10-24 21:30:10.434927489 +0000
++++ b/function/list_parameter.go	2026-10-24 23:09:54.244545666 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -134,21 +133,5 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (p ListParameter) ValidateImplementation(ctx context.Context, req fwfunction.ValidateParameterImplementationRequest, resp *fwfunction.ValidateParameterImplementationResponse) {
+-	if p.CustomType == nil {
+-		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
+-			if req.ParameterPosition != nil {
+-				resp.Diagnostics.Append(fwtype.ParameterCollectionWithDynamicTypeDiag(*req.ParameterPosition, p.GetName()))
+-			} else {
+-				resp.Diagnostics.Append(fwtype.VariadicParameterCollectionWithDynamicTypeDiag(p.GetName()))
+-			}
+-		}
+-
+-		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ParameterMissingUnderlyingTypeDiag(p.GetName(), req.ParameterPosition))
+-		}
+-	}
+-
+-	if p.GetName() == "" {
+-		resp.Diagnostics.Append(fwfunction.MissingParameterNameDiag(req.FunctionName, req.ParameterPosition))
+-	}
++	validateCollectionParameterImplementation(p, p.CustomType != nil, req, resp)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/list_return.go b/function/list_return.go
+--- a/function/list_return.go	2026-10-24 21:30:10.434927489 +0000
++++ b/function/list_return.go	2026-10-24 23:09:54.244714984 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -73,13 +72,5 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (p ListReturn) ValidateImplementation(ctx context.Context, req fwfunction.ValidateReturnImplementationRequest, resp *fwfunction.ValidateReturnImplementationResponse) {
+-	if p.CustomType == nil {
+-		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ReturnCollectionWithDynamicTypeDiag())
+-		}
+-
+-		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ReturnMissingUnderlyingTypeDiag())
+-		}
+-	}
++	validateCollectionReturnImplementation(p.GetType(), p.CustomType != nil, resp)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/map_parameter.go b/function/map_parameter.go
+--- a/function/map_parameter.go	2026-10-24 21:30:10.434927489 +0000
++++ b/function/map_parameter.go	2026-10-24 23:09:54.244816327 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -134,21 +133,5 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (p MapParameter) ValidateImplementation(ctx context.Context, req fwfunction.ValidateParameterImplementationRequest, resp *fwfunction.ValidateParameterImplementationResponse) {
+-	if p.CustomType == nil {
+-		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
+-			if req.ParameterPosition != nil {
+-				resp.Diagnostics.Append(fwtype.ParameterCollectionWithDynamicTypeDiag(*req.ParameterPosition, p.GetName()))
+-			} else {
+-				resp.Diagnostics.Append(fwtype.VariadicParameterCollectionWithDynamicTypeDiag(p.GetName()))
+-			}
+-		}
+-
+-		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ParameterMissingUnderlyingTypeDiag(p.GetName(), req.ParameterPosition))
+-		}
+-	}
+-
+-	if p.GetName() == "" {
+-		resp.Diagnostics.Append(fwfunction.MissingParameterNameDiag(req.FunctionName, req.ParameterPosition))
+-	}
++	validateCollectionParameterImplementation(p, p.CustomType != nil, req, resp)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/map_return.go b/function/map_return.go
+--- a/function/map_return.go	2026-10-24 21:30:10.434927489 +0000
++++ b/function/map_return.go	2026-10-24 23:09:54.244915100 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -73,13 +72,5 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (p MapReturn) ValidateImplementation(ctx context.Context, req fwfunction.ValidateReturnImplementationRequest, resp *fwfunction.ValidateReturnImplementationResponse) {
+-	if p.CustomType == nil {
+-		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ReturnCollectionWithDynamicTypeDiag())
+-		}
+-
+-		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ReturnMissingUnderlyingTypeDiag())
+-		}
+-	}
++	validateCollectionReturnImplementation(p.GetType(), p.CustomType != nil, resp)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/object_parameter.go b/function/object_parameter.go
+--- a/function/object_parameter.go	2026-10-24 21:30:10.435597582 +0000
++++ b/function/object_parameter.go	2026-10-24 23:09:54.245192412 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -136,21 +135,5 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (p ObjectParameter) ValidateImplementation(ctx context.Context, req fwfunction.ValidateParameterImplementationRequest, resp *fwfunction.ValidateParameterImplementationResponse) {
+-	if p.CustomType == nil {
+-		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
+-			if req.ParameterPosition != nil {
+-				resp.Diagnostics.Append(fwtype.ParameterCollectionWithDynamicTypeDiag(*req.ParameterPosition, p.GetName()))
+-			} else {
+-				resp.Diagnostics.Append(fwtype.VariadicParameterCollectionWithDynamicTypeDiag(p.GetName()))
+-			}
+-		}
+-
+-		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ParameterMissingUnderlyingTypeDiag(p.GetName(), req.ParameterPosition))
+-		}
+-	}
+-
+-	if p.GetName() == "" {
+-		resp.Diagnostics.Append(fwfunction.MissingParameterNameDiag(req.FunctionName, req.ParameterPosition))
+-	}
++	validateCollectionParameterImplementation(p, p.CustomType != nil, req, resp)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/object_return.go b/function/object_return.go
+--- a/function/object_return.go	2026-10-24 21:30:10.435597582 +0000
++++ b/function/object_return.go	2026-10-24 23:09:54.245373965 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -69,13 +68,5 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (p ObjectReturn) ValidateImplementation(ctx context.Context, req fwfunction.ValidateReturnImplementationRequest, resp *fwfunction.ValidateReturnImplementationResponse) {
+-	if p.CustomType == nil {
+-		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ReturnCollectionWithDynamicTypeDiag())
+-		}
+-
+-		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ReturnMissingUnderlyingTypeDiag())
+-		}
+-	}
++	validateCollectionReturnImplementation(p.GetType(), p.CustomType != nil, resp)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/set_parameter.go b/function/set_parameter.go
+--- a/function/set_parameter.go	2026-10-24 21:30:10.439597581 +0000
++++ b/function/set_parameter.go	2026-10-24 23:09:54.245012944 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -134,21 +133,5 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (p SetParameter) ValidateImplementation(ctx context.Context, req fwfunction.ValidateParameterImplementationRequest, resp *fwfunction.ValidateParameterImplementationResponse) {
+-	if p.CustomType == nil {
+-		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
+-			if req.ParameterPosition != nil {
+-				resp.Diagnostics.Append(fwtype.ParameterCollectionWithDynamicTypeDiag(*req.ParameterPosition, p.GetName()))
+-			} else {
+-				resp.Diagnostics.Append(fwtype.VariadicParameterCollectionWithDynamicTypeDiag(p.GetName()))
+-			}
+-		}
+-
+-		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ParameterMissingUnderlyingTypeDiag(p.GetName(), req.ParameterPosition))
+-		}
+-	}
+-
+-	if p.GetName() == "" {
+-		resp.Diagnostics.Append(fwfunction.MissingParameterNameDiag(req.FunctionName, req.ParameterPosition))
+-	}
++	validateCollectionParameterImplementation(p, p.CustomType != nil, req, resp)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/set_return.go b/function/set_return.go
+--- a/function/set_return.go	2026-10-24 21:30:10.439597581 +0000
++++ b/function/set_return.go	2026-10-24 23:09:54.245102650 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/attr"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
+-	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
+ 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+ )
+ 
+@@ -73,13 +72,5 @@
+ // errors or panics. This logic runs during the GetProviderSchema RPC and
+ // should never include false positives.
+ func (p SetReturn) ValidateImplementation(ctx context.Context, req fwfunction.ValidateReturnImplementationRequest, resp *fwfunction.ValidateReturnImplementationResponse) {
+-	if p.CustomType == nil {
+-		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ReturnCollectionWithDynamicTypeDiag())
+-		}
+-
+-		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
+-			resp.Diagnostics.Append(fwtype.ReturnMissingUnderlyingTypeDiag())
+-		}
+-	}
++	validateCollectionReturnImplementation(p.GetType(), p.CustomType != nil, resp)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/function/validate_implementation.go b/function/validate_implementation.go
+--- a/function/validate_implementation.go	1970-01-01 00:00:00.000000000 +0000
++++ b/function/validate_implementation.go	2026-10-24 23:09:54.245505552 +0000
+@@ -0,0 +1,48 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package function
++
++import (
++	"github.com/hashicorp/terraform-plugin-framework/attr"
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwfunction"
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwtype"
++)
++
++// validateCollectionParameterImplementation contains the ValidateImplementation
++// logic shared by the collection and object parameter types.
++func validateCollectionParameterImplementation(p Parameter, hasCustomType bool, req fwfunction.ValidateParameterImplementationRequest, resp *fwfunction.ValidateParameterImplementationResponse) {
++	if !hasCustomType {
++		if fwtype.ContainsCollectionWithDynamic(p.GetType()) {
++			if req.ParameterPosition != nil {
++				resp.Diagnostics.Append(fwtype.ParameterCollectionWithDynamicTypeDiag(*req.ParameterPosition, p.GetName()))
++			} else {
++				resp.Diagnostics.Append(fwtype.VariadicParameterCollectionWithDynamicTypeDiag(p.GetName()))
++			}
++		}
++
++		if fwtype.ContainsMissingUnderlyingType(p.GetType()) {
++			resp.Diagnostics.Append(fwtype.ParameterMissingUnderlyingTypeDiag(p.GetName(), req.ParameterPosition))
++		}
++	}
++
++	if p.GetName() == "" {
++		resp.Diagnostics.Append(fwfunction.MissingParameterNameDiag(req.FunctionName, req.ParameterPosition))
++	}
++}
++
++// validateCollectionReturnImplementation contains the ValidateImplementation
++// logic shared by the collection and object return types.
++func validateCollectionReturnImplementation(typ attr.Type, hasCustomType bool, resp *fwfunction.ValidateReturnImplementationResponse) {
++	if hasCustomType {
++		return
++	}
++
++	if fwtype.ContainsCollectionWithDynamic(typ) {
++		resp.Diagnostics.Append(fwtype.ReturnCollectionWithDynamicTypeDiag())
++	}
++
++	if fwtype.ContainsMissingUnderlyingType(typ) {
++		resp.Diagnostics.Append(fwtype.ReturnMissingUnderlyingTypeDiag())
++	}
++}

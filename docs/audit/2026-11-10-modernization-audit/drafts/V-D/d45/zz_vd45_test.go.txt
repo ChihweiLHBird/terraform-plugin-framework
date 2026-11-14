@@ -1,0 +1,51 @@
+package schema_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/action/schema"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+)
+
+func TestZZVD45(t *testing.T) {
+	ctx := context.Background()
+	show := func(label string, s interface {
+		ValidateImplementation(context.Context) interface{ HasError() bool }
+	}) {
+	}
+	_ = show
+	p := func(label string, n int, msgs []string) { fmt.Printf("VD45 %-55s diags=%d %v\n", label, n, msgs) }
+	run := func(label string, s schema.Schema) {
+		d := s.ValidateImplementation(ctx)
+		var m []string
+		for _, x := range d {
+			m = append(m, x.Detail()[len("When validating the schema, an implementation issue was found. This is always an issue with the provider and should be reported to the provider developers.\n\n"):])
+		}
+		p(label, len(d), m)
+	}
+	rrun := func(label string, s rschema.Schema) {
+		d := s.ValidateImplementation(ctx)
+		var m []string
+		for _, x := range d {
+			m = append(m, x.Detail()[len("When validating the schema, an implementation issue was found. This is always an issue with the provider and should be reported to the provider developers.\n\n"):])
+		}
+		p(label, len(d), m)
+	}
+	nonWO := map[string]schema.Attribute{"s": schema.StringAttribute{Optional: true}}
+	wo := map[string]schema.Attribute{"s": schema.StringAttribute{Optional: true, WriteOnly: true}}
+	run("action Single WO + non-WO child", schema.Schema{Attributes: map[string]schema.Attribute{"obj": schema.SingleNestedAttribute{Optional: true, WriteOnly: true, Attributes: nonWO}}})
+	run("action List WO + non-WO child", schema.Schema{Attributes: map[string]schema.Attribute{"obj": schema.ListNestedAttribute{Optional: true, WriteOnly: true, NestedObject: schema.NestedAttributeObject{Attributes: nonWO}}}})
+	run("action Map WO + non-WO child", schema.Schema{Attributes: map[string]schema.Attribute{"obj": schema.MapNestedAttribute{Optional: true, WriteOnly: true, NestedObject: schema.NestedAttributeObject{Attributes: nonWO}}}})
+	run("action Single WO + WO child", schema.Schema{Attributes: map[string]schema.Attribute{"obj": schema.SingleNestedAttribute{Optional: true, WriteOnly: true, Attributes: wo}}})
+	run("action SingleNestedBlock + WO child", schema.Schema{Blocks: map[string]schema.Block{"blk": schema.SingleNestedBlock{Attributes: wo}}})
+	run("action Set nested attr + WO child", schema.Schema{Attributes: map[string]schema.Attribute{"set": schema.SetNestedAttribute{Optional: true, NestedObject: schema.NestedAttributeObject{Attributes: wo}}}})
+	run("action Set nested block + WO child", schema.Schema{Blocks: map[string]schema.Block{"set": schema.SetNestedBlock{NestedObject: schema.NestedBlockObject{Attributes: wo}}}})
+	run("action List nested block + WO child", schema.Schema{Blocks: map[string]schema.Block{"lst": schema.ListNestedBlock{NestedObject: schema.NestedBlockObject{Attributes: wo}}}})
+	rnonWO := map[string]rschema.Attribute{"s": rschema.StringAttribute{Optional: true}}
+	rwo := map[string]rschema.Attribute{"s": rschema.StringAttribute{Optional: true, WriteOnly: true}}
+	rrun("resource Single WO + non-WO child", rschema.Schema{Attributes: map[string]rschema.Attribute{"obj": rschema.SingleNestedAttribute{Optional: true, WriteOnly: true, Attributes: rnonWO}}})
+	rrun("resource Set nested attr + WO child", rschema.Schema{Attributes: map[string]rschema.Attribute{"set": rschema.SetNestedAttribute{Optional: true, NestedObject: rschema.NestedAttributeObject{Attributes: rwo}}}})
+	rrun("resource Set nested block + WO child", rschema.Schema{Blocks: map[string]rschema.Block{"set": rschema.SetNestedBlock{NestedObject: rschema.NestedBlockObject{Attributes: rwo}}}})
+}

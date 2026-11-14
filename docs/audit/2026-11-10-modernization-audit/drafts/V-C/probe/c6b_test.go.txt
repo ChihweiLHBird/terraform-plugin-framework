@@ -1,0 +1,24 @@
+package vcprobe
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+func TestC6b(t *testing.T) {
+	ctx := context.Background()
+	var s string
+	vCalls.Store(0)
+	d := tfsdk.ValueFrom(ctx, "a", vStrType{}, &s)
+	t.Logf("tfsdk.ValueFrom(\"a\", vStrType, *string): calls=%d n=%d %s s=%q", vCalls.Load(), len(d), dump(d), s)
+	var av attr.Value
+	vCalls.Store(0)
+	d = tfsdk.ValueFrom(ctx, "a", vStrType{}, &av)
+	t.Logf("tfsdk.ValueFrom(\"a\", vStrType, *attr.Value): calls=%d n=%d %s", vCalls.Load(), len(d), dump(d))
+	vCalls.Store(0)
+	d = tfsdk.ValueAs(ctx, vStr{}, &av)
+	t.Logf("tfsdk.ValueAs(vStr, *attr.Value): calls=%d n=%d", vCalls.Load(), len(d))
+}

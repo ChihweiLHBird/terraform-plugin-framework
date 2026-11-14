@@ -1,0 +1,451 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server.go b/internal/fwserver/server.go
+--- a/internal/fwserver/server.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server.go	2026-11-10 21:02:54.834874681 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 	"fmt"
++	"slices"
+ 	"sync"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/action"
+@@ -322,7 +323,7 @@
+ 	defer s.dataSourceTypesMutex.Unlock()
+ 
+ 	if s.dataSourceFuncs != nil {
+-		return s.dataSourceFuncs, s.dataSourceTypesDiags
++		return s.dataSourceFuncs, slices.Clip(s.dataSourceTypesDiags)
+ 	}
+ 
+ 	providerTypeName := s.ProviderTypeName(ctx)
+@@ -366,7 +367,7 @@
+ 		s.dataSourceFuncs[dataSourceTypeNameResp.TypeName] = dataSourceFunc
+ 	}
+ 
+-	return s.dataSourceFuncs, s.dataSourceTypesDiags
++	return s.dataSourceFuncs, slices.Clip(s.dataSourceTypesDiags)
+ }
+ 
+ // DataSourceMetadatas returns a slice of DataSourceMetadata for the GetMetadata
+@@ -597,7 +598,7 @@
+ 	defer s.resourceBehaviorsMutex.Unlock()
+ 
+ 	if s.resourceBehaviors != nil {
+-		return s.resourceBehaviors, s.resourceBehaviorsDiags
++		return s.resourceBehaviors, slices.Clip(s.resourceBehaviorsDiags)
+ 	}
+ 
+ 	providerTypeName := s.ProviderTypeName(ctx)
+@@ -640,7 +641,7 @@
+ 		s.resourceBehaviors[metadataResponse.TypeName] = metadataResponse.ResourceBehavior
+ 	}
+ 
+-	return s.resourceBehaviors, s.resourceBehaviorsDiags
++	return s.resourceBehaviors, slices.Clip(s.resourceBehaviorsDiags)
+ }
+ 
+ // ResourceFuncs returns a map of Resource functions. The results are cached
+@@ -651,7 +652,7 @@
+ 	defer s.resourceTypesMutex.Unlock()
+ 
+ 	if s.resourceFuncs != nil {
+-		return s.resourceFuncs, s.resourceTypesDiags
++		return s.resourceFuncs, slices.Clip(s.resourceTypesDiags)
+ 	}
+ 
+ 	providerTypeName := s.ProviderTypeName(ctx)
+@@ -695,7 +696,7 @@
+ 		s.resourceFuncs[resourceTypeNameResp.TypeName] = resourceFunc
+ 	}
+ 
+-	return s.resourceFuncs, s.resourceTypesDiags
++	return s.resourceFuncs, slices.Clip(s.resourceTypesDiags)
+ }
+ 
+ // ResourceMetadatas returns a slice of ResourceMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_actions.go b/internal/fwserver/server_actions.go
+--- a/internal/fwserver/server_actions.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server_actions.go	2026-11-10 21:02:54.826874680 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 	"fmt"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/action"
+ 	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
+@@ -40,7 +41,7 @@
+ 	defer s.actionFuncsMutex.Unlock()
+ 
+ 	if s.actionFuncs != nil {
+-		return s.actionFuncs, s.actionFuncsDiags
++		return s.actionFuncs, slices.Clip(s.actionFuncsDiags)
+ 	}
+ 
+ 	providerTypeName := s.ProviderTypeName(ctx)
+@@ -50,7 +51,7 @@
+ 	if !ok {
+ 		// Only action specific RPCs should return diagnostics about the
+ 		// provider not implementing actions or missing actions.
+-		return s.actionFuncs, s.actionFuncsDiags
++		return s.actionFuncs, slices.Clip(s.actionFuncsDiags)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined Actions")
+@@ -91,7 +92,7 @@
+ 		s.actionFuncs[actionTypeResp.TypeName] = actionFunc
+ 	}
+ 
+-	return s.actionFuncs, s.actionFuncsDiags
++	return s.actionFuncs, slices.Clip(s.actionFuncsDiags)
+ }
+ 
+ // ActionMetadatas returns a slice of ActionMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_applyresourcechange.go b/internal/fwserver/server_applyresourcechange.go
+--- a/internal/fwserver/server_applyresourcechange.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server_applyresourcechange.go	2026-11-10 21:14:29.570894453 +0000
+@@ -62,7 +62,7 @@
+ 
+ 		s.CreateResource(ctx, createReq, createResp)
+ 
+-		resp.Diagnostics = createResp.Diagnostics
++		resp.Diagnostics.Append(createResp.Diagnostics...)
+ 		resp.NewState = createResp.NewState
+ 		resp.NewIdentity = createResp.NewIdentity
+ 		resp.Private = createResp.Private
+@@ -90,7 +90,7 @@
+ 
+ 		s.DeleteResource(ctx, deleteReq, deleteResp)
+ 
+-		resp.Diagnostics = deleteResp.Diagnostics
++		resp.Diagnostics.Append(deleteResp.Diagnostics...)
+ 		resp.NewState = deleteResp.NewState
+ 		resp.NewIdentity = deleteResp.NewIdentity
+ 		resp.Private = deleteResp.Private
+@@ -117,7 +117,7 @@
+ 
+ 	s.UpdateResource(ctx, updateReq, updateResp)
+ 
+-	resp.Diagnostics = updateResp.Diagnostics
++	resp.Diagnostics.Append(updateResp.Diagnostics...)
+ 	resp.NewState = updateResp.NewState
+ 	resp.NewIdentity = updateResp.NewIdentity
+ 	resp.Private = updateResp.Private
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_closeephemeralresource.go b/internal/fwserver/server_closeephemeralresource.go
+--- a/internal/fwserver/server_closeephemeralresource.go	2026-10-24 21:30:10.519597580 +0000
++++ b/internal/fwserver/server_closeephemeralresource.go	2026-11-10 21:02:14.722416790 +0000
+@@ -72,5 +72,5 @@
+ 	resourceWithClose.Close(ctx, closeReq, &closeResp)
+ 	logging.FrameworkTrace(ctx, "Called provider defined EphemeralResource Close")
+ 
+-	resp.Diagnostics = closeResp.Diagnostics
++	resp.Diagnostics.Append(closeResp.Diagnostics...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_createresource.go b/internal/fwserver/server_createresource.go
+--- a/internal/fwserver/server_createresource.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_createresource.go	2026-11-10 21:02:14.721202683 +0000
+@@ -127,7 +127,7 @@
+ 	req.Resource.Create(ctx, createReq, &createResp)
+ 	logging.FrameworkTrace(ctx, "Called provider defined Resource Create")
+ 
+-	resp.Diagnostics = createResp.Diagnostics
++	resp.Diagnostics.Append(createResp.Diagnostics...)
+ 	resp.NewState = &createResp.State
+ 	resp.NewIdentity = createResp.Identity
+ 
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_deleteresource.go b/internal/fwserver/server_deleteresource.go
+--- a/internal/fwserver/server_deleteresource.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_deleteresource.go	2026-11-10 21:02:14.721884318 +0000
+@@ -144,7 +144,7 @@
+ 		}
+ 	}
+ 
+-	resp.Diagnostics = deleteResp.Diagnostics
++	resp.Diagnostics.Append(deleteResp.Diagnostics...)
+ 	resp.NewState = &deleteResp.State
+ 	resp.NewIdentity = deleteResp.Identity
+ 
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_ephemeralresources.go b/internal/fwserver/server_ephemeralresources.go
+--- a/internal/fwserver/server_ephemeralresources.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_ephemeralresources.go	2026-11-10 21:02:54.902874685 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 	"fmt"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
+@@ -40,7 +41,7 @@
+ 	defer s.ephemeralResourceFuncsMutex.Unlock()
+ 
+ 	if s.ephemeralResourceFuncs != nil {
+-		return s.ephemeralResourceFuncs, s.ephemeralResourceFuncsDiags
++		return s.ephemeralResourceFuncs, slices.Clip(s.ephemeralResourceFuncsDiags)
+ 	}
+ 
+ 	providerTypeName := s.ProviderTypeName(ctx)
+@@ -51,7 +52,7 @@
+ 	if !ok {
+ 		// Only ephemeral resource specific RPCs should return diagnostics about the
+ 		// provider not implementing ephemeral resources or missing ephemeral resources.
+-		return s.ephemeralResourceFuncs, s.ephemeralResourceFuncsDiags
++		return s.ephemeralResourceFuncs, slices.Clip(s.ephemeralResourceFuncsDiags)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined Provider EphemeralResources")
+@@ -92,7 +93,7 @@
+ 		s.ephemeralResourceFuncs[ephemeralResourceTypeNameResp.TypeName] = ephemeralResourceFunc
+ 	}
+ 
+-	return s.ephemeralResourceFuncs, s.ephemeralResourceFuncsDiags
++	return s.ephemeralResourceFuncs, slices.Clip(s.ephemeralResourceFuncsDiags)
+ }
+ 
+ // EphemeralResourceMetadatas returns a slice of EphemeralResourceMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_functions.go b/internal/fwserver/server_functions.go
+--- a/internal/fwserver/server_functions.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_functions.go	2026-11-10 21:02:54.906874685 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 	"fmt"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/function"
+@@ -126,7 +127,7 @@
+ 	defer s.functionFuncsMutex.Unlock()
+ 
+ 	if s.functionFuncs != nil {
+-		return s.functionFuncs, s.functionFuncsDiags
++		return s.functionFuncs, slices.Clip(s.functionFuncsDiags)
+ 	}
+ 
+ 	s.functionFuncs = make(map[string]func() function.Function)
+@@ -136,7 +137,7 @@
+ 	if !ok {
+ 		// Only function-specific RPCs should return diagnostics about the
+ 		// provider not implementing functions or missing functions.
+-		return s.functionFuncs, s.functionFuncsDiags
++		return s.functionFuncs, slices.Clip(s.functionFuncsDiags)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined Provider Functions")
+@@ -175,7 +176,7 @@
+ 		s.functionFuncs[metadataResp.Name] = functionFunc
+ 	}
+ 
+-	return s.functionFuncs, s.functionFuncsDiags
++	return s.functionFuncs, slices.Clip(s.functionFuncsDiags)
+ }
+ 
+ // FunctionMetadatas returns a slice of FunctionMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_importresourcestate.go b/internal/fwserver/server_importresourcestate.go
+--- a/internal/fwserver/server_importresourcestate.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_importresourcestate.go	2026-11-10 21:01:43.213674610 +0000
+@@ -84,6 +84,7 @@
+ 					Raw:    tftypes.NewValue(req.EmptyState.Schema.Type().TerraformType(ctx), tftypes.UnknownValue),
+ 					Schema: req.EmptyState.Schema,
+ 				},
++				Identity: req.Identity,
+ 				TypeName: req.TypeName,
+ 				Private:  &privatestate.Data{},
+ 			},
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_invokeaction.go b/internal/fwserver/server_invokeaction.go
+--- a/internal/fwserver/server_invokeaction.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_invokeaction.go	2026-11-10 21:02:14.722536724 +0000
+@@ -83,5 +83,5 @@
+ 	req.Action.Invoke(ctx, invokeReq, &invokeResp)
+ 	logging.FrameworkTrace(ctx, "Called provider defined Action Invoke")
+ 
+-	resp.Diagnostics = invokeResp.Diagnostics
++	resp.Diagnostics.Append(invokeResp.Diagnostics...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_listresources.go b/internal/fwserver/server_listresources.go
+--- a/internal/fwserver/server_listresources.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_listresources.go	2026-11-10 21:02:54.970874689 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 	"fmt"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+@@ -44,7 +45,7 @@
+ 	defer s.listResourceFuncsMutex.Unlock()
+ 
+ 	if s.listResourceFuncs != nil {
+-		return s.listResourceFuncs, s.listResourceFuncsDiags
++		return s.listResourceFuncs, slices.Clip(s.listResourceFuncsDiags)
+ 	}
+ 
+ 	providerTypeName := s.ProviderTypeName(ctx)
+@@ -112,7 +113,7 @@
+ 		s.listResourceFuncs[typeName] = listResourceFunc
+ 	}
+ 
+-	return s.listResourceFuncs, s.listResourceFuncsDiags
++	return s.listResourceFuncs, slices.Clip(s.listResourceFuncsDiags)
+ }
+ 
+ // ListResourceMetadatas returns a slice of ListResourceMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_openephemeralresource.go b/internal/fwserver/server_openephemeralresource.go
+--- a/internal/fwserver/server_openephemeralresource.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_openephemeralresource.go	2026-11-10 21:02:14.722169119 +0000
+@@ -101,7 +101,7 @@
+ 	req.EphemeralResource.Open(ctx, openReq, &openResp)
+ 	logging.FrameworkTrace(ctx, "Called provider defined EphemeralResource Open")
+ 
+-	resp.Diagnostics = openResp.Diagnostics
++	resp.Diagnostics.Append(openResp.Diagnostics...)
+ 	resp.Result = &openResp.Result
+ 	resp.RenewAt = openResp.RenewAt
+ 	resp.Deferred = openResp.Deferred
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_planresourcechange.go b/internal/fwserver/server_planresourcechange.go
+--- a/internal/fwserver/server_planresourcechange.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_planresourcechange.go	2026-11-10 21:01:43.214043071 +0000
+@@ -353,22 +353,22 @@
+ 		resp.RequiresReplace = append(resp.RequiresReplace, modifyPlanResp.RequiresReplace...)
+ 		resp.PlannedPrivate.Provider = modifyPlanResp.Private
+ 		resp.Deferred = modifyPlanResp.Deferred
++	}
+ 
+-		// Provider deferred response is present, add the deferred response alongside the provider-modified plan
+-		if s.deferred != nil {
+-			logging.FrameworkDebug(ctx, "Provider has deferred response configured, returning deferred response with modified plan.")
+-			// Only set the response to the provider configured deferred reason if there is no resource configured deferred reason
+-			if resp.Deferred == nil {
+-				resp.Deferred = &resource.Deferred{
+-					Reason: resource.DeferredReason(s.deferred.Reason),
+-				}
+-			} else {
+-				logging.FrameworkDebug(ctx, fmt.Sprintf("Resource has deferred reason configured, "+
+-					"replacing provider deferred reason: %s with resource deferred reason: %s",
+-					s.deferred.Reason.String(), modifyPlanResp.Deferred.Reason.String()))
++	// Provider deferred response is present, add the deferred response alongside the provider-modified plan
++	if s.deferred != nil {
++		logging.FrameworkDebug(ctx, "Provider has deferred response configured, returning deferred response with modified plan.")
++		// Only set the response to the provider configured deferred reason if there is no resource configured deferred reason
++		if resp.Deferred == nil {
++			resp.Deferred = &resource.Deferred{
++				Reason: resource.DeferredReason(s.deferred.Reason),
+ 			}
+-			return
++		} else {
++			logging.FrameworkDebug(ctx, fmt.Sprintf("Resource has deferred reason configured, "+
++				"replacing provider deferred reason: %s with resource deferred reason: %s",
++				s.deferred.Reason.String(), resp.Deferred.Reason.String()))
+ 		}
++		return
+ 	}
+ 
+ 	if resp.PlannedIdentity != nil {
+@@ -413,7 +413,7 @@
+ 
+ func MarkComputedNilsAsUnknown(ctx context.Context, config tftypes.Value, resourceSchema fwschema.Schema) func(*tftypes.AttributePath, tftypes.Value) (tftypes.Value, error) {
+ 	return func(path *tftypes.AttributePath, val tftypes.Value) (tftypes.Value, error) {
+-		ctx = logging.FrameworkWithAttributePath(ctx, path.String())
++		ctx := logging.FrameworkWithAttributePath(ctx, path.String())
+ 
+ 		// we are only modifying attributes, not the entire resource
+ 		if len(path.Steps()) < 1 {
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readdatasource.go b/internal/fwserver/server_readdatasource.go
+--- a/internal/fwserver/server_readdatasource.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_readdatasource.go	2026-11-10 21:02:14.722021772 +0000
+@@ -103,7 +103,7 @@
+ 	req.DataSource.Read(ctx, readReq, &readResp)
+ 	logging.FrameworkTrace(ctx, "Called provider defined DataSource Read")
+ 
+-	resp.Diagnostics = readResp.Diagnostics
++	resp.Diagnostics.Append(readResp.Diagnostics...)
+ 	resp.State = &readResp.State
+ 	resp.Deferred = readResp.Deferred
+ 
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readresource.go b/internal/fwserver/server_readresource.go
+--- a/internal/fwserver/server_readresource.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_readresource.go	2026-11-10 21:02:14.721470923 +0000
+@@ -156,7 +156,7 @@
+ 	req.Resource.Read(ctx, readReq, &readResp)
+ 	logging.FrameworkTrace(ctx, "Called provider defined Resource Read")
+ 
+-	resp.Diagnostics = readResp.Diagnostics
++	resp.Diagnostics.Append(readResp.Diagnostics...)
+ 	resp.NewState = &readResp.State
+ 	resp.NewIdentity = readResp.Identity
+ 	resp.Deferred = readResp.Deferred
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_renewephemeralresource.go b/internal/fwserver/server_renewephemeralresource.go
+--- a/internal/fwserver/server_renewephemeralresource.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_renewephemeralresource.go	2026-11-10 21:02:14.722298253 +0000
+@@ -89,7 +89,7 @@
+ 	resourceWithRenew.Renew(ctx, renewReq, &renewResp)
+ 	logging.FrameworkTrace(ctx, "Called provider defined EphemeralResource Renew")
+ 
+-	resp.Diagnostics = renewResp.Diagnostics
++	resp.Diagnostics.Append(renewResp.Diagnostics...)
+ 	resp.RenewAt = renewResp.RenewAt
+ 
+ 	if renewResp.Private != nil {
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_statestore.go b/internal/fwserver/server_statestore.go
+--- a/internal/fwserver/server_statestore.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_statestore.go	2026-11-10 21:02:55.126874698 +0000
+@@ -6,6 +6,7 @@
+ import (
+ 	"context"
+ 	"fmt"
++	"slices"
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+@@ -40,7 +41,7 @@
+ 	defer s.statestoreFuncsMutex.Unlock()
+ 
+ 	if s.statestoreFuncs != nil {
+-		return s.statestoreFuncs, s.statestoreFuncsDiags
++		return s.statestoreFuncs, slices.Clip(s.statestoreFuncsDiags)
+ 	}
+ 
+ 	providerTypeName := s.ProviderTypeName(ctx)
+@@ -50,7 +51,7 @@
+ 	if !ok {
+ 		// Only state store specific RPCs should return diagnostics about the
+ 		// provider not implementing state stores or missing state stores.
+-		return s.statestoreFuncs, s.statestoreFuncsDiags
++		return s.statestoreFuncs, slices.Clip(s.statestoreFuncsDiags)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined StateStores")
+@@ -91,7 +92,7 @@
+ 		s.statestoreFuncs[statestoreTypeResp.TypeName] = statestoreFunc
+ 	}
+ 
+-	return s.statestoreFuncs, s.statestoreFuncsDiags
++	return s.statestoreFuncs, slices.Clip(s.statestoreFuncsDiags)
+ }
+ 
+ // StateStoreMetadatas returns a slice of StateStoreMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_updateresource.go b/internal/fwserver/server_updateresource.go
+--- a/internal/fwserver/server_updateresource.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_updateresource.go	2026-11-10 21:02:14.721694461 +0000
+@@ -150,7 +150,7 @@
+ 	req.Resource.Update(ctx, updateReq, &updateResp)
+ 	logging.FrameworkTrace(ctx, "Called provider defined Resource Update")
+ 
+-	resp.Diagnostics = updateResp.Diagnostics
++	resp.Diagnostics.Append(updateResp.Diagnostics...)
+ 	resp.NewState = &updateResp.State
+ 	resp.NewIdentity = updateResp.Identity
+ 
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/write_only_nullification.go b/internal/fwserver/write_only_nullification.go
+--- a/internal/fwserver/write_only_nullification.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/write_only_nullification.go	2026-11-10 21:01:43.214161410 +0000
+@@ -21,7 +21,7 @@
+ // manually by the provider developers, but the Framework is handling it instead for convenience.
+ func NullifyWriteOnlyAttributes(ctx context.Context, resourceSchema fwschema.Schema) func(*tftypes.AttributePath, tftypes.Value) (tftypes.Value, error) {
+ 	return func(path *tftypes.AttributePath, val tftypes.Value) (tftypes.Value, error) {
+-		ctx = logging.FrameworkWithAttributePath(ctx, path.String())
++		ctx := logging.FrameworkWithAttributePath(ctx, path.String())
+ 
+ 		// we are only modifying attributes, not the entire resource
+ 		if len(path.Steps()) < 1 {

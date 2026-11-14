@@ -1,0 +1,69 @@
+package fwserver_test
+
+import (
+	"bytes"
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"github.com/hashicorp/terraform-plugin-log/tfsdklogtest"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func TestProbeB1LogPath(t *testing.T) {
+	t.Parallel()
+	pm := func(d string) planmodifier.List {
+		return testplanmodifier.List{DescriptionMethod: func(context.Context) string { return d }}
+	}
+	v := func(d string) validator.List {
+		return testvalidator.List{DescriptionMethod: func(context.Context) string { return d }}
+	}
+	s := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"attr_list": schema.ListAttribute{ElementType: types.StringType, Optional: true, PlanModifiers: []planmodifier.List{pm("attr-pm")}, Validators: []validator.List{v("attr-v")}},
+		},
+		Blocks: map[string]schema.Block{
+			"blk_list": schema.ListNestedBlock{PlanModifiers: []planmodifier.List{pm("block-pm")}, Validators: []validator.List{v("block-v")},
+				NestedObject: schema.NestedBlockObject{Attributes: map[string]schema.Attribute{"a": schema.StringAttribute{Optional: true}}}},
+		},
+	}
+	elemT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"a": tftypes.String}}
+	rootT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"attr_list": tftypes.List{ElementType: tftypes.String}, "blk_list": tftypes.List{ElementType: elemT}}}
+	val := tftypes.NewValue(rootT, map[string]tftypes.Value{
+		"attr_list": tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{tftypes.NewValue(tftypes.String, "x")}),
+		"blk_list":  tftypes.NewValue(tftypes.List{ElementType: elemT}, []tftypes.Value{tftypes.NewValue(elemT, map[string]tftypes.Value{"a": tftypes.NewValue(tftypes.String, "y")})}),
+	})
+	var output bytes.Buffer
+	ctx := tfsdklogtest.RootLogger(context.Background(), &output)
+	ctx = logging.InitContext(ctx)
+	server := &fwserver.Server{Provider: &testprovider.Provider{}}
+	server.ValidateResourceConfig(ctx, &fwserver.ValidateResourceConfigRequest{
+		Config: &tfsdk.Config{Raw: val, Schema: s}, Resource: &testprovider.Resource{},
+		ClientCapabilities: resource.ValidateConfigClientCapabilities{WriteOnlyAttributesAllowed: true},
+	}, &fwserver.ValidateResourceConfigResponse{})
+	server.PlanResourceChange(ctx, &fwserver.PlanResourceChangeRequest{
+		Config: &tfsdk.Config{Raw: val, Schema: s}, ProposedNewState: &tfsdk.Plan{Raw: val, Schema: s},
+		PriorState: &tfsdk.State{Raw: tftypes.NewValue(rootT, nil), Schema: s}, ResourceSchema: s, Resource: &testprovider.Resource{},
+	}, &fwserver.PlanResourceChangeResponse{})
+	entries, err := tfsdklogtest.MultilineJSONDecode(&output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		msg, _ := e["@message"].(string)
+		if msg == "Calling provider defined planmodifier.List" || msg == "Calling provider defined validator.List" {
+			t.Logf("%-45s description=%-9v tf_attribute_path=%v", msg, e["description"], e["tf_attribute_path"])
+		}
+	}
+}

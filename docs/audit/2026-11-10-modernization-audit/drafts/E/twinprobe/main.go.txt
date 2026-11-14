@@ -1,0 +1,85 @@
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/printer"
+	"go/token"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+)
+
+// usage: twinprobe dir kind(value|type) names...
+func main() {
+	dir := os.Args[1]
+	kind := os.Args[2]
+	names := os.Args[3:]
+	// funcKey -> name -> normalized source
+	table := map[string]map[string]string{}
+	for _, n := range names {
+		T := strings.ToUpper(n[:1]) + n[1:]
+		fset := token.NewFileSet()
+		f, err := parser.ParseFile(fset, filepath.Join(dir, n+"_"+kind+".go"), nil, parser.ParseComments)
+		if err != nil {
+			panic(err)
+		}
+		for _, d := range f.Decls {
+			fd, ok := d.(*ast.FuncDecl)
+			if !ok {
+				continue
+			}
+			fd.Doc = nil
+			if fd.Recv != nil && len(fd.Recv.List) > 0 && len(fd.Recv.List[0].Names) > 0 {
+				rid := fd.Recv.List[0].Names[0]
+				obj := rid.Obj
+				ast.Inspect(fd, func(nd ast.Node) bool {
+					if id, ok := nd.(*ast.Ident); ok && id.Obj != nil && id.Obj == obj {
+						id.Name = "r"
+					}
+					return true
+				})
+				rid.Name = "r"
+			}
+			var buf bytes.Buffer
+			printer.Fprint(&buf, fset, fd)
+			src := buf.String()
+			src = strings.ReplaceAll(src, T, "XX")
+			src = strings.ReplaceAll(src, n, "xx")
+			key := strings.ReplaceAll(strings.ReplaceAll(fd.Name.Name, T, "XX"), n, "xx")
+			if table[key] == nil {
+				table[key] = map[string]string{}
+			}
+			table[key][n] = src
+		}
+	}
+	keys := make([]string, 0, len(table))
+	for k := range table {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		// group identical bodies
+		groups := map[string][]string{}
+		for _, n := range names {
+			if s, ok := table[k][n]; ok {
+				groups[s] = append(groups[s], n)
+			}
+		}
+		var gl []string
+		for s, ns := range groups {
+			gl = append(gl, fmt.Sprintf("%v(%d lines)", ns, strings.Count(s, "\n")+1))
+		}
+		sort.Strings(gl)
+		fmt.Printf("%-40s %d variants: %s\n", k, len(groups), strings.Join(gl, " | "))
+	}
+	if len(os.Getenv("DUMP")) > 0 {
+		k := os.Getenv("DUMP")
+		for _, n := range names {
+			fmt.Printf("---- %s\n%s\n", n, table[k][n])
+		}
+	}
+}

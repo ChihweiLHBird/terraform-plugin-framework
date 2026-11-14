@@ -1,0 +1,38 @@
+package vcprobe
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+func TestC4(t *testing.T) {
+	ctx := context.Background()
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{
+		"_internal": schema.StringAttribute{Optional: true},
+		"id":        schema.StringAttribute{Computed: true},
+	}}
+	t.Logf("ValidateImplementation diags: %v", sch.ValidateImplementation(ctx))
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"_internal": tftypes.String, "id": tftypes.String}}
+	raw := tftypes.NewValue(objT, map[string]tftypes.Value{"_internal": tftypes.NewValue(tftypes.String, "v"), "id": tftypes.NewValue(tftypes.String, "i")})
+	type m struct {
+		Internal types.String `tfsdk:"_internal"`
+		ID       types.String `tfsdk:"id"`
+	}
+	st := tfsdk.State{Schema: sch, Raw: raw}
+	var x m
+	d := st.Get(ctx, &x)
+	t.Logf("Get: n=%d %s", len(d), dump(d))
+	if len(d) > 0 {
+		t.Logf("Get detail: %q", d[0].Detail())
+	}
+	d = st.Set(ctx, &m{Internal: types.StringValue("a"), ID: types.StringValue("b")})
+	t.Logf("Set: n=%d %s", len(d), dump(d))
+	var s types.String
+	d = st.GetAttribute(ctx, pathRoot("_internal"), &s)
+	t.Logf("GetAttribute(_internal) into types.String: n=%d val=%v", len(d), s)
+}

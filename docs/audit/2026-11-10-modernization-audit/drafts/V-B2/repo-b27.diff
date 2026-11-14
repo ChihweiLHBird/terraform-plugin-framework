@@ -1,0 +1,24 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_upgraderesourcestate.go b/internal/fwserver/server_upgraderesourcestate.go
+--- a/internal/fwserver/server_upgraderesourcestate.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_upgraderesourcestate.go	2026-11-10 21:44:59.092245120 +0000
+@@ -101,9 +101,19 @@
+ 			return
+ 		}
+ 
++		// Set any write-only attributes in the state to null
++		modifiedState, err := tftypes.Transform(rawStateValue, NullifyWriteOnlyAttributes(ctx, req.ResourceSchema))
++		if err != nil {
++			resp.Diagnostics.AddError(
++				"Error Modifying Upgraded Resource State",
++				"There was an unexpected error modifying the Upgraded Resource State. This is always a problem with the provider. Please report the following to the provider developer:\n\n"+err.Error(),
++			)
++			return
++		}
++
+ 		resp.UpgradedState = &tfsdk.State{
+ 			Schema: req.ResourceSchema,
+-			Raw:    rawStateValue,
++			Raw:    modifiedState,
+ 		}
+ 
+ 		return

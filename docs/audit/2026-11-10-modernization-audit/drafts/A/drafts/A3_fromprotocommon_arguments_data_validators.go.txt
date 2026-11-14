@@ -1,0 +1,362 @@
+// Copyright IBM Corp. 2021, 2026
+// SPDX-License-Identifier: MPL-2.0
+
+package fromprotocommon
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
+// ArgumentsData returns the ArgumentsData for numArguments protocol function
+// arguments and a function.Definition. It holds the protocol-version-neutral
+// logic shared by fromproto5.ArgumentsData and fromproto6.ArgumentsData: unmarshal
+// is called once per argument, in position order, with the Terraform type of the
+// parameter at that position, and must return the unmarshalled argument value.
+func ArgumentsData(ctx context.Context, numArguments int, unmarshal func(position int, typ tftypes.Type) (tftypes.Value, error), definition function.Definition) (function.ArgumentsData, *function.FuncError) {
+	if definition.VariadicParameter == nil && numArguments != len(definition.Parameters) {
+		return function.NewArgumentsData(nil), function.NewFuncError(
+			"Unexpected Function Arguments Data: " +
+				"The provider received an unexpected number of function arguments from Terraform for the given function definition. " +
+				"This is always an issue in terraform-plugin-framework or Terraform itself and should be reported to the provider developers.\n\n" +
+				fmt.Sprintf("Expected function arguments: %d\n", len(definition.Parameters)) +
+				fmt.Sprintf("Given function arguments: %d", numArguments),
+		)
+	}
+
+	// Expect at least all parameters to have corresponding arguments. Variadic
+	// parameter might have 0 to n arguments, which is why it is not checked in
+	// this case.
+	if numArguments < len(definition.Parameters) {
+		return function.NewArgumentsData(nil), function.NewFuncError(
+			"Unexpected Function Arguments Data: " +
+				"The provider received an unexpected number of function arguments from Terraform for the given function definition. " +
+				"This is always an issue in terraform-plugin-framework or Terraform itself and should be reported to the provider developers.\n\n" +
+				fmt.Sprintf("Expected minimum function arguments: %d\n", len(definition.Parameters)) +
+				fmt.Sprintf("Given function arguments: %d", numArguments),
+		)
+	}
+
+	if definition.VariadicParameter == nil && numArguments == 0 {
+		return function.NewArgumentsData(nil), nil
+	}
+
+	// Variadic values are collected as a separate tuple to ease developer usage.
+	argumentValues := make([]attr.Value, 0, len(definition.Parameters))
+	variadicValues := make([]attr.Value, 0, numArguments-len(definition.Parameters))
+	var funcError *function.FuncError
+
+	for position := range numArguments {
+		var parameter function.Parameter
+		pos := int64(position)
+
+		switch {
+		case definition.VariadicParameter != nil && position >= len(definition.Parameters):
+			parameter = definition.VariadicParameter
+		default:
+			parameter = definition.Parameters[position]
+		}
+
+		parameterType := parameter.GetType()
+
+		if parameterType == nil {
+			funcError = function.ConcatFuncErrors(funcError, function.NewArgumentFuncError(
+				pos,
+				"Unable to Convert Function Argument: "+
+					"An unexpected error was encountered when converting the function argument from the protocol type. "+
+					"This is always an issue in terraform-plugin-framework used to implement the provider and should be reported to the provider developers.\n\n"+
+					"Please report this to the provider developer:\n\n"+
+					fmt.Sprintf("Parameter type missing at position %d", position),
+			))
+
+			return function.NewArgumentsData(nil), funcError
+		}
+
+		tfValue, err := unmarshal(position, parameterType.TerraformType(ctx))
+
+		if err != nil {
+			funcError = function.ConcatFuncErrors(funcError, function.NewArgumentFuncError(
+				pos,
+				"Unable to Convert Function Argument: "+
+					"An unexpected error was encountered when converting the function argument from the protocol type. "+
+					"This is always an issue in terraform-plugin-framework used to implement the provider and should be reported to the provider developers.\n\n"+
+					"Please report this to the provider developer:\n\n"+
+					fmt.Sprintf("Unable to unmarshal DynamicValue at position %d: %s", position, err),
+			))
+
+			return function.NewArgumentsData(nil), funcError
+		}
+
+		attrValue, err := parameterType.ValueFromTerraform(ctx, tfValue)
+
+		if err != nil {
+			funcError = function.ConcatFuncErrors(funcError, function.NewArgumentFuncError(
+				pos,
+				"Unable to Convert Function Argument"+
+					"An unexpected error was encountered when converting the function argument from the protocol type. "+
+					"Please report this to the provider developer:\n\n"+
+					fmt.Sprintf("Unable to convert tftypes to framework type at position %d: %s", position, err),
+			))
+
+			return function.NewArgumentsData(nil), funcError
+		}
+
+		// This is intentionally below the conversion of tftypes.Value to attr.Value
+		// so it can be updated for any new type system validation interfaces. Note that the
+		// original xattr.TypeWithValidate interface must set a path.Path,
+		// which will always be incorrect in the context of functions.
+		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/589
+		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/893
+		switch t := attrValue.(type) {
+		case function.ValidateableParameter:
+			resp := function.ValidateParameterResponse{}
+
+			logging.FrameworkTrace(ctx, "Parameter value implements ValidateableParameter")
+			logging.FrameworkTrace(ctx, "Calling provider defined Value ValidateParameter")
+
+			t.ValidateParameter(ctx,
+				function.ValidateParameterRequest{
+					Position: pos,
+				},
+				&resp,
+			)
+
+			logging.FrameworkTrace(ctx, "Called provider defined Value ValidateParameter")
+
+			if resp.Error != nil {
+				funcError = function.ConcatFuncErrors(funcError, function.NewArgumentFuncError(
+					pos,
+					resp.Error.Error(),
+				))
+
+				continue
+			}
+		default:
+			//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+			if t, ok := parameterType.(xattr.TypeWithValidate); ok {
+				logging.FrameworkTrace(ctx, "Parameter type implements TypeWithValidate")
+				logging.FrameworkTrace(ctx, "Calling provider defined Type Validate")
+
+				diags := t.Validate(ctx, tfValue, path.Empty())
+
+				logging.FrameworkTrace(ctx, "Called provider defined Type Validate")
+
+				funcErrFromDiags := function.FuncErrorFromDiags(ctx, diags)
+
+				if funcErrFromDiags != nil {
+					funcError = function.ConcatFuncErrors(funcError, function.NewArgumentFuncError(
+						pos,
+						funcErrFromDiags.Error()))
+
+					continue
+				}
+			}
+		}
+
+		switch parameterWithValidators := parameter.(type) {
+		case function.ParameterWithBoolValidators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.BoolValuable", basetypes.BoolValuable.ToBoolValue,
+				func(ctx context.Context, v function.BoolParameterValidator, value basetypes.BoolValue) *function.FuncError {
+					resp := &function.BoolParameterValidatorResponse{}
+					v.ValidateParameterBool(ctx, function.BoolParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithDynamicValidators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.DynamicValuable", basetypes.DynamicValuable.ToDynamicValue,
+				func(ctx context.Context, v function.DynamicParameterValidator, value basetypes.DynamicValue) *function.FuncError {
+					resp := &function.DynamicParameterValidatorResponse{}
+					v.ValidateParameterDynamic(ctx, function.DynamicParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithFloat32Validators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.Float32Valuable", basetypes.Float32Valuable.ToFloat32Value,
+				func(ctx context.Context, v function.Float32ParameterValidator, value basetypes.Float32Value) *function.FuncError {
+					resp := &function.Float32ParameterValidatorResponse{}
+					v.ValidateParameterFloat32(ctx, function.Float32ParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithFloat64Validators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.Float64Valuable", basetypes.Float64Valuable.ToFloat64Value,
+				func(ctx context.Context, v function.Float64ParameterValidator, value basetypes.Float64Value) *function.FuncError {
+					resp := &function.Float64ParameterValidatorResponse{}
+					v.ValidateParameterFloat64(ctx, function.Float64ParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithInt32Validators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.Int32Valuable", basetypes.Int32Valuable.ToInt32Value,
+				func(ctx context.Context, v function.Int32ParameterValidator, value basetypes.Int32Value) *function.FuncError {
+					resp := &function.Int32ParameterValidatorResponse{}
+					v.ValidateParameterInt32(ctx, function.Int32ParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithInt64Validators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.Int64Valuable", basetypes.Int64Valuable.ToInt64Value,
+				func(ctx context.Context, v function.Int64ParameterValidator, value basetypes.Int64Value) *function.FuncError {
+					resp := &function.Int64ParameterValidatorResponse{}
+					v.ValidateParameterInt64(ctx, function.Int64ParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithListValidators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.ListValuable", basetypes.ListValuable.ToListValue,
+				func(ctx context.Context, v function.ListParameterValidator, value basetypes.ListValue) *function.FuncError {
+					resp := &function.ListParameterValidatorResponse{}
+					v.ValidateParameterList(ctx, function.ListParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithMapValidators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.MapValuable", basetypes.MapValuable.ToMapValue,
+				func(ctx context.Context, v function.MapParameterValidator, value basetypes.MapValue) *function.FuncError {
+					resp := &function.MapParameterValidatorResponse{}
+					v.ValidateParameterMap(ctx, function.MapParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithNumberValidators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.NumberValuable", basetypes.NumberValuable.ToNumberValue,
+				func(ctx context.Context, v function.NumberParameterValidator, value basetypes.NumberValue) *function.FuncError {
+					resp := &function.NumberParameterValidatorResponse{}
+					v.ValidateParameterNumber(ctx, function.NumberParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithObjectValidators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.ObjectValuable", basetypes.ObjectValuable.ToObjectValue,
+				func(ctx context.Context, v function.ObjectParameterValidator, value basetypes.ObjectValue) *function.FuncError {
+					resp := &function.ObjectParameterValidatorResponse{}
+					v.ValidateParameterObject(ctx, function.ObjectParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithSetValidators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.SetValuable", basetypes.SetValuable.ToSetValue,
+				func(ctx context.Context, v function.SetParameterValidator, value basetypes.SetValue) *function.FuncError {
+					resp := &function.SetParameterValidatorResponse{}
+					v.ValidateParameterSet(ctx, function.SetParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		case function.ParameterWithStringValidators:
+			funcError = function.ConcatFuncErrors(funcError, runParameterValidators(ctx, pos, attrValue, parameterWithValidators.GetValidators(), "basetypes.StringValuable", basetypes.StringValuable.ToStringValue,
+				func(ctx context.Context, v function.StringParameterValidator, value basetypes.StringValue) *function.FuncError {
+					resp := &function.StringParameterValidatorResponse{}
+					v.ValidateParameterString(ctx, function.StringParameterValidatorRequest{ArgumentPosition: pos, Value: value}, resp)
+					return resp.Error
+				},
+			))
+		}
+
+		if definition.VariadicParameter != nil && position >= len(definition.Parameters) {
+			variadicValues = append(variadicValues, attrValue)
+
+			continue
+		}
+
+		// Skip appending argument values if parameter validation raises an error.
+		if funcError != nil {
+			continue
+		}
+
+		argumentValues = append(argumentValues, attrValue)
+	}
+
+	if definition.VariadicParameter != nil {
+		// MAINTAINER NOTE: Variadic parameters are represented as individual arguments in the CallFunction RPC and Terraform core applies the variadic parameter
+		// type constraint to each argument individually. For developer convenience, the framework logic below, groups the variadic arguments into a
+		// framework Tuple where each element type of the tuple matches the variadic parameter type.
+		//
+		// Previously, this logic utilized a framework List with an element type that matched the variadic parameter type. Using a List presented an issue with dynamic
+		// variadic parameters, as each argument was allowed to be any type "individually", rather than having a single type constraint applied to all dynamic elements,
+		// like a cty.List in Terraform. This eventually results in an error attempting to create a tftypes.List with multiple element types (when unwrapping from a framework
+		// dynamic to a tftypes concrete value).
+		//
+		// While a framework List type can handle multiple dynamic values of different types (due to it's wrapping of dynamic values), `terraform-plugin-go` and `tftypes.List` cannot.
+		// Currently, the logic for retrieving argument data is dependent on the tftypes package to utilize the framework reflection logic, requiring us to apply a type constraint
+		// that is valid in Terraform core and `terraform-plugin-go`, which we are doing here with a Tuple.
+		variadicType := definition.VariadicParameter.GetType()
+		tupleTypes := make([]attr.Type, len(variadicValues))
+		tupleValues := make([]attr.Value, len(variadicValues))
+		for i, val := range variadicValues {
+			tupleTypes[i] = variadicType
+			tupleValues[i] = val
+		}
+
+		variadicValue, variadicValueDiags := basetypes.NewTupleValue(tupleTypes, tupleValues)
+
+		funcError = function.ConcatFuncErrors(funcError, function.FuncErrorFromDiags(ctx, variadicValueDiags))
+
+		if funcError != nil {
+			return function.NewArgumentsData(argumentValues), funcError
+		}
+
+		argumentValues = append(argumentValues, variadicValue)
+	}
+
+	return function.NewArgumentsData(argumentValues), funcError
+}
+
+// runParameterValidators runs every validator of a typed function parameter
+// against the argument value at position pos and returns the concatenation of
+// their errors. It replaces one identical loop per function.ParameterWith*Validators
+// interface: valuableName is only used in the error text when attrValue does not
+// implement Valuable, toValue converts the Valuable to the validator value type,
+// and validate calls the validator and returns its response error.
+func runParameterValidators[Valuable, Value, Validator any](
+	ctx context.Context,
+	pos int64,
+	attrValue attr.Value,
+	validators []Validator,
+	valuableName string,
+	toValue func(Valuable, context.Context) (Value, diag.Diagnostics),
+	validate func(context.Context, Validator, Value) *function.FuncError,
+) *function.FuncError {
+	var funcError *function.FuncError
+
+	for _, validator := range validators {
+		valuable, ok := attrValue.(Valuable)
+		if !ok {
+			funcError = function.ConcatFuncErrors(funcError, function.NewArgumentFuncError(
+				pos,
+				"Invalid Argument Type: "+
+					"An unexpected error was encountered when converting the function argument from the protocol type. "+
+					"This is always an issue in terraform-plugin-framework used to implement the provider and should be reported to the provider developers.\n\n"+
+					"Please report this to the provider developer:\n\n"+
+					fmt.Sprintf("Expected %s at position %d", valuableName, pos),
+			))
+
+			continue
+		}
+
+		value, diags := toValue(valuable, ctx)
+		if diags.HasError() {
+			funcError = function.ConcatFuncErrors(funcError, function.FuncErrorFromDiags(ctx, diags))
+
+			continue
+		}
+
+		if err := validate(ctx, validator, value); err != nil {
+			funcError = function.ConcatFuncErrors(funcError, function.NewArgumentFuncError(
+				pos,
+				err.Error(),
+			))
+		}
+	}
+
+	return funcError
+}

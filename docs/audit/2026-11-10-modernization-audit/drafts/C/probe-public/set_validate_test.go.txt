@@ -1,0 +1,64 @@
+package probepublic
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+var calls int
+
+type warnStringType struct{ basetypes.StringType }
+
+func (t warnStringType) Equal(o attr.Type) bool { _, ok := o.(warnStringType); return ok }
+func (t warnStringType) String() string         { return "warnStringType" }
+func (t warnStringType) ValueType(context.Context) attr.Value { return warnString{} }
+func (t warnStringType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+	return warnString{StringValue: in}, nil
+}
+func (t warnStringType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	v, err := t.StringType.ValueFromTerraform(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return warnString{StringValue: v.(basetypes.StringValue)}, nil
+}
+
+type warnString struct{ basetypes.StringValue }
+
+func (v warnString) Type(context.Context) attr.Type { return warnStringType{} }
+func (v warnString) Equal(o attr.Value) bool {
+	ov, ok := o.(warnString)
+	return ok && v.StringValue.Equal(ov.StringValue)
+}
+func (v warnString) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	calls++
+	resp.Diagnostics.AddAttributeWarning(req.Path, "custom warning", "value "+v.ValueString())
+}
+
+func TestSetValueFromValidation(t *testing.T) {
+	ctx := context.Background()
+	for _, tc := range []struct {
+		name string
+		fn   func() diag.Diagnostics
+	}{
+		{"types.SetValueFrom", func() diag.Diagnostics { _, d := types.SetValueFrom(ctx, warnStringType{}, []string{"a", "b"}); return d }},
+		{"types.ListValueFrom", func() diag.Diagnostics { _, d := types.ListValueFrom(ctx, warnStringType{}, []string{"a", "b"}); return d }},
+	} {
+		calls = 0
+		diags := tc.fn()
+		fmt.Printf("%s: ValidateAttribute calls=%d, diagnostics=%d\n", tc.name, calls, len(diags))
+		for _, d := range diags {
+			if dp, ok := d.(diag.DiagnosticWithPath); ok {
+				fmt.Printf("   %s %q at path %s\n", d.Severity(), d.Detail(), dp.Path())
+			}
+		}
+	}
+}

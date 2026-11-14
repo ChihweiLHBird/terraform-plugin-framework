@@ -1,0 +1,106 @@
+package main
+
+import (
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+)
+
+// scanResponses: for exported *Response structs in the given packages, report fields never read
+// (as selector x.Field) in internal/ non-test files that mention pkg.Type.
+func scanResponses(repo string, pkgs []string) {
+	fset := token.NewFileSet()
+	type key struct{ pkg, typ string }
+	fields := map[key][]string{}
+	for _, p := range pkgs {
+		dir := filepath.Join(repo, p)
+		ents, _ := os.ReadDir(dir)
+		for _, e := range ents {
+			n := e.Name()
+			if !strings.HasSuffix(n, ".go") || strings.HasSuffix(n, "_test.go") {
+				continue
+			}
+			f, _ := parser.ParseFile(fset, filepath.Join(dir, n), nil, 0)
+			for _, d := range f.Decls {
+				gd, ok := d.(*ast.GenDecl)
+				if !ok || gd.Tok != token.TYPE {
+					continue
+				}
+				for _, s := range gd.Specs {
+					ts := s.(*ast.TypeSpec)
+					st, ok := ts.Type.(*ast.StructType)
+					if !ok || !ts.Name.IsExported() || !(strings.HasSuffix(ts.Name.Name, "Response") || strings.HasSuffix(ts.Name.Name, "Stream") || strings.HasSuffix(ts.Name.Name, "Result")) {
+						continue
+					}
+					for _, fl := range st.Fields.List {
+						for _, nm := range fl.Names {
+							if nm.IsExported() {
+								k := key{filepath.Base(p), ts.Name.Name}
+								fields[k] = append(fields[k], nm.Name)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	// selector names read anywhere in internal/ non-test files, grouped per file, plus which pkg.Type each file mentions
+	fileSels := map[string]map[string]bool{}
+	fileTypes := map[string]map[key]bool{}
+	filepath.WalkDir(filepath.Join(repo, "internal"), func(path string, d os.DirEntry, err error) error {
+		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		f, _ := parser.ParseFile(fset, path, nil, 0)
+		fileSels[path] = map[string]bool{}
+		fileTypes[path] = map[key]bool{}
+		ast.Inspect(f, func(n ast.Node) bool {
+			se, ok := n.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			if id, ok := se.X.(*ast.Ident); ok {
+				k := key{id.Name, se.Sel.Name}
+				if _, ok := fields[k]; ok {
+					fileTypes[path][k] = true
+				}
+			}
+			fileSels[path][se.Sel.Name] = true
+			return true
+		})
+		return nil
+	})
+	var keys []key
+	for k := range fields {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i].pkg+keys[i].typ < keys[j].pkg+keys[j].typ })
+	for _, k := range keys {
+		var unread []string
+		nfiles := 0
+		for _, fl := range fields[k] {
+			found := false
+			for path, ts := range fileTypes {
+				if ts[k] && fileSels[path][fl] {
+					found = true
+				}
+			}
+			if !found {
+				unread = append(unread, fl)
+			}
+		}
+		for _, ts := range fileTypes {
+			if ts[k] {
+				nfiles++
+			}
+		}
+		if len(unread) > 0 || nfiles == 0 {
+			fmt.Printf("%s.%s files=%d fields=%v NOT-READ=%v\n", k.pkg, k.typ, nfiles, fields[k], unread)
+		}
+	}
+}

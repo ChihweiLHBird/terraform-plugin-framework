@@ -1,0 +1,255 @@
+AttributeValidateBool/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateBool/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateBool/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateBool/chain: diags(nil=false len=2)
+AttributeValidateBool/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateBool/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateBool/chain: log @level=trace @message=Calling provider defined validator.Bool @module=sdk.framework description=desc-v1
+AttributeValidateBool/chain: log @level=trace @message=Called provider defined validator.Bool @module=sdk.framework description=desc-v1
+AttributeValidateBool/chain: log @level=trace @message=Calling provider defined validator.Bool @module=sdk.framework description=desc-v2
+AttributeValidateBool/chain: log @level=trace @message=Called provider defined validator.Bool @module=sdk.framework description=desc-v2
+AttributeValidateBool/chain: log @level=trace @message=Calling provider defined validator.Bool @module=sdk.framework description=desc-v3
+AttributeValidateBool/chain: log @level=trace @message=Called provider defined validator.Bool @module=sdk.framework description=desc-v3
+AttributeValidateBool/nil-config: diags(nil=false len=1)
+AttributeValidateBool/nil-config:   diag.withPath Error "Invalid Bool Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Bool attribute validation. The value type must implement the basetypes.BoolValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateBool/none: diags(nil=true len=0)
+AttributeValidateBool/wrong-config: diags(nil=false len=1)
+AttributeValidateBool/wrong-config:   diag.withPath Error "Invalid Bool Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Bool attribute validation. The value type must implement the basetypes.BoolValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateFloat32/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateFloat32/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateFloat32/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateFloat32/chain: diags(nil=false len=2)
+AttributeValidateFloat32/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateFloat32/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateFloat32/chain: log @level=trace @message=Calling provider defined validator.Float32 @module=sdk.framework description=desc-v1
+AttributeValidateFloat32/chain: log @level=trace @message=Called provider defined validator.Float32 @module=sdk.framework description=desc-v1
+AttributeValidateFloat32/chain: log @level=trace @message=Calling provider defined validator.Float32 @module=sdk.framework description=desc-v2
+AttributeValidateFloat32/chain: log @level=trace @message=Called provider defined validator.Float32 @module=sdk.framework description=desc-v2
+AttributeValidateFloat32/chain: log @level=trace @message=Calling provider defined validator.Float32 @module=sdk.framework description=desc-v3
+AttributeValidateFloat32/chain: log @level=trace @message=Called provider defined validator.Float32 @module=sdk.framework description=desc-v3
+AttributeValidateFloat32/nil-config: diags(nil=false len=1)
+AttributeValidateFloat32/nil-config:   diag.withPath Error "Invalid Float32 Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Float32 attribute validation. The value type must implement the basetypes.Float32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateFloat32/none: diags(nil=true len=0)
+AttributeValidateFloat32/wrong-config: diags(nil=false len=1)
+AttributeValidateFloat32/wrong-config:   diag.withPath Error "Invalid Float32 Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Float32 attribute validation. The value type must implement the basetypes.Float32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateFloat64/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateFloat64/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateFloat64/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateFloat64/chain: diags(nil=false len=2)
+AttributeValidateFloat64/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateFloat64/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateFloat64/chain: log @level=trace @message=Calling provider defined validator.Float64 @module=sdk.framework description=desc-v1
+AttributeValidateFloat64/chain: log @level=trace @message=Called provider defined validator.Float64 @module=sdk.framework description=desc-v1
+AttributeValidateFloat64/chain: log @level=trace @message=Calling provider defined validator.Float64 @module=sdk.framework description=desc-v2
+AttributeValidateFloat64/chain: log @level=trace @message=Called provider defined validator.Float64 @module=sdk.framework description=desc-v2
+AttributeValidateFloat64/chain: log @level=trace @message=Calling provider defined validator.Float64 @module=sdk.framework description=desc-v3
+AttributeValidateFloat64/chain: log @level=trace @message=Called provider defined validator.Float64 @module=sdk.framework description=desc-v3
+AttributeValidateFloat64/nil-config: diags(nil=false len=1)
+AttributeValidateFloat64/nil-config:   diag.withPath Error "Invalid Float64 Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Float64 attribute validation. The value type must implement the basetypes.Float64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateFloat64/none: diags(nil=true len=0)
+AttributeValidateFloat64/wrong-config: diags(nil=false len=1)
+AttributeValidateFloat64/wrong-config:   diag.withPath Error "Invalid Float64 Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Float64 attribute validation. The value type must implement the basetypes.Float64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateInt32/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateInt32/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateInt32/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateInt32/chain: diags(nil=false len=2)
+AttributeValidateInt32/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateInt32/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateInt32/chain: log @level=trace @message=Calling provider defined validator.Int32 @module=sdk.framework description=desc-v1
+AttributeValidateInt32/chain: log @level=trace @message=Called provider defined validator.Int32 @module=sdk.framework description=desc-v1
+AttributeValidateInt32/chain: log @level=trace @message=Calling provider defined validator.Int32 @module=sdk.framework description=desc-v2
+AttributeValidateInt32/chain: log @level=trace @message=Called provider defined validator.Int32 @module=sdk.framework description=desc-v2
+AttributeValidateInt32/chain: log @level=trace @message=Calling provider defined validator.Int32 @module=sdk.framework description=desc-v3
+AttributeValidateInt32/chain: log @level=trace @message=Called provider defined validator.Int32 @module=sdk.framework description=desc-v3
+AttributeValidateInt32/nil-config: diags(nil=false len=1)
+AttributeValidateInt32/nil-config:   diag.withPath Error "Invalid Int32 Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Int32 attribute validation. The value type must implement the basetypes.Int32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateInt32/none: diags(nil=true len=0)
+AttributeValidateInt32/wrong-config: diags(nil=false len=1)
+AttributeValidateInt32/wrong-config:   diag.withPath Error "Invalid Int32 Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Int32 attribute validation. The value type must implement the basetypes.Int32Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateInt64/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateInt64/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateInt64/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateInt64/chain: diags(nil=false len=2)
+AttributeValidateInt64/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateInt64/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateInt64/chain: log @level=trace @message=Calling provider defined validator.Int64 @module=sdk.framework description=desc-v1
+AttributeValidateInt64/chain: log @level=trace @message=Called provider defined validator.Int64 @module=sdk.framework description=desc-v1
+AttributeValidateInt64/chain: log @level=trace @message=Calling provider defined validator.Int64 @module=sdk.framework description=desc-v2
+AttributeValidateInt64/chain: log @level=trace @message=Called provider defined validator.Int64 @module=sdk.framework description=desc-v2
+AttributeValidateInt64/chain: log @level=trace @message=Calling provider defined validator.Int64 @module=sdk.framework description=desc-v3
+AttributeValidateInt64/chain: log @level=trace @message=Called provider defined validator.Int64 @module=sdk.framework description=desc-v3
+AttributeValidateInt64/nil-config: diags(nil=false len=1)
+AttributeValidateInt64/nil-config:   diag.withPath Error "Invalid Int64 Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Int64 attribute validation. The value type must implement the basetypes.Int64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateInt64/none: diags(nil=true len=0)
+AttributeValidateInt64/wrong-config: diags(nil=false len=1)
+AttributeValidateInt64/wrong-config:   diag.withPath Error "Invalid Int64 Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Int64 attribute validation. The value type must implement the basetypes.Int64Valuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateList/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateList/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateList/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateList/chain: diags(nil=false len=2)
+AttributeValidateList/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateList/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateList/chain: log @level=trace @message=Calling provider defined validator.List @module=sdk.framework description=desc-v1
+AttributeValidateList/chain: log @level=trace @message=Called provider defined validator.List @module=sdk.framework description=desc-v1
+AttributeValidateList/chain: log @level=trace @message=Calling provider defined validator.List @module=sdk.framework description=desc-v2
+AttributeValidateList/chain: log @level=trace @message=Called provider defined validator.List @module=sdk.framework description=desc-v2
+AttributeValidateList/chain: log @level=trace @message=Calling provider defined validator.List @module=sdk.framework description=desc-v3
+AttributeValidateList/chain: log @level=trace @message=Called provider defined validator.List @module=sdk.framework description=desc-v3
+AttributeValidateList/nil-config: diags(nil=false len=1)
+AttributeValidateList/nil-config:   diag.withPath Error "Invalid List Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform List attribute validation. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateList/none: diags(nil=true len=0)
+AttributeValidateList/wrong-config: diags(nil=false len=1)
+AttributeValidateList/wrong-config:   diag.withPath Error "Invalid List Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform List attribute validation. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateMap/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateMap/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateMap/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateMap/chain: diags(nil=false len=2)
+AttributeValidateMap/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateMap/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateMap/chain: log @level=trace @message=Calling provider defined validator.Map @module=sdk.framework description=desc-v1
+AttributeValidateMap/chain: log @level=trace @message=Called provider defined validator.Map @module=sdk.framework description=desc-v1
+AttributeValidateMap/chain: log @level=trace @message=Calling provider defined validator.Map @module=sdk.framework description=desc-v2
+AttributeValidateMap/chain: log @level=trace @message=Called provider defined validator.Map @module=sdk.framework description=desc-v2
+AttributeValidateMap/chain: log @level=trace @message=Calling provider defined validator.Map @module=sdk.framework description=desc-v3
+AttributeValidateMap/chain: log @level=trace @message=Called provider defined validator.Map @module=sdk.framework description=desc-v3
+AttributeValidateMap/nil-config: diags(nil=false len=1)
+AttributeValidateMap/nil-config:   diag.withPath Error "Invalid Map Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Map attribute validation. The value type must implement the basetypes.MapValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateMap/none: diags(nil=true len=0)
+AttributeValidateMap/wrong-config: diags(nil=false len=1)
+AttributeValidateMap/wrong-config:   diag.withPath Error "Invalid Map Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Map attribute validation. The value type must implement the basetypes.MapValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateNumber/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateNumber/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateNumber/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateNumber/chain: diags(nil=false len=2)
+AttributeValidateNumber/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateNumber/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateNumber/chain: log @level=trace @message=Calling provider defined validator.Number @module=sdk.framework description=desc-v1
+AttributeValidateNumber/chain: log @level=trace @message=Called provider defined validator.Number @module=sdk.framework description=desc-v1
+AttributeValidateNumber/chain: log @level=trace @message=Calling provider defined validator.Number @module=sdk.framework description=desc-v2
+AttributeValidateNumber/chain: log @level=trace @message=Called provider defined validator.Number @module=sdk.framework description=desc-v2
+AttributeValidateNumber/chain: log @level=trace @message=Calling provider defined validator.Number @module=sdk.framework description=desc-v3
+AttributeValidateNumber/chain: log @level=trace @message=Called provider defined validator.Number @module=sdk.framework description=desc-v3
+AttributeValidateNumber/nil-config: diags(nil=false len=1)
+AttributeValidateNumber/nil-config:   diag.withPath Error "Invalid Number Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Number attribute validation. The value type must implement the basetypes.NumberValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateNumber/none: diags(nil=true len=0)
+AttributeValidateNumber/wrong-config: diags(nil=false len=1)
+AttributeValidateNumber/wrong-config:   diag.withPath Error "Invalid Number Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Number attribute validation. The value type must implement the basetypes.NumberValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateObject/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateObject/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateObject/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateObject/chain: diags(nil=false len=2)
+AttributeValidateObject/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateObject/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateObject/chain: log @level=trace @message=Calling provider defined validator.Object @module=sdk.framework description=desc-v1
+AttributeValidateObject/chain: log @level=trace @message=Called provider defined validator.Object @module=sdk.framework description=desc-v1
+AttributeValidateObject/chain: log @level=trace @message=Calling provider defined validator.Object @module=sdk.framework description=desc-v2
+AttributeValidateObject/chain: log @level=trace @message=Called provider defined validator.Object @module=sdk.framework description=desc-v2
+AttributeValidateObject/chain: log @level=trace @message=Calling provider defined validator.Object @module=sdk.framework description=desc-v3
+AttributeValidateObject/chain: log @level=trace @message=Called provider defined validator.Object @module=sdk.framework description=desc-v3
+AttributeValidateObject/nil-config: diags(nil=false len=1)
+AttributeValidateObject/nil-config:   diag.withPath Error "Invalid Object Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Object attribute validation. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateObject/none: diags(nil=true len=0)
+AttributeValidateObject/wrong-config: diags(nil=false len=1)
+AttributeValidateObject/wrong-config:   diag.withPath Error "Invalid Object Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Object attribute validation. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateSet/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateSet/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateSet/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateSet/chain: diags(nil=false len=2)
+AttributeValidateSet/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateSet/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateSet/chain: log @level=trace @message=Calling provider defined validator.Set @module=sdk.framework description=desc-v1
+AttributeValidateSet/chain: log @level=trace @message=Called provider defined validator.Set @module=sdk.framework description=desc-v1
+AttributeValidateSet/chain: log @level=trace @message=Calling provider defined validator.Set @module=sdk.framework description=desc-v2
+AttributeValidateSet/chain: log @level=trace @message=Called provider defined validator.Set @module=sdk.framework description=desc-v2
+AttributeValidateSet/chain: log @level=trace @message=Calling provider defined validator.Set @module=sdk.framework description=desc-v3
+AttributeValidateSet/chain: log @level=trace @message=Called provider defined validator.Set @module=sdk.framework description=desc-v3
+AttributeValidateSet/nil-config: diags(nil=false len=1)
+AttributeValidateSet/nil-config:   diag.withPath Error "Invalid Set Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Set attribute validation. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateSet/none: diags(nil=true len=0)
+AttributeValidateSet/wrong-config: diags(nil=false len=1)
+AttributeValidateSet/wrong-config:   diag.withPath Error "Invalid Set Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Set attribute validation. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+AttributeValidateString/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateString/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateString/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateString/chain: diags(nil=false len=2)
+AttributeValidateString/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateString/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateString/chain: log @level=trace @message=Calling provider defined validator.String @module=sdk.framework description=desc-v1
+AttributeValidateString/chain: log @level=trace @message=Called provider defined validator.String @module=sdk.framework description=desc-v1
+AttributeValidateString/chain: log @level=trace @message=Calling provider defined validator.String @module=sdk.framework description=desc-v2
+AttributeValidateString/chain: log @level=trace @message=Called provider defined validator.String @module=sdk.framework description=desc-v2
+AttributeValidateString/chain: log @level=trace @message=Calling provider defined validator.String @module=sdk.framework description=desc-v3
+AttributeValidateString/chain: log @level=trace @message=Called provider defined validator.String @module=sdk.framework description=desc-v3
+AttributeValidateString/nil-config: diags(nil=false len=1)
+AttributeValidateString/nil-config:   diag.withPath Error "Invalid String Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform String attribute validation. The value type must implement the basetypes.StringValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateString/none: diags(nil=true len=0)
+AttributeValidateString/wrong-config: diags(nil=false len=1)
+AttributeValidateString/wrong-config:   diag.withPath Error "Invalid String Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform String attribute validation. The value type must implement the basetypes.StringValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.BoolValue" path="test"
+AttributeValidateDynamic/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateDynamic/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateDynamic/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+AttributeValidateDynamic/chain: diags(nil=false len=2)
+AttributeValidateDynamic/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+AttributeValidateDynamic/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+AttributeValidateDynamic/chain: log @level=trace @message=Calling provider defined validator.Dynamic @module=sdk.framework description=desc-v1
+AttributeValidateDynamic/chain: log @level=trace @message=Called provider defined validator.Dynamic @module=sdk.framework description=desc-v1
+AttributeValidateDynamic/chain: log @level=trace @message=Calling provider defined validator.Dynamic @module=sdk.framework description=desc-v2
+AttributeValidateDynamic/chain: log @level=trace @message=Called provider defined validator.Dynamic @module=sdk.framework description=desc-v2
+AttributeValidateDynamic/chain: log @level=trace @message=Calling provider defined validator.Dynamic @module=sdk.framework description=desc-v3
+AttributeValidateDynamic/chain: log @level=trace @message=Called provider defined validator.Dynamic @module=sdk.framework description=desc-v3
+AttributeValidateDynamic/nil-config: diags(nil=false len=1)
+AttributeValidateDynamic/nil-config:   diag.withPath Error "Invalid Dynamic Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Dynamic attribute validation. The value type must implement the basetypes.DynamicValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+AttributeValidateDynamic/none: diags(nil=true len=0)
+AttributeValidateDynamic/wrong-config: diags(nil=false len=1)
+AttributeValidateDynamic/wrong-config:   diag.withPath Error "Invalid Dynamic Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Dynamic attribute validation. The value type must implement the basetypes.DynamicValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockValidateList/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateList/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateList/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateList/chain: diags(nil=false len=2)
+BlockValidateList/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+BlockValidateList/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+BlockValidateList/chain: log @level=trace @message=Calling provider defined validator.List @module=sdk.framework description=desc-v1
+BlockValidateList/chain: log @level=trace @message=Called provider defined validator.List @module=sdk.framework description=desc-v1
+BlockValidateList/chain: log @level=trace @message=Calling provider defined validator.List @module=sdk.framework description=desc-v2
+BlockValidateList/chain: log @level=trace @message=Called provider defined validator.List @module=sdk.framework description=desc-v2
+BlockValidateList/chain: log @level=trace @message=Calling provider defined validator.List @module=sdk.framework description=desc-v3
+BlockValidateList/chain: log @level=trace @message=Called provider defined validator.List @module=sdk.framework description=desc-v3
+BlockValidateList/nil-config: diags(nil=false len=1)
+BlockValidateList/nil-config:   diag.withPath Error "Invalid List Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform List attribute validation. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+BlockValidateList/none: diags(nil=true len=0)
+BlockValidateList/wrong-config: diags(nil=false len=1)
+BlockValidateList/wrong-config:   diag.withPath Error "Invalid List Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform List attribute validation. The value type must implement the basetypes.ListValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockValidateObject/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateObject/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateObject/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateObject/chain: diags(nil=false len=2)
+BlockValidateObject/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+BlockValidateObject/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+BlockValidateObject/chain: log @level=trace @message=Calling provider defined validator.Object @module=sdk.framework description=desc-v1
+BlockValidateObject/chain: log @level=trace @message=Called provider defined validator.Object @module=sdk.framework description=desc-v1
+BlockValidateObject/chain: log @level=trace @message=Calling provider defined validator.Object @module=sdk.framework description=desc-v2
+BlockValidateObject/chain: log @level=trace @message=Called provider defined validator.Object @module=sdk.framework description=desc-v2
+BlockValidateObject/chain: log @level=trace @message=Calling provider defined validator.Object @module=sdk.framework description=desc-v3
+BlockValidateObject/chain: log @level=trace @message=Called provider defined validator.Object @module=sdk.framework description=desc-v3
+BlockValidateObject/nil-config: diags(nil=false len=1)
+BlockValidateObject/nil-config:   diag.withPath Error "Invalid Object Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Object attribute validation. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+BlockValidateObject/none: diags(nil=true len=0)
+BlockValidateObject/wrong-config: diags(nil=false len=1)
+BlockValidateObject/wrong-config:   diag.withPath Error "Invalid Object Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Object attribute validation. The value type must implement the basetypes.ObjectValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"
+BlockValidateSet/chain: call v1 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateSet/chain: call v2 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateSet/chain: call v3 req: path="test" expr="test" config=<null> caps={WriteOnlyAttributesAllowed:true} | resp0 diags(nil=true)
+BlockValidateSet/chain: diags(nil=false len=2)
+BlockValidateSet/chain:   diag.WarningDiagnostic Warning "w1" "d1" path=""
+BlockValidateSet/chain:   diag.ErrorDiagnostic Error "e2" "d2" path=""
+BlockValidateSet/chain: log @level=trace @message=Calling provider defined validator.Set @module=sdk.framework description=desc-v1
+BlockValidateSet/chain: log @level=trace @message=Called provider defined validator.Set @module=sdk.framework description=desc-v1
+BlockValidateSet/chain: log @level=trace @message=Calling provider defined validator.Set @module=sdk.framework description=desc-v2
+BlockValidateSet/chain: log @level=trace @message=Called provider defined validator.Set @module=sdk.framework description=desc-v2
+BlockValidateSet/chain: log @level=trace @message=Calling provider defined validator.Set @module=sdk.framework description=desc-v3
+BlockValidateSet/chain: log @level=trace @message=Called provider defined validator.Set @module=sdk.framework description=desc-v3
+BlockValidateSet/nil-config: diags(nil=false len=1)
+BlockValidateSet/nil-config:   diag.withPath Error "Invalid Set Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Set attribute validation. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: <nil>" path="test"
+BlockValidateSet/none: diags(nil=true len=0)
+BlockValidateSet/wrong-config: diags(nil=false len=1)
+BlockValidateSet/wrong-config:   diag.withPath Error "Invalid Set Attribute Validator Value Type" "An unexpected value type was encountered while attempting to perform Set attribute validation. The value type must implement the basetypes.SetValuable interface. Please report this to the provider developers.\n\nIncoming Value Type: basetypes.StringValue" path="test"

@@ -1,0 +1,30 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"math/big"
+
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"github.com/hashicorp/terraform-plugin-log/tfsdklog"
+	"github.com/hashicorp/terraform-plugin-log/tfsdklogtest"
+)
+
+func main() {
+	for _, in := range []*big.Float{
+		big.NewFloat(1.5), // exact in float32 and float64
+		big.NewFloat(3),   // exact in float32 and float64
+		big.NewFloat(0.1), // exact as float64, NOT exact as float32 (the "distinct" case)
+		func() *big.Float { f, _, _ := big.ParseFloat("0.1", 10, 512, big.ToNearestEven); return f }(), // neither exact
+	} {
+		var buf bytes.Buffer
+		ctx := tfsdklogtest.RootLogger(context.Background(), &buf)
+		ctx = tfsdklog.NewSubsystem(ctx, "framework")
+		v, err := basetypes.Float32Type{}.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.Number, in))
+		_, a32 := in.Float32()
+		_, a64 := in.Float64()
+		fmt.Printf("in=%s acc32=%v acc64=%v -> %v err=%v\n   log: %q\n", in.Text('g', 20), a32, a64, v, err, buf.String())
+	}
+}

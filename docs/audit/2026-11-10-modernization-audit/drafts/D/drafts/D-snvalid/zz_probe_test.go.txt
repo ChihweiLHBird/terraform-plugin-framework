@@ -1,0 +1,73 @@
+package fwserver_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type countingObjectValidator struct{ n *int }
+
+func (v countingObjectValidator) Description(context.Context) string         { return "count" }
+func (v countingObjectValidator) MarkdownDescription(context.Context) string { return "count" }
+func (v countingObjectValidator) ValidateObject(_ context.Context, _ validator.ObjectRequest, resp *validator.ObjectResponse) {
+	*v.n++
+	resp.Diagnostics.AddWarning("counted", "same text every call")
+}
+
+func TestZZProbeSingleNestedValidatorCount(t *testing.T) {
+	t.Parallel()
+	for _, kind := range []string{"single", "list"} {
+		n := 0
+		attrTypes := map[string]attr.Type{"a": types.StringType}
+		obj := types.ObjectValueMust(attrTypes, map[string]attr.Value{"a": types.StringValue("x")})
+		var a schema.Attribute
+		var cfg attr.Value
+		var tfType tftypes.Type
+		var raw tftypes.Value
+		objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"a": tftypes.String}}
+		objRaw := tftypes.NewValue(objT, map[string]tftypes.Value{"a": tftypes.NewValue(tftypes.String, "x")})
+		if kind == "single" {
+			a = schema.SingleNestedAttribute{Optional: true, Validators: []validator.Object{countingObjectValidator{&n}},
+				Attributes: map[string]schema.Attribute{"a": schema.StringAttribute{Optional: true}}}
+			cfg, tfType, raw = obj, objT, objRaw
+		} else {
+			a = schema.ListNestedAttribute{Optional: true, Validators: []validator.List{},
+				NestedObject: schema.NestedAttributeObject{Validators: []validator.Object{countingObjectValidator{&n}},
+					Attributes: map[string]schema.Attribute{"a": schema.StringAttribute{Optional: true}}}}
+			cfg = types.ListValueMust(types.ObjectType{AttrTypes: attrTypes}, []attr.Value{obj})
+			tfType = tftypes.List{ElementType: objT}
+			raw = tftypes.NewValue(tfType, []tftypes.Value{objRaw})
+		}
+		s := schema.Schema{Attributes: map[string]schema.Attribute{"test": a}}
+		config := tfsdk.Config{Schema: s, Raw: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{"test": tfType}}, map[string]tftypes.Value{"test": raw})}
+		resp := &fwserver.ValidateAttributeResponse{}
+		fwserver.AttributeValidate(context.Background(), a, fwserver.ValidateAttributeRequest{
+			AttributePath: path.Root("test"), AttributePathExpression: path.MatchRoot("test"), AttributeConfig: cfg, Config: config}, resp)
+		t.Logf("%s nested attribute: object validator invoked %d time(s); diagnostics=%d", kind, n, len(resp.Diagnostics))
+	}
+}
+
+func TestZZProbeSingleNestedBlockValidatorCount(t *testing.T) {
+	t.Parallel()
+	n := 0
+	b := schema.SingleNestedBlock{Validators: []validator.Object{countingObjectValidator{&n}},
+		Attributes: map[string]schema.Attribute{"a": schema.StringAttribute{Optional: true}}}
+	s := schema.Schema{Blocks: map[string]schema.Block{"test": b}}
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"a": tftypes.String}}
+	config := tfsdk.Config{Schema: s, Raw: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{"test": objT}},
+		map[string]tftypes.Value{"test": tftypes.NewValue(objT, map[string]tftypes.Value{"a": tftypes.NewValue(tftypes.String, "x")})})}
+	resp := &fwserver.ValidateAttributeResponse{}
+	fwserver.BlockValidate(context.Background(), b, fwserver.ValidateAttributeRequest{
+		AttributePath: path.Root("test"), AttributePathExpression: path.MatchRoot("test"), Config: config}, resp)
+	t.Logf("single nested block: object validator invoked %d time(s); diagnostics=%d", n, len(resp.Diagnostics))
+}

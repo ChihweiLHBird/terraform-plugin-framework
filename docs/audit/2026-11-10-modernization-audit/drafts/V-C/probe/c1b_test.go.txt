@@ -1,0 +1,32 @@
+package vcprobe
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type KeyIface interface{}
+
+func TestC1AnyKey(t *testing.T) {
+	ctx := context.Background()
+	st := tfsdk.State{Schema: c1Schema(), Raw: c1Raw()}
+	try(t, "GetAttribute map[any]string", func() string { var m map[any]string; d := st.GetAttribute(ctx, path.Root("labels"), &m); return fmt.Sprintf("diags=%d %v", len(d), m) })
+	try(t, "GetAttribute map[KeyIface]string", func() string { var m map[KeyIface]string; d := st.GetAttribute(ctx, path.Root("labels"), &m); return fmt.Sprintf("diags=%d %v", len(d), m) })
+	try(t, "ElementsAs map[any]types.String", func() string {
+		var l types.Map
+		d := st.GetAttribute(ctx, path.Root("labels"), &l)
+		var m map[any]types.String
+		d.Append(l.ElementsAs(ctx, &m, false)...)
+		return fmt.Sprintf("diags=%d %v", len(d), m)
+	})
+	try(t, "SetAttribute map[any]string", func() string {
+		s2 := tfsdk.State{Schema: c1Schema(), Raw: c1Raw()}
+		d := s2.SetAttribute(ctx, path.Root("labels"), map[any]string{"k": "v"})
+		return fmt.Sprintf("diags=%d", len(d))
+	})
+}

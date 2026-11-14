@@ -1,0 +1,70 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	aschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func show(label string, diags diag.Diagnostics) {
+	fmt.Printf("%-62s diags=%d\n", label, len(diags))
+	for _, d := range diags {
+		fmt.Printf("    %s | %s\n", d.Summary(), d.Detail())
+	}
+}
+
+func main() {
+	ctx := context.Background()
+
+	// 1. write-only single nested attribute with a non-write-only child
+	show("action SingleNestedAttribute{WriteOnly} non-WO child", aschema.Schema{Attributes: map[string]aschema.Attribute{
+		"obj": aschema.SingleNestedAttribute{Optional: true, WriteOnly: true, Attributes: map[string]aschema.Attribute{
+			"child": aschema.StringAttribute{Optional: true},
+		}},
+	}}.ValidateImplementation(ctx))
+	show("action ListNestedAttribute{WriteOnly} non-WO child", aschema.Schema{Attributes: map[string]aschema.Attribute{
+		"obj": aschema.ListNestedAttribute{Optional: true, WriteOnly: true, NestedObject: aschema.NestedAttributeObject{Attributes: map[string]aschema.Attribute{
+			"child": aschema.StringAttribute{Optional: true},
+		}}},
+	}}.ValidateImplementation(ctx))
+	show("resource SingleNestedAttribute{WriteOnly} non-WO child", rschema.Schema{Attributes: map[string]rschema.Attribute{
+		"obj": rschema.SingleNestedAttribute{Optional: true, WriteOnly: true, Attributes: map[string]rschema.Attribute{
+			"child": rschema.StringAttribute{Optional: true},
+		}},
+	}}.ValidateImplementation(ctx))
+
+	// 2. set nested attribute / set nested block with a write-only child
+	show("action SetNestedAttribute with WO child", aschema.Schema{Attributes: map[string]aschema.Attribute{
+		"set": aschema.SetNestedAttribute{Optional: true, NestedObject: aschema.NestedAttributeObject{Attributes: map[string]aschema.Attribute{
+			"child": aschema.StringAttribute{Optional: true, WriteOnly: true},
+		}}},
+	}}.ValidateImplementation(ctx))
+	show("resource SetNestedAttribute with WO child", rschema.Schema{Attributes: map[string]rschema.Attribute{
+		"set": rschema.SetNestedAttribute{Optional: true, NestedObject: rschema.NestedAttributeObject{Attributes: map[string]rschema.Attribute{
+			"child": rschema.StringAttribute{Optional: true, WriteOnly: true},
+		}}},
+	}}.ValidateImplementation(ctx))
+	show("action SetNestedBlock with WO child", aschema.Schema{Blocks: map[string]aschema.Block{
+		"set": aschema.SetNestedBlock{NestedObject: aschema.NestedBlockObject{Attributes: map[string]aschema.Attribute{
+			"child": aschema.StringAttribute{Optional: true, WriteOnly: true},
+		}}},
+	}}.ValidateImplementation(ctx))
+	show("resource SetNestedBlock with WO child", rschema.Schema{Blocks: map[string]rschema.Block{
+		"set": rschema.SetNestedBlock{NestedObject: rschema.NestedBlockObject{Attributes: map[string]rschema.Attribute{
+			"child": rschema.StringAttribute{Optional: true, WriteOnly: true},
+		}}},
+	}}.ValidateImplementation(ctx))
+
+	// 3. resource SingleNestedAttribute default on non-computed: how many diags?
+	show("resource SingleNestedAttribute default non-computed (dedup)", rschema.Schema{Attributes: map[string]rschema.Attribute{
+		"obj": rschema.SingleNestedAttribute{Optional: true, WriteOnly: true, Default: objectdefault.StaticValue(types.ObjectValueMust(map[string]attr.Type{"child": types.StringType}, map[string]attr.Value{"child": types.StringNull()})), Attributes: map[string]rschema.Attribute{
+			"child": rschema.StringAttribute{Optional: true},
+		}},
+	}}.ValidateImplementation(ctx))
+}

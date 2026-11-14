@@ -203,7 +203,7 @@ Sampled:
       consumers' minimums for shared deps (e.g. github.com/mattn/go-isatty main v0.0.20 vs tools v0.0.21). Rejected.
   (b) tool directive inside the existing tools/ module: `go get -tool github.com/hashicorp/copywrite@v0.25.3` in tools/,
       delete tools/copywrite.go (13 lines), Makefile `generate:` becomes `cd tools; go tool copywrite headers -d .. --config ../.copywrite.hcl`,
-      CONTRIBUTING.md:110 text updated; dependabot keeps updating /tools. Net about -12 lines. Same copywrite version,
+      .github/CONTRIBUTING.md:110 text updated; dependabot keeps updating /tools. Net about -12 lines. Same copywrite version,
       same flags. But terraform-plugin-testing, -sdk, -log use the byte-identical tools/copywrite.go + go:generate layout
       and none of them (nor terraform-plugin-go) has a `tool` directive (fetched their tools/go.mod and
       tools/copywrite.go from GitHub raw). Divergence from the shared HashiCorp devex layout outweighs ~12 lines.
@@ -222,7 +222,7 @@ Sampled:
   A matrix dimension cannot express it (TF_VERSIONS_PROTOCOL_V5 and _V6 are different org-level lists); a reusable
   workflow would save <= 8 lines and add a file + indirection. Rejected.
 - Makefile: `website`, `website/local`, `website/build-local` call `$(MAKE) -C website`, and website/ does not exist;
-  `make website` fails ("make[1]: *** website: No such file or directory.  Stop."). CONTRIBUTING.md:50 still says the
+  `make website` fails ("make[1]: *** website: No such file or directory.  Stop."). .github/CONTRIBUTING.md:50 still says the
   repo contains the docs and links ../website/README.md (missing). -> G10. (Same residue exists in terraform-plugin-testing,
   -sdk, -log Makefiles; terraform-plugin-go's Makefile has none, so there is precedent for removing it.)
 - .copywrite.hcl header_ignore: `.github/labeler-*.yml` and `.release/*.hcl` match 0 files (others match >= 1;

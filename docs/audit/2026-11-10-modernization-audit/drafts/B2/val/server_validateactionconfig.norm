@@ -1,0 +1,119 @@
+// Copyright IBM Corp. 2021, 2026
+// SPDX-License-Identifier: MPL-2.0
+
+package fwserver
+
+import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework/x"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+// ValidateXConfigRequest is the framework server request for the
+// ValidateXConfig RPC.
+type ValidateXConfigRequest struct {
+	Config *tfsdk.Config
+	X pkg.X
+}
+
+// ValidateXConfigResponse is the framework server response for the
+// ValidateXConfig RPC.
+type ValidateXConfigResponse struct {
+	Diagnostics diag.Diagnostics
+}
+
+// ValidateXConfig implements the framework server ValidateXConfig RPC.
+func (s *Server) ValidateXConfig(ctx context.Context, req *ValidateXConfigRequest, resp *ValidateXConfigResponse) {
+	if req == nil || req.Config == nil {
+		return
+	}
+
+	if x-conceptWithConfigure, ok := req.X.(x.ActionWithConfigure); ok {
+		logging.FrameworkTrace(ctx, "X implements ActionWithConfigure")
+
+		configureReq := x.ConfigureRequest{
+			ProviderData: s.ActionConfigureData,
+		}
+		configureResp := x.ConfigureResponse{}
+
+		logging.FrameworkTrace(ctx, "Calling x defined X Configure")
+		x-conceptWithConfigure.Configure(ctx, configureReq, &configureResp)
+		logging.FrameworkTrace(ctx, "Called x defined X Configure")
+
+		resp.Diagnostics.Append(configureResp.Diagnostics...)
+
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	vdscReq := pkg.ValidateConfigRequest{
+		Config: *req.Config,
+	}
+
+	if x-conceptWithConfigValidators, ok := req.X.(x.XWithConfigValidators); ok {
+		logging.FrameworkTrace(ctx, "X implements XWithConfigValidators")
+
+		for _, configValidator := range x-conceptWithConfigValidators.ConfigValidators(ctx) {
+			// Instantiate a new response for each request to prevent validators
+			// from modifying or removing diagnostics.
+			vdscResp := &pkg.ValidateConfigResponse{}
+
+			logging.FrameworkTrace(
+				ctx,
+				"Calling x defined ActionConfigValidator",
+				map[string]interface{}{
+					logging.KeyDescription: configValidator.Description(ctx),
+				},
+			)
+			configValidator.ValidateAction(ctx, vdscReq, vdscResp)
+			logging.FrameworkTrace(
+				ctx,
+				"Called x defined ActionConfigValidator",
+				map[string]interface{}{
+					logging.KeyDescription: configValidator.Description(ctx),
+				},
+			)
+
+			resp.Diagnostics.Append(vdscResp.Diagnostics...)
+		}
+	}
+
+	if x-conceptWithValidateConfig, ok := req.X.(x.XWithValidateConfig); ok {
+		logging.FrameworkTrace(ctx, "X implements XWithValidateConfig")
+
+		// Instantiate a new response for each request to prevent validators
+		// from modifying or removing diagnostics.
+		vdscResp := &pkg.ValidateConfigResponse{}
+
+		logging.FrameworkTrace(ctx, "Calling x defined X ValidateConfig")
+		x-conceptWithValidateConfig.ValidateConfig(ctx, vdscReq, vdscResp)
+		logging.FrameworkTrace(ctx, "Called x defined X ValidateConfig")
+
+		resp.Diagnostics.Append(vdscResp.Diagnostics...)
+	}
+
+	schemaCapabilities := validator.ValidateSchemaClientCapabilities{
+		// The SchemaValidate function is shared between x, x,
+		// x-concept, ephemeral x, and x schemas; however, WriteOnlyAttributesAllowed
+		// capability is only valid for x schemas, so this is explicitly set to false
+		// for all other schema types.
+		WriteOnlyAttributesAllowed: false,
+	}
+
+	validateSchemaReq := ValidateSchemaRequest{
+		ClientCapabilities: schemaCapabilities,
+		Config:             *req.Config,
+	}
+	// Instantiate a new response for each request to prevent validators
+	// from modifying or removing diagnostics.
+	validateSchemaResp := ValidateSchemaResponse{}
+
+	SchemaValidate(ctx, req.Config.Schema, validateSchemaReq, &validateSchemaResp)
+
+	resp.Diagnostics.Append(validateSchemaResp.Diagnostics...)
+}

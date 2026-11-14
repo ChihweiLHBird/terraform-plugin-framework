@@ -149,7 +149,7 @@ schema practitioners cannot configure. connection/provider/provisioner blocks ar
 provider/schema TestSchemaValidateImplementation "block-using-reserved-field-name" pins the resource message for "connection".
 
 ### C9 (privatestate typos): CONFIRMED, size corrected
-data.go:68-69, 82-83, 163, 176, 380 and fwschema/schema.go:70-71 confirmed; `grep -c 'is is not valid\|a a period'
+data.go:68-69, 82-83, 163, 176, 380 and internal/fwschema/schema.go:70-71 confirmed; `grep -c 'is is not valid\|a a period'
 internal/privatestate/data_test.go` = 17, no other package. The missing-newline fix also changes the 4 expectations
 `"An error was encountered when validating private state value."+` at data_test.go:55,70,121,138: 21 test lines, 7 data.go lines.
 
@@ -216,7 +216,7 @@ nil-nil, nil-empty, empty-nil true/true; same-length different keys, same keys d
 false/false; equal maps in different insertion order true/true. No case differs.
 
 ### C20 (degenerate switches): CONFIRMED, draft does not compile
-Applying draft-fwschema-switch.diff (identical to drafts/C/fwschema-draft/*.go):
+Applying draft-fwschema-switch.diff (identical to drafts/C/fwschema-draft/*.go.txt):
 ```
 internal/fwschema/attribute_validate_implementation.go:10:2: ".../path" imported and not used
 internal/fwschema/block_validate_implementation.go:10:2: ".../path" imported and not used

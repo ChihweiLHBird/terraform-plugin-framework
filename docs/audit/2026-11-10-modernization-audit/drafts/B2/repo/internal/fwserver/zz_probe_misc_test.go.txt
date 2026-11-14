@@ -1,0 +1,105 @@
+package fwserver_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+)
+
+func catch(t *testing.T, name string, f func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Logf("%s: PANIC: %v", name, r)
+		} else {
+			t.Logf("%s: no panic", name)
+		}
+	}()
+	f()
+}
+
+func TestProbeMisc(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. UpgradeResourceState passthrough keeps write-only values
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{
+		"id":       schema.StringAttribute{Computed: true},
+		"password": schema.StringAttribute{Optional: true, WriteOnly: true},
+	}}
+	resp := &fwserver.UpgradeResourceStateResponse{}
+	(&fwserver.Server{Provider: &testprovider.Provider{}}).UpgradeResourceState(ctx, &fwserver.UpgradeResourceStateRequest{
+		RawState:       &tfprotov6.RawState{JSON: []byte(`{"id":"x","password":"stored-secret"}`)},
+		ResourceSchema: sch,
+		Resource:       &testprovider.Resource{},
+		Version:        0,
+	}, resp)
+	t.Logf("UpgradeResourceState passthrough: state=%v diags=%v", resp.UpgradedState.Raw, resp.Diagnostics)
+
+	// 2. ConfigureProvider with nil request and a deferring provider
+	catch(t, "ConfigureProvider(nil req, deferred)", func() {
+		s := &fwserver.Server{Provider: &testprovider.Provider{ConfigureMethod: func(_ context.Context, _ provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+			resp.Deferred = &provider.Deferred{Reason: provider.DeferredReasonProviderConfigUnknown}
+		}}}
+		s.ConfigureProvider(ctx, nil, &provider.ConfigureResponse{})
+	})
+
+	// 3. ReadDataSource with nil Config and a Read that sets nothing
+	catch(t, "ReadDataSource(nil Config)", func() {
+		dsch := dsschema.Schema{Attributes: map[string]dsschema.Attribute{"id": dsschema.StringAttribute{Optional: true}}}
+		r := &fwserver.ReadDataSourceResponse{}
+		(&fwserver.Server{Provider: &testprovider.Provider{}}).ReadDataSource(ctx, &fwserver.ReadDataSourceRequest{
+			DataSourceSchema: dsch,
+			DataSource:       &testprovider.DataSource{ReadMethod: func(context.Context, datasource.ReadRequest, *datasource.ReadResponse) {}},
+		}, r)
+		t.Logf("  diags=%v", r.Diagnostics)
+	})
+
+	// 4. ApplyResourceChange with nil PriorState and nil PlannedState (create path, PlannedState nil)
+	catch(t, "ApplyResourceChange(nil prior, nil planned)", func() {
+		r := &fwserver.ApplyResourceChangeResponse{}
+		(&fwserver.Server{Provider: &testprovider.Provider{}}).ApplyResourceChange(ctx, &fwserver.ApplyResourceChangeRequest{
+			ResourceSchema: sch,
+			Resource: &testprovider.Resource{CreateMethod: func(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, pathRoot("id"), "x")...)
+			}},
+		}, r)
+		t.Logf("  diags=%v", r.Diagnostics)
+	})
+
+	// 5. registry diags aliasing: two lookups for unknown names with 3 cached registry errors
+	{
+		s := &fwserver.Server{Provider: &testprovider.Provider{
+			DataSourcesMethod: func(context.Context) []func() datasource.DataSource {
+				mk := func(n string) func() datasource.DataSource {
+					return func() datasource.DataSource {
+						return &testprovider.DataSource{MetadataMethod: func(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+							resp.TypeName = n
+						}}
+					}
+				}
+				empty := func() datasource.DataSource { return &testprovider.DataSource{} }
+				return []func() datasource.DataSource{mk("a"), mk("a"), mk("b"), mk("b"), empty}
+			},
+		}}
+		_, d1 := s.DataSource(ctx, "first")
+		snapshot := fmt.Sprint(d1[len(d1)-1].Detail())
+		_, d2 := s.DataSource(ctx, "second")
+		t.Logf("aliasing: len(d1)=%d cap(d1)=%d; d1 last before=%q after second lookup=%q; d2 last=%q", len(d1), cap(d1), snapshot, d1[len(d1)-1].Detail(), d2[len(d2)-1].Detail())
+		funcs, cached := s.DataSourceFuncs(ctx)
+		t.Logf("cached registry diags len=%d (unchanged), funcs=%d", len(cached), len(funcs))
+		_ = diag.Diagnostics{}
+	}
+}
+
+func pathRoot(s string) path.Path { return path.Root(s) }

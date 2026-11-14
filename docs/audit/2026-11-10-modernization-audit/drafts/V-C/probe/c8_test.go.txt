@@ -1,0 +1,23 @@
+package vcprobe
+
+import (
+	"context"
+	"testing"
+
+	pschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+)
+
+func TestC8(t *testing.T) {
+	ctx := context.Background()
+	for _, n := range []string{"count", "lifecycle", "provider", "depends_on", "connection", "locals", "source"} {
+		sb := pschema.Schema{Blocks: map[string]pschema.Block{n: pschema.ListNestedBlock{}}}
+		sa := pschema.Schema{Attributes: map[string]pschema.Attribute{n: pschema.StringAttribute{Optional: true}}}
+		db := sb.ValidateImplementation(ctx)
+		da := sa.ValidateImplementation(ctx)
+		msg := ""
+		if len(db) > 0 {
+			msg = db[0].Detail()[:60]
+		}
+		t.Logf("provider block %-11q errors=%d (%s...)  attribute errors=%d", n, len(db), msg, len(da))
+	}
+}

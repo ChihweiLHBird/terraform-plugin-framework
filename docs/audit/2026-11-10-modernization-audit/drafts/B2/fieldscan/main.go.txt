@@ -1,0 +1,118 @@
+package main
+
+import (
+	"fmt"
+	"go/ast"
+	"go/token"
+	"go/types"
+	"os"
+	"sort"
+	"strings"
+
+	"golang.org/x/tools/go/packages"
+)
+
+// Reports struct fields declared in non-test files of the target package that
+// are never read anywhere in the loaded packages (tests included). A "read" is
+// any use of the field object other than: the LHS of an assignment, or a key
+// in a composite literal.
+func main() {
+	target := os.Args[1]
+	cfg := &packages.Config{Mode: packages.LoadAllSyntax, Tests: true, Dir: os.Args[2]}
+	pkgs, err := packages.Load(cfg, "./...")
+	if err != nil {
+		panic(err)
+	}
+	type info struct {
+		reads, writes, keys int
+		pos              token.Position
+		owner            string
+	}
+	fields := map[string]*info{} // key: pos string
+	objKey := func(fset *token.FileSet, v *types.Var) string { return fset.Position(v.Pos()).String() }
+	// collect fields
+	for _, p := range pkgs {
+		if p.PkgPath != target {
+			continue
+		}
+		for _, f := range p.Syntax {
+			fn := p.Fset.Position(f.Pos()).Filename
+			if strings.HasSuffix(fn, "_test.go") {
+				continue
+			}
+			ast.Inspect(f, func(n ast.Node) bool {
+				ts, ok := n.(*ast.TypeSpec)
+				if !ok {
+					return true
+				}
+				st, ok := ts.Type.(*ast.StructType)
+				if !ok {
+					return true
+				}
+				for _, fl := range st.Fields.List {
+					for _, nm := range fl.Names {
+						v, _ := p.TypesInfo.Defs[nm].(*types.Var)
+						if v == nil {
+							continue
+						}
+						fields[objKey(p.Fset, v)] = &info{pos: p.Fset.Position(v.Pos()), owner: ts.Name.Name + "." + nm.Name}
+					}
+				}
+				return true
+			})
+		}
+	}
+	for _, p := range pkgs {
+		writeIdents := map[*ast.Ident]bool{}
+		keyIdents := map[*ast.Ident]bool{}
+		for _, f := range p.Syntax {
+			ast.Inspect(f, func(n ast.Node) bool {
+				switch x := n.(type) {
+				case *ast.AssignStmt:
+					for _, l := range x.Lhs {
+						if se, ok := l.(*ast.SelectorExpr); ok && (x.Tok == token.ASSIGN || x.Tok == token.DEFINE) {
+							writeIdents[se.Sel] = true
+						}
+					}
+				case *ast.CompositeLit:
+					for _, el := range x.Elts {
+						if kv, ok := el.(*ast.KeyValueExpr); ok {
+							if id, ok := kv.Key.(*ast.Ident); ok {
+								keyIdents[id] = true
+							}
+						}
+					}
+				}
+				return true
+			})
+		}
+		for id, obj := range p.TypesInfo.Uses {
+			v, ok := obj.(*types.Var)
+			if !ok || !v.IsField() {
+				continue
+			}
+			fi := fields[objKey(p.Fset, v)]
+			if fi == nil {
+				continue
+			}
+			switch {
+			case keyIdents[id]:
+				fi.keys++
+			case writeIdents[id]:
+				fi.writes++
+			default:
+				fi.reads++
+			}
+		}
+	}
+	var out []string
+	for _, fi := range fields {
+		if fi.reads == 0 || os.Getenv("ALL") != "" {
+			out = append(out, fmt.Sprintf("%s:%d\t%s\treads=%d writes=%d keys=%d", fi.pos.Filename, fi.pos.Line, fi.owner, fi.reads, fi.writes, fi.keys))
+		}
+	}
+	sort.Strings(out)
+	for _, o := range out {
+		fmt.Println(o)
+	}
+}

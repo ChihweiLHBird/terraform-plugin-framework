@@ -1,0 +1,39 @@
+package vcprobe
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+func TestC6(t *testing.T) {
+	ctx := context.Background()
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{
+		"name": schema.StringAttribute{CustomType: vStrType{}, Optional: true},
+	}}
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"name": tftypes.String}}
+	raw := tftypes.NewValue(objT, map[string]tftypes.Value{"name": tftypes.NewValue(tftypes.String, "a")})
+	st := tfsdk.State{Schema: sch, Raw: raw}
+
+	var generic attr.Value
+	d := st.GetAttribute(ctx, pathRoot("name"), &generic)
+	t.Logf("GetAttribute into *attr.Value: n=%d %s value=%v", len(d), dump(d), generic)
+	var typed vStr
+	d = st.GetAttribute(ctx, pathRoot("name"), &typed)
+	t.Logf("GetAttribute into *vStr:       n=%d %s", len(d), dump(d))
+
+	// tfsdk.ValueFrom drops FromValue warnings
+	var out vStr
+	d = tfsdk.ValueFrom(ctx, "a", vStrType{}, &out)
+	t.Logf("tfsdk.ValueFrom(\"a\", vStrType): n=%d %s out=%v", len(d), dump(d), out)
+	var outS basetypes.StringValue
+	_ = outS
+	// tfsdk.ValueFrom top-level Unknownable
+	d = tfsdk.ValueFrom(ctx, &uStr{S: "a"}, vStrType{}, &out)
+	t.Logf("tfsdk.ValueFrom(*uStr): n=%d %s", len(d), dump(d))
+}

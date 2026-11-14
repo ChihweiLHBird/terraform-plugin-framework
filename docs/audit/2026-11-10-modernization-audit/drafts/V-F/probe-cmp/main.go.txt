@@ -1,0 +1,30 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/google/go-cmp/cmp"
+)
+
+type valRecv struct{ value any }
+
+func (d valRecv) Equal(o valRecv) bool { return fmt.Sprint(d.value) == fmt.Sprint(o.value) }
+
+type ptrRecv struct{ value any }
+
+func (d *ptrRecv) Equal(o ptrRecv) bool { return fmt.Sprint(d.value) == fmt.Sprint(o.value) }
+
+type respVal struct{ Result valRecv }
+type respPtr struct{ Result ptrRecv }
+
+func main() {
+	fmt.Printf("value receiver: diff=%q\n", cmp.Diff(respVal{valRecv{1}}, respVal{valRecv{1}}))
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("pointer receiver: PANIC %v\n", r)
+			}
+		}()
+		fmt.Printf("pointer receiver: diff=%q\n", cmp.Diff(respPtr{ptrRecv{1}}, respPtr{ptrRecv{1}}))
+	}()
+}

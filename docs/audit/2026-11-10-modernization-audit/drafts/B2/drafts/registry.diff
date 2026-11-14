@@ -1,0 +1,858 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/registry.go b/internal/fwserver/registry.go
+--- a/internal/fwserver/registry.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/registry.go	2026-10-24 23:11:16.887241169 +0000
+@@ -0,0 +1,91 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package fwserver
++
++import (
++	"context"
++	"fmt"
++	"sync"
++
++	"github.com/hashicorp/terraform-plugin-framework/diag"
++	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++)
++
++// factoryRegistry is the cached map of the provider-defined factory functions
++// of one concept (resources, data sources, ...) by type name, along with the
++// diagnostics raised while building it on first use.
++type factoryRegistry[T any] struct {
++	mu    sync.Mutex
++	funcs map[string]func() T
++	diags diag.Diagnostics
++}
++
++// factoryRegistryText is the concept-specific log and diagnostic text of a
++// factoryRegistry. The text is observable behavior, so it is kept per concept.
++type factoryRegistryText struct {
++	lockLog, callingLog, calledLog string
++	foundLog, logKey               string
++	// missingDetail is a format with a single %T verb for the instance and
++	// duplicateDetail a format with a single %s verb for the type name.
++	missingSummary, missingDetail     string
++	duplicateSummary, duplicateDetail string
++}
++
++const reportToProviderDevelopers = "This is always an issue with the provider and should be reported to the provider developers."
++
++// load returns the cached factory functions, building them on first use.
++// prepare is called once, under the lock, and returns the provider-defined
++// factories method, or nil if the provider does not implement the concept,
++// along with a function returning the type name of an instance. accept, if
++// non-nil, performs any additional validation of a uniquely named instance.
++func (r *factoryRegistry[T]) load(
++	ctx context.Context,
++	text *factoryRegistryText,
++	prepare func() (factories func(context.Context) []func() T, typeName func(T) string),
++	accept func(instance T, typeName string, diags *diag.Diagnostics) bool,
++) (map[string]func() T, diag.Diagnostics) {
++	logging.FrameworkTrace(ctx, text.lockLog)
++	r.mu.Lock()
++	defer r.mu.Unlock()
++
++	if r.funcs != nil {
++		return r.funcs, r.diags
++	}
++
++	factories, typeNameOf := prepare()
++	r.funcs = make(map[string]func() T)
++
++	if factories == nil {
++		return r.funcs, r.diags
++	}
++
++	logging.FrameworkTrace(ctx, text.callingLog)
++	factoryFuncs := factories(ctx)
++	logging.FrameworkTrace(ctx, text.calledLog)
++
++	for _, factory := range factoryFuncs {
++		instance := factory()
++		typeName := typeNameOf(instance)
++
++		if typeName == "" {
++			r.diags.AddError(text.missingSummary, fmt.Sprintf(text.missingDetail, instance)+reportToProviderDevelopers)
++			continue
++		}
++
++		logging.FrameworkTrace(ctx, text.foundLog, map[string]interface{}{text.logKey: typeName})
++
++		if _, ok := r.funcs[typeName]; ok {
++			r.diags.AddError(text.duplicateSummary, fmt.Sprintf(text.duplicateDetail, typeName)+reportToProviderDevelopers)
++			continue
++		}
++
++		if accept != nil && !accept(instance, typeName, &r.diags) {
++			continue
++		}
++
++		r.funcs[typeName] = factory
++	}
++
++	return r.funcs, r.diags
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server.go b/internal/fwserver/server.go
+--- a/internal/fwserver/server.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server.go	2026-10-24 23:12:30.165559090 +0000
+@@ -85,16 +85,7 @@
+ 	// actionFuncs is the cached Action functions for RPCs that need to
+ 	// access actions. If not found, it will be fetched from the
+ 	// Provider.Actions() method.
+-	actionFuncs map[string]func() action.Action
+-
+-	// actionFuncsDiags is the cached Diagnostics obtained while populating
+-	// actionFuncs. This is to ensure any warnings or errors are also
+-	// returned appropriately when fetching actionFuncs.
+-	actionFuncsDiags diag.Diagnostics
+-
+-	// actionFuncsMutex is a mutex to protect concurrent actionFuncs
+-	// access from race conditions.
+-	actionFuncsMutex sync.Mutex
++	actionFuncs factoryRegistry[action.Action]
+ 
+ 	// dataSourceSchemas is the cached DataSource Schemas for RPCs that need to
+ 	// convert configuration data from the protocol. If not found, it will be
+@@ -108,16 +99,7 @@
+ 	// dataSourceFuncs is the cached DataSource functions for RPCs that need to
+ 	// access data sources. If not found, it will be fetched from the
+ 	// Provider.DataSources() method.
+-	dataSourceFuncs map[string]func() datasource.DataSource
+-
+-	// dataSourceTypesDiags is the cached Diagnostics obtained while populating
+-	// dataSourceTypes. This is to ensure any warnings or errors are also
+-	// returned appropriately when fetching dataSourceTypes.
+-	dataSourceTypesDiags diag.Diagnostics
+-
+-	// dataSourceTypesMutex is a mutex to protect concurrent dataSourceTypes
+-	// access from race conditions.
+-	dataSourceTypesMutex sync.Mutex
++	dataSourceFuncs factoryRegistry[datasource.DataSource]
+ 
+ 	// ephemeralResourceSchemas is the cached EphemeralResource Schemas for RPCs that need to
+ 	// convert configuration data from the protocol. If not found, it will be
+@@ -131,16 +113,7 @@
+ 	// ephemeralResourceFuncs is the cached EphemeralResource functions for RPCs that need to
+ 	// access ephemeral resources. If not found, it will be fetched from the
+ 	// Provider.EphemeralResources() method.
+-	ephemeralResourceFuncs map[string]func() ephemeral.EphemeralResource
+-
+-	// ephemeralResourceFuncsDiags is the cached Diagnostics obtained while populating
+-	// ephemeralResourceFuncs. This is to ensure any warnings or errors are also
+-	// returned appropriately when fetching ephemeralResourceFuncs.
+-	ephemeralResourceFuncsDiags diag.Diagnostics
+-
+-	// ephemeralResourceFuncsMutex is a mutex to protect concurrent ephemeralResourceFuncs
+-	// access from race conditions.
+-	ephemeralResourceFuncsMutex sync.Mutex
++	ephemeralResourceFuncs factoryRegistry[ephemeral.EphemeralResource]
+ 
+ 	// deferred indicates an automatic provider deferral. When this is set,
+ 	// the provider will automatically defer the PlanResourceChange, ReadResource,
+@@ -159,27 +132,10 @@
+ 	// functionFuncs is the cached Function functions for RPCs that need to
+ 	// access functions. If not found, it will be fetched from the
+ 	// Provider.Functions() method.
+-	functionFuncs map[string]func() function.Function
+-
+-	// functionFuncsDiags is the cached Diagnostics obtained while populating
+-	// functionFuncs. This is to ensure any warnings or errors are also
+-	// returned appropriately when fetching functionFuncs.
+-	functionFuncsDiags diag.Diagnostics
+-
+-	// functionFuncsMutex is a mutex to protect concurrent functionFuncs
+-	// access from race conditions.
+-	functionFuncsMutex sync.Mutex
++	functionFuncs factoryRegistry[function.Function]
+ 
+ 	// listResourceFuncs is a map of known ListResource factory functions.
+-	listResourceFuncs map[string]func() list.ListResource
+-
+-	// listResourceFuncsDiags are the cached Diagnostics obtained while
+-	// populating listResourceFuncs.
+-	listResourceFuncsDiags diag.Diagnostics
+-
+-	// listResourceFuncsMutex is a mutex to protect concurrent listResourceFuncs
+-	// access from race conditions.
+-	listResourceFuncsMutex sync.Mutex
++	listResourceFuncs factoryRegistry[list.ListResource]
+ 
+ 	// listResourceSchemas is the cached ListResource Schemas for RPCs that
+ 	// need to convert configuration data from the protocol. If not found, it
+@@ -248,16 +204,7 @@
+ 	// resourceFuncs is the cached Resource functions for RPCs that need to
+ 	// access resources. If not found, it will be fetched from the
+ 	// Provider.Resources() method.
+-	resourceFuncs map[string]func() resource.Resource
+-
+-	// resourceTypesDiags is the cached Diagnostics obtained while populating
+-	// resourceTypes. This is to ensure any warnings or errors are also
+-	// returned appropriately when fetching resourceTypes.
+-	resourceTypesDiags diag.Diagnostics
+-
+-	// resourceTypesMutex is a mutex to protect concurrent resourceTypes
+-	// access from race conditions.
+-	resourceTypesMutex sync.Mutex
++	resourceFuncs factoryRegistry[resource.Resource]
+ 
+ 	// resourceBehaviors is the cached Resource behaviors for RPCs that need to
+ 	// control framework-specific logic when interacting with a resource.
+@@ -284,16 +231,7 @@
+ 	// statestoreFuncs is the cached StateStore functions for RPCs that need to
+ 	// access statestores. If not found, it will be fetched from the
+ 	// Provider.StateStore() method.
+-	statestoreFuncs map[string]func() statestore.StateStore
+-
+-	// statestoreFuncsDiags is the cached Diagnostics obtained while populating
+-	// statestoreFuncs. This is to ensure any warnings or errors are also
+-	// returned appropriately when fetching statestoreFuncs.
+-	statestoreFuncsDiags diag.Diagnostics
+-
+-	// statestoreFuncsMutex is a mutex to protect concurrent statestoreFuncs
+-	// access from race conditions.
+-	statestoreFuncsMutex sync.Mutex
++	statestoreFuncs factoryRegistry[statestore.StateStore]
+ }
+ 
+ // DataSource returns the DataSource for a given type name.
+@@ -314,59 +252,31 @@
+ 	return dataSourceFunc(), diags
+ }
+ 
++var dataSourceRegistryText = factoryRegistryText{
++	lockLog:          "Checking DataSourceTypes lock",
++	callingLog:       "Calling provider defined Provider DataSources",
++	calledLog:        "Called provider defined Provider DataSources",
++	foundLog:         "Found data source type",
++	logKey:           logging.KeyDataSourceType,
++	missingSummary:   "Data Source Type Name Missing",
++	missingDetail:    "The %T DataSource returned an empty string from the Metadata method. ",
++	duplicateSummary: "Duplicate Data Source Type Defined",
++	duplicateDetail:  "The %s data source type name was returned for multiple data sources. Data source type names must be unique. ",
++}
++
+ // DataSourceFuncs returns a map of DataSource functions. The results are cached
+ // on first use.
+ func (s *Server) DataSourceFuncs(ctx context.Context) (map[string]func() datasource.DataSource, diag.Diagnostics) {
+-	logging.FrameworkTrace(ctx, "Checking DataSourceTypes lock")
+-	s.dataSourceTypesMutex.Lock()
+-	defer s.dataSourceTypesMutex.Unlock()
+-
+-	if s.dataSourceFuncs != nil {
+-		return s.dataSourceFuncs, s.dataSourceTypesDiags
+-	}
+-
+-	providerTypeName := s.ProviderTypeName(ctx)
+-	s.dataSourceFuncs = make(map[string]func() datasource.DataSource)
+-
+-	logging.FrameworkTrace(ctx, "Calling provider defined Provider DataSources")
+-	dataSourceFuncsSlice := s.Provider.DataSources(ctx)
+-	logging.FrameworkTrace(ctx, "Called provider defined Provider DataSources")
++	return s.dataSourceFuncs.load(ctx, &dataSourceRegistryText, func() (func(context.Context) []func() datasource.DataSource, func(datasource.DataSource) string) {
++		providerTypeName := s.ProviderTypeName(ctx)
+ 
+-	for _, dataSourceFunc := range dataSourceFuncsSlice {
+-		dataSource := dataSourceFunc()
++		return s.Provider.DataSources, func(dataSource datasource.DataSource) string {
++			resp := datasource.MetadataResponse{}
++			dataSource.Metadata(ctx, datasource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+ 
+-		dataSourceTypeNameReq := datasource.MetadataRequest{
+-			ProviderTypeName: providerTypeName,
++			return resp.TypeName
+ 		}
+-		dataSourceTypeNameResp := datasource.MetadataResponse{}
+-
+-		dataSource.Metadata(ctx, dataSourceTypeNameReq, &dataSourceTypeNameResp)
+-
+-		if dataSourceTypeNameResp.TypeName == "" {
+-			s.dataSourceTypesDiags.AddError(
+-				"Data Source Type Name Missing",
+-				fmt.Sprintf("The %T DataSource returned an empty string from the Metadata method. ", dataSource)+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
+-		}
+-
+-		logging.FrameworkTrace(ctx, "Found data source type", map[string]interface{}{logging.KeyDataSourceType: dataSourceTypeNameResp.TypeName})
+-
+-		if _, ok := s.dataSourceFuncs[dataSourceTypeNameResp.TypeName]; ok {
+-			s.dataSourceTypesDiags.AddError(
+-				"Duplicate Data Source Type Defined",
+-				fmt.Sprintf("The %s data source type name was returned for multiple data sources. ", dataSourceTypeNameResp.TypeName)+
+-					"Data source type names must be unique. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
+-		}
+-
+-		s.dataSourceFuncs[dataSourceTypeNameResp.TypeName] = dataSourceFunc
+-	}
+-
+-	return s.dataSourceFuncs, s.dataSourceTypesDiags
++	}, nil)
+ }
+ 
+ // DataSourceMetadatas returns a slice of DataSourceMetadata for the GetMetadata
+@@ -643,59 +553,31 @@
+ 	return s.resourceBehaviors, s.resourceBehaviorsDiags
+ }
+ 
++var resourceRegistryText = factoryRegistryText{
++	lockLog:          "Checking ResourceTypes lock",
++	callingLog:       "Calling provider defined Provider Resources",
++	calledLog:        "Called provider defined Provider Resources",
++	foundLog:         "Found resource type",
++	logKey:           logging.KeyResourceType,
++	missingSummary:   "Resource Type Name Missing",
++	missingDetail:    "The %T Resource returned an empty string from the Metadata method. ",
++	duplicateSummary: "Duplicate Resource Type Defined",
++	duplicateDetail:  "The %s resource type name was returned for multiple resources. Resource type names must be unique. ",
++}
++
+ // ResourceFuncs returns a map of Resource functions. The results are cached
+ // on first use.
+ func (s *Server) ResourceFuncs(ctx context.Context) (map[string]func() resource.Resource, diag.Diagnostics) {
+-	logging.FrameworkTrace(ctx, "Checking ResourceTypes lock")
+-	s.resourceTypesMutex.Lock()
+-	defer s.resourceTypesMutex.Unlock()
+-
+-	if s.resourceFuncs != nil {
+-		return s.resourceFuncs, s.resourceTypesDiags
+-	}
+-
+-	providerTypeName := s.ProviderTypeName(ctx)
+-	s.resourceFuncs = make(map[string]func() resource.Resource)
+-
+-	logging.FrameworkTrace(ctx, "Calling provider defined Provider Resources")
+-	resourceFuncsSlice := s.Provider.Resources(ctx)
+-	logging.FrameworkTrace(ctx, "Called provider defined Provider Resources")
+-
+-	for _, resourceFunc := range resourceFuncsSlice {
+-		res := resourceFunc()
+-
+-		resourceTypeNameReq := resource.MetadataRequest{
+-			ProviderTypeName: providerTypeName,
+-		}
+-		resourceTypeNameResp := resource.MetadataResponse{}
+-
+-		res.Metadata(ctx, resourceTypeNameReq, &resourceTypeNameResp)
+-
+-		if resourceTypeNameResp.TypeName == "" {
+-			s.resourceTypesDiags.AddError(
+-				"Resource Type Name Missing",
+-				fmt.Sprintf("The %T Resource returned an empty string from the Metadata method. ", res)+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
+-		}
++	return s.resourceFuncs.load(ctx, &resourceRegistryText, func() (func(context.Context) []func() resource.Resource, func(resource.Resource) string) {
++		providerTypeName := s.ProviderTypeName(ctx)
+ 
+-		logging.FrameworkTrace(ctx, "Found resource type", map[string]interface{}{logging.KeyResourceType: resourceTypeNameResp.TypeName})
++		return s.Provider.Resources, func(res resource.Resource) string {
++			resp := resource.MetadataResponse{}
++			res.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+ 
+-		if _, ok := s.resourceFuncs[resourceTypeNameResp.TypeName]; ok {
+-			s.resourceTypesDiags.AddError(
+-				"Duplicate Resource Type Defined",
+-				fmt.Sprintf("The %s resource type name was returned for multiple resources. ", resourceTypeNameResp.TypeName)+
+-					"Resource type names must be unique. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++			return resp.TypeName
+ 		}
+-
+-		s.resourceFuncs[resourceTypeNameResp.TypeName] = resourceFunc
+-	}
+-
+-	return s.resourceFuncs, s.resourceTypesDiags
++	}, nil)
+ }
+ 
+ // ResourceMetadatas returns a slice of ResourceMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_actions.go b/internal/fwserver/server_actions.go
+--- a/internal/fwserver/server_actions.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server_actions.go	2026-10-24 23:12:19.543290455 +0000
+@@ -32,66 +32,38 @@
+ 	return actionFunc(), diags
+ }
+ 
++var actionRegistryText = factoryRegistryText{
++	lockLog:          "Checking ActionFuncs lock",
++	callingLog:       "Calling provider defined Actions",
++	calledLog:        "Called provider defined Actions",
++	foundLog:         "Found action",
++	logKey:           logging.KeyActionType,
++	missingSummary:   "Action Type Missing",
++	missingDetail:    "The %T Action returned an empty string from the Metadata method. ",
++	duplicateSummary: "Duplicate Action Defined",
++	duplicateDetail:  "The %s action type was returned for multiple actions. Action types must be unique. ",
++}
++
+ // ActionFuncs returns a map of Action functions. The results are cached
+ // on first use.
+ func (s *Server) ActionFuncs(ctx context.Context) (map[string]func() action.Action, diag.Diagnostics) {
+-	logging.FrameworkTrace(ctx, "Checking ActionFuncs lock")
+-	s.actionFuncsMutex.Lock()
+-	defer s.actionFuncsMutex.Unlock()
+-
+-	if s.actionFuncs != nil {
+-		return s.actionFuncs, s.actionFuncsDiags
+-	}
+-
+-	providerTypeName := s.ProviderTypeName(ctx)
+-	s.actionFuncs = make(map[string]func() action.Action)
+-
+-	provider, ok := s.Provider.(provider.ProviderWithActions)
+-	if !ok {
+-		// Only action specific RPCs should return diagnostics about the
+-		// provider not implementing actions or missing actions.
+-		return s.actionFuncs, s.actionFuncsDiags
+-	}
+-
+-	logging.FrameworkTrace(ctx, "Calling provider defined Actions")
+-	actionFuncsSlice := provider.Actions(ctx)
+-	logging.FrameworkTrace(ctx, "Called provider defined Actions")
+-
+-	for _, actionFunc := range actionFuncsSlice {
+-		actionImpl := actionFunc()
+-
+-		actionTypeReq := action.MetadataRequest{
+-			ProviderTypeName: providerTypeName,
+-		}
+-		actionTypeResp := action.MetadataResponse{}
+-
+-		actionImpl.Metadata(ctx, actionTypeReq, &actionTypeResp)
++	return s.actionFuncs.load(ctx, &actionRegistryText, func() (func(context.Context) []func() action.Action, func(action.Action) string) {
++		providerTypeName := s.ProviderTypeName(ctx)
+ 
+-		if actionTypeResp.TypeName == "" {
+-			s.actionFuncsDiags.AddError(
+-				"Action Type Missing",
+-				fmt.Sprintf("The %T Action returned an empty string from the Metadata method. ", actionImpl)+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++		provider, ok := s.Provider.(provider.ProviderWithActions)
++		if !ok {
++			// Only action specific RPCs should return diagnostics about the
++			// provider not implementing actions or missing actions.
++			return nil, nil
+ 		}
+ 
+-		logging.FrameworkTrace(ctx, "Found action", map[string]interface{}{logging.KeyActionType: actionTypeResp.TypeName})
++		return provider.Actions, func(actionImpl action.Action) string {
++			resp := action.MetadataResponse{}
++			actionImpl.Metadata(ctx, action.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+ 
+-		if _, ok := s.actionFuncs[actionTypeResp.TypeName]; ok {
+-			s.actionFuncsDiags.AddError(
+-				"Duplicate Action Defined",
+-				fmt.Sprintf("The %s action type was returned for multiple actions. ", actionTypeResp.TypeName)+
+-					"Action types must be unique. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++			return resp.TypeName
+ 		}
+-
+-		s.actionFuncs[actionTypeResp.TypeName] = actionFunc
+-	}
+-
+-	return s.actionFuncs, s.actionFuncsDiags
++	}, nil)
+ }
+ 
+ // ActionMetadatas returns a slice of ActionMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_ephemeralresources.go b/internal/fwserver/server_ephemeralresources.go
+--- a/internal/fwserver/server_ephemeralresources.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_ephemeralresources.go	2026-10-24 23:12:19.543618599 +0000
+@@ -32,67 +32,38 @@
+ 	return ephemeralResourceFunc(), diags
+ }
+ 
++var ephemeralResourceRegistryText = factoryRegistryText{
++	lockLog:          "Checking EphemeralResourceFuncs lock",
++	callingLog:       "Calling provider defined Provider EphemeralResources",
++	calledLog:        "Called provider defined Provider EphemeralResources",
++	foundLog:         "Found ephemeral resource type",
++	logKey:           logging.KeyEphemeralResourceType,
++	missingSummary:   "Ephemeral Resource Type Name Missing",
++	missingDetail:    "The %T EphemeralResource returned an empty string from the Metadata method. ",
++	duplicateSummary: "Duplicate Ephemeral Resource Type Defined",
++	duplicateDetail:  "The %s ephemeral resource type name was returned for multiple ephemeral resources. Ephemeral resource type names must be unique. ",
++}
++
+ // EphemeralResourceFuncs returns a map of EphemeralResource functions. The results are cached
+ // on first use.
+ func (s *Server) EphemeralResourceFuncs(ctx context.Context) (map[string]func() ephemeral.EphemeralResource, diag.Diagnostics) {
+-	logging.FrameworkTrace(ctx, "Checking EphemeralResourceFuncs lock")
+-	s.ephemeralResourceFuncsMutex.Lock()
+-	defer s.ephemeralResourceFuncsMutex.Unlock()
+-
+-	if s.ephemeralResourceFuncs != nil {
+-		return s.ephemeralResourceFuncs, s.ephemeralResourceFuncsDiags
+-	}
+-
+-	providerTypeName := s.ProviderTypeName(ctx)
+-	s.ephemeralResourceFuncs = make(map[string]func() ephemeral.EphemeralResource)
+-
+-	provider, ok := s.Provider.(provider.ProviderWithEphemeralResources)
+-
+-	if !ok {
+-		// Only ephemeral resource specific RPCs should return diagnostics about the
+-		// provider not implementing ephemeral resources or missing ephemeral resources.
+-		return s.ephemeralResourceFuncs, s.ephemeralResourceFuncsDiags
+-	}
+-
+-	logging.FrameworkTrace(ctx, "Calling provider defined Provider EphemeralResources")
+-	ephemeralResourceFuncsSlice := provider.EphemeralResources(ctx)
+-	logging.FrameworkTrace(ctx, "Called provider defined Provider EphemeralResources")
+-
+-	for _, ephemeralResourceFunc := range ephemeralResourceFuncsSlice {
+-		ephemeralResource := ephemeralResourceFunc()
+-
+-		ephemeralResourceTypeNameReq := ephemeral.MetadataRequest{
+-			ProviderTypeName: providerTypeName,
+-		}
+-		ephemeralResourceTypeNameResp := ephemeral.MetadataResponse{}
+-
+-		ephemeralResource.Metadata(ctx, ephemeralResourceTypeNameReq, &ephemeralResourceTypeNameResp)
++	return s.ephemeralResourceFuncs.load(ctx, &ephemeralResourceRegistryText, func() (func(context.Context) []func() ephemeral.EphemeralResource, func(ephemeral.EphemeralResource) string) {
++		providerTypeName := s.ProviderTypeName(ctx)
+ 
+-		if ephemeralResourceTypeNameResp.TypeName == "" {
+-			s.ephemeralResourceFuncsDiags.AddError(
+-				"Ephemeral Resource Type Name Missing",
+-				fmt.Sprintf("The %T EphemeralResource returned an empty string from the Metadata method. ", ephemeralResource)+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++		provider, ok := s.Provider.(provider.ProviderWithEphemeralResources)
++		if !ok {
++			// Only ephemeral resource specific RPCs should return diagnostics about the
++			// provider not implementing ephemeral resources or missing ephemeral resources.
++			return nil, nil
+ 		}
+ 
+-		logging.FrameworkTrace(ctx, "Found ephemeral resource type", map[string]interface{}{logging.KeyEphemeralResourceType: ephemeralResourceTypeNameResp.TypeName})
++		return provider.EphemeralResources, func(ephemeralResource ephemeral.EphemeralResource) string {
++			resp := ephemeral.MetadataResponse{}
++			ephemeralResource.Metadata(ctx, ephemeral.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+ 
+-		if _, ok := s.ephemeralResourceFuncs[ephemeralResourceTypeNameResp.TypeName]; ok {
+-			s.ephemeralResourceFuncsDiags.AddError(
+-				"Duplicate Ephemeral Resource Type Defined",
+-				fmt.Sprintf("The %s ephemeral resource type name was returned for multiple ephemeral resources. ", ephemeralResourceTypeNameResp.TypeName)+
+-					"Ephemeral resource type names must be unique. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++			return resp.TypeName
+ 		}
+-
+-		s.ephemeralResourceFuncs[ephemeralResourceTypeNameResp.TypeName] = ephemeralResourceFunc
+-	}
+-
+-	return s.ephemeralResourceFuncs, s.ephemeralResourceFuncsDiags
++	}, nil)
+ }
+ 
+ // EphemeralResourceMetadatas returns a slice of EphemeralResourceMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_functions.go b/internal/fwserver/server_functions.go
+--- a/internal/fwserver/server_functions.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_functions.go	2026-10-24 23:12:19.544231944 +0000
+@@ -118,64 +118,36 @@
+ 	return functionDefinitions, diags
+ }
+ 
++var functionRegistryText = factoryRegistryText{
++	lockLog:          "Checking FunctionTypes lock",
++	callingLog:       "Calling provider defined Provider Functions",
++	calledLog:        "Called provider defined Provider Functions",
++	foundLog:         "Found function",
++	logKey:           logging.KeyFunctionName,
++	missingSummary:   "Function Name Missing",
++	missingDetail:    "The %T Function returned an empty string from the Metadata method. ",
++	duplicateSummary: "Duplicate Function Name Defined",
++	duplicateDetail:  "The %s function name was returned for multiple functions. Function names must be unique. ",
++}
++
+ // FunctionFuncs returns a map of Function functions. The results are cached
+ // on first use.
+ func (s *Server) FunctionFuncs(ctx context.Context) (map[string]func() function.Function, diag.Diagnostics) {
+-	logging.FrameworkTrace(ctx, "Checking FunctionTypes lock")
+-	s.functionFuncsMutex.Lock()
+-	defer s.functionFuncsMutex.Unlock()
+-
+-	if s.functionFuncs != nil {
+-		return s.functionFuncs, s.functionFuncsDiags
+-	}
+-
+-	s.functionFuncs = make(map[string]func() function.Function)
+-
+-	provider, ok := s.Provider.(provider.ProviderWithFunctions)
+-
+-	if !ok {
+-		// Only function-specific RPCs should return diagnostics about the
+-		// provider not implementing functions or missing functions.
+-		return s.functionFuncs, s.functionFuncsDiags
+-	}
+-
+-	logging.FrameworkTrace(ctx, "Calling provider defined Provider Functions")
+-	functionFuncs := provider.Functions(ctx)
+-	logging.FrameworkTrace(ctx, "Called provider defined Provider Functions")
+-
+-	for _, functionFunc := range functionFuncs {
+-		functionImpl := functionFunc()
+-
+-		metadataReq := function.MetadataRequest{}
+-		metadataResp := function.MetadataResponse{}
+-
+-		functionImpl.Metadata(ctx, metadataReq, &metadataResp)
+-
+-		if metadataResp.Name == "" {
+-			s.functionFuncsDiags.AddError(
+-				"Function Name Missing",
+-				fmt.Sprintf("The %T Function returned an empty string from the Metadata method. ", functionImpl)+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++	return s.functionFuncs.load(ctx, &functionRegistryText, func() (func(context.Context) []func() function.Function, func(function.Function) string) {
++		provider, ok := s.Provider.(provider.ProviderWithFunctions)
++		if !ok {
++			// Only function-specific RPCs should return diagnostics about the
++			// provider not implementing functions or missing functions.
++			return nil, nil
+ 		}
+ 
+-		logging.FrameworkTrace(ctx, "Found function", map[string]interface{}{logging.KeyFunctionName: metadataResp.Name})
++		return provider.Functions, func(functionImpl function.Function) string {
++			resp := function.MetadataResponse{}
++			functionImpl.Metadata(ctx, function.MetadataRequest{}, &resp)
+ 
+-		if _, ok := s.functionFuncs[metadataResp.Name]; ok {
+-			s.functionFuncsDiags.AddError(
+-				"Duplicate Function Name Defined",
+-				fmt.Sprintf("The %s function name was returned for multiple functions. ", metadataResp.Name)+
+-					"Function names must be unique. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++			return resp.Name
+ 		}
+-
+-		s.functionFuncs[metadataResp.Name] = functionFunc
+-	}
+-
+-	return s.functionFuncs, s.functionFuncsDiags
++	}, nil)
+ }
+ 
+ // FunctionMetadatas returns a slice of FunctionMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_listresources.go b/internal/fwserver/server_listresources.go
+--- a/internal/fwserver/server_listresources.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_listresources.go	2026-10-24 23:12:19.544497799 +0000
+@@ -31,6 +31,18 @@
+ 	return listResourceFunc(), nil
+ }
+ 
++var listResourceRegistryText = factoryRegistryText{
++	lockLog:          "Checking ListResourceFuncs lock",
++	callingLog:       "Calling provider defined ListResources",
++	calledLog:        "Called provider defined ListResources",
++	foundLog:         "Found resource type", // TODO: y?
++	logKey:           logging.KeyListResourceType,
++	missingSummary:   "ListResource Type Name Missing",
++	missingDetail:    "The %T ListResource returned an empty string from the Metadata method. ",
++	duplicateSummary: "Duplicate ListResource Type Defined",
++	duplicateDetail:  "The %s ListResource type name was returned for multiple list resources. ListResource type names must be unique. ",
++}
++
+ // ListResourceFuncs returns a map of ListResource functions. The results are
+ // cached on first use.
+ func (s *Server) ListResourceFuncs(ctx context.Context) (map[string]func() list.ListResource, diag.Diagnostics) {
+@@ -39,52 +51,16 @@
+ 		return nil, nil
+ 	}
+ 
+-	logging.FrameworkTrace(ctx, "Checking ListResourceFuncs lock")
+-	s.listResourceFuncsMutex.Lock()
+-	defer s.listResourceFuncsMutex.Unlock()
+-
+-	if s.listResourceFuncs != nil {
+-		return s.listResourceFuncs, s.listResourceFuncsDiags
+-	}
+-
+-	providerTypeName := s.ProviderTypeName(ctx)
+-	s.listResourceFuncs = make(map[string]func() list.ListResource)
+-
+-	logging.FrameworkTrace(ctx, "Calling provider defined ListResources")
+-	listResourceFuncSlice := provider.ListResources(ctx)
+-	logging.FrameworkTrace(ctx, "Called provider defined ListResources")
+-
+-	for _, listResourceFunc := range listResourceFuncSlice {
+-		listResource := listResourceFunc()
++	return s.listResourceFuncs.load(ctx, &listResourceRegistryText, func() (func(context.Context) []func() list.ListResource, func(list.ListResource) string) {
++		providerTypeName := s.ProviderTypeName(ctx)
+ 
+-		metadataReq := resource.MetadataRequest{
+-			ProviderTypeName: providerTypeName,
+-		}
+-		metadataResp := resource.MetadataResponse{}
+-		listResource.Metadata(ctx, metadataReq, &metadataResp)
+-
+-		typeName := metadataResp.TypeName
+-		if typeName == "" {
+-			s.listResourceFuncsDiags.AddError(
+-				"ListResource Type Name Missing",
+-				fmt.Sprintf("The %T ListResource returned an empty string from the Metadata method. ", listResource)+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
+-		}
+-
+-		logging.FrameworkTrace(ctx, "Found resource type", map[string]interface{}{logging.KeyListResourceType: typeName}) // TODO: y?
++		return provider.ListResources, func(listResource list.ListResource) string {
++			resp := resource.MetadataResponse{}
++			listResource.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+ 
+-		if _, ok := s.listResourceFuncs[typeName]; ok {
+-			s.listResourceFuncsDiags.AddError(
+-				"Duplicate ListResource Type Defined",
+-				fmt.Sprintf("The %s ListResource type name was returned for multiple list resources. ", typeName)+
+-					"ListResource type names must be unique. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++			return resp.TypeName
+ 		}
+-
++	}, func(listResource list.ListResource, typeName string, diags *diag.Diagnostics) bool {
+ 		rawV5SchemasResp := list.RawV5SchemaResponse{}
+ 		if listResourceWithSchemas, ok := listResource.(list.ListResourceWithRawV5Schemas); ok {
+ 			listResourceWithSchemas.RawV5Schemas(ctx, list.RawV5SchemaRequest{}, &rawV5SchemasResp)
+@@ -98,21 +74,19 @@
+ 		resourceFuncs, _ := s.ResourceFuncs(ctx)
+ 		if _, ok := resourceFuncs[typeName]; !ok {
+ 			if (rawV5SchemasResp.ProtoV5Schema == nil || rawV5SchemasResp.ProtoV5IdentitySchema == nil) && (rawV6SchemasResp.ProtoV6Schema == nil || rawV6SchemasResp.ProtoV6IdentitySchema == nil) {
+-				s.listResourceFuncsDiags.AddError(
++				diags.AddError(
+ 					"ListResource Type Defined without a Matching Managed Resource Type",
+ 					fmt.Sprintf("The %s ListResource type name was returned, but no matching managed Resource type was defined. ", typeName)+
+ 						"If the matching managed Resource type is not a framework resource either ProtoV5Schema and ProtoV5IdentitySchema must be specified in the RawV5Schemas method, "+
+ 						"or ProtoV6Schema and ProtoV6IdentitySchema must be specified in the RawV6Schemas method. "+
+ 						"This is always an issue with the provider and should be reported to the provider developers.",
+ 				)
+-				continue
++				return false
+ 			}
+ 		}
+ 
+-		s.listResourceFuncs[typeName] = listResourceFunc
+-	}
+-
+-	return s.listResourceFuncs, s.listResourceFuncsDiags
++		return true
++	})
+ }
+ 
+ // ListResourceMetadatas returns a slice of ListResourceMetadata for the GetMetadata
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_statestore.go b/internal/fwserver/server_statestore.go
+--- a/internal/fwserver/server_statestore.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_statestore.go	2026-10-24 23:12:19.543957787 +0000
+@@ -32,66 +32,38 @@
+ 	return statestoreFunc(), diags
+ }
+ 
++var stateStoreRegistryText = factoryRegistryText{
++	lockLog:          "Checking StateStoreFuncs lock",
++	callingLog:       "Calling provider defined StateStores",
++	calledLog:        "Called provider defined StateStores",
++	foundLog:         "Found state store",
++	logKey:           logging.KeyStateStoreType,
++	missingSummary:   "State Store Type Missing",
++	missingDetail:    "The %T state store returned an empty string from the Metadata method. ",
++	duplicateSummary: "Duplicate State Store Type Defined",
++	duplicateDetail:  "The %s state store type was returned for multiple state stores. State store type names must be unique. ",
++}
++
+ // StateStoreFuncs returns a map of StateStore functions. The results are cached
+ // on first use.
+ func (s *Server) StateStoreFuncs(ctx context.Context) (map[string]func() statestore.StateStore, diag.Diagnostics) {
+-	logging.FrameworkTrace(ctx, "Checking StateStoreFuncs lock")
+-	s.statestoreFuncsMutex.Lock()
+-	defer s.statestoreFuncsMutex.Unlock()
+-
+-	if s.statestoreFuncs != nil {
+-		return s.statestoreFuncs, s.statestoreFuncsDiags
+-	}
+-
+-	providerTypeName := s.ProviderTypeName(ctx)
+-	s.statestoreFuncs = make(map[string]func() statestore.StateStore)
+-
+-	provider, ok := s.Provider.(provider.ProviderWithStateStores)
+-	if !ok {
+-		// Only state store specific RPCs should return diagnostics about the
+-		// provider not implementing state stores or missing state stores.
+-		return s.statestoreFuncs, s.statestoreFuncsDiags
+-	}
+-
+-	logging.FrameworkTrace(ctx, "Calling provider defined StateStores")
+-	statestoreFuncsSlice := provider.StateStores(ctx)
+-	logging.FrameworkTrace(ctx, "Called provider defined StateStores")
+-
+-	for _, statestoreFunc := range statestoreFuncsSlice {
+-		statestoreImpl := statestoreFunc()
+-
+-		statestoreTypeReq := statestore.MetadataRequest{
+-			ProviderTypeName: providerTypeName,
+-		}
+-		statestoreTypeResp := statestore.MetadataResponse{}
+-
+-		statestoreImpl.Metadata(ctx, statestoreTypeReq, &statestoreTypeResp)
++	return s.statestoreFuncs.load(ctx, &stateStoreRegistryText, func() (func(context.Context) []func() statestore.StateStore, func(statestore.StateStore) string) {
++		providerTypeName := s.ProviderTypeName(ctx)
+ 
+-		if statestoreTypeResp.TypeName == "" {
+-			s.statestoreFuncsDiags.AddError(
+-				"State Store Type Missing",
+-				fmt.Sprintf("The %T state store returned an empty string from the Metadata method. ", statestoreImpl)+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++		provider, ok := s.Provider.(provider.ProviderWithStateStores)
++		if !ok {
++			// Only state store specific RPCs should return diagnostics about the
++			// provider not implementing state stores or missing state stores.
++			return nil, nil
+ 		}
+ 
+-		logging.FrameworkTrace(ctx, "Found state store", map[string]interface{}{logging.KeyStateStoreType: statestoreTypeResp.TypeName})
++		return provider.StateStores, func(statestoreImpl statestore.StateStore) string {
++			resp := statestore.MetadataResponse{}
++			statestoreImpl.Metadata(ctx, statestore.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+ 
+-		if _, ok := s.statestoreFuncs[statestoreTypeResp.TypeName]; ok {
+-			s.statestoreFuncsDiags.AddError(
+-				"Duplicate State Store Type Defined",
+-				fmt.Sprintf("The %s state store type was returned for multiple state stores. ", statestoreTypeResp.TypeName)+
+-					"State store type names must be unique. "+
+-					"This is always an issue with the provider and should be reported to the provider developers.",
+-			)
+-			continue
++			return resp.TypeName
+ 		}
+-
+-		s.statestoreFuncs[statestoreTypeResp.TypeName] = statestoreFunc
+-	}
+-
+-	return s.statestoreFuncs, s.statestoreFuncsDiags
++	}, nil)
+ }
+ 
+ // StateStoreMetadatas returns a slice of StateStoreMetadata for the GetMetadata

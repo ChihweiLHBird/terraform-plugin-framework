@@ -1,0 +1,140 @@
+package fwserver
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"runtime"
+	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"github.com/hashicorp/terraform-plugin-log/tfsdklogtest"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func vbSchema() schema.Schema {
+	return schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"items": schema.ListNestedAttribute{Optional: true, NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+				"a": schema.StringAttribute{Optional: true},
+				"b": schema.StringAttribute{Optional: true, Computed: true},
+				"c": schema.StringAttribute{Computed: true},
+			}}},
+			"secret": schema.StringAttribute{Optional: true, WriteOnly: true},
+			"m":      schema.MapAttribute{ElementType: types.StringType, Optional: true},
+			"d":      schema.DynamicAttribute{Optional: true, Computed: true},
+			"comp":   schema.StringAttribute{Computed: true},
+		},
+		Blocks: map[string]schema.Block{
+			"blk": schema.ListNestedBlock{NestedObject: schema.NestedBlockObject{Attributes: map[string]schema.Attribute{
+				"x": schema.StringAttribute{Optional: true, Computed: true},
+			}}},
+		},
+	}
+}
+
+func vbValue(n int, nullComputed bool) tftypes.Value {
+	sch := vbSchema()
+	rootT := sch.Type().TerraformType(context.Background()).(tftypes.Object)
+	itemT := rootT.AttributeTypes["items"].(tftypes.List).ElementType
+	blkT := rootT.AttributeTypes["blk"].(tftypes.List).ElementType
+	str := func(s string) tftypes.Value {
+		if nullComputed {
+			return tftypes.NewValue(tftypes.String, nil)
+		}
+		return tftypes.NewValue(tftypes.String, s)
+	}
+	items := make([]tftypes.Value, n)
+	for i := range items {
+		items[i] = tftypes.NewValue(itemT, map[string]tftypes.Value{
+			"a": tftypes.NewValue(tftypes.String, fmt.Sprintf("a%d", i)),
+			"b": str("b"),
+			"c": str("c"),
+		})
+	}
+	return tftypes.NewValue(rootT, map[string]tftypes.Value{
+		"items":  tftypes.NewValue(rootT.AttributeTypes["items"], items),
+		"secret": tftypes.NewValue(tftypes.String, "s3cret"),
+		"m":      tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{"k1": tftypes.NewValue(tftypes.String, "v1"), "k2": tftypes.NewValue(tftypes.String, "v2")}),
+		"d":      tftypes.NewValue(tftypes.List{ElementType: tftypes.Number}, []tftypes.Value{tftypes.NewValue(tftypes.Number, 1)}),
+		"comp":   str("comp"),
+		"blk": tftypes.NewValue(rootT.AttributeTypes["blk"], []tftypes.Value{
+			tftypes.NewValue(blkT, map[string]tftypes.Value{"x": str("x")}),
+		}),
+	})
+}
+
+// Writes the captured log output and transformed values to the file named by VB2_OUT.
+func TestVB2CtxLogs(t *testing.T) {
+	var buf bytes.Buffer
+	ctx := tfsdklogtest.RootLogger(context.Background(), &buf)
+	ctx = logging.InitContext(ctx)
+	ctx = logging.FrameworkWithAttributePath(ctx, "pre-existing")
+	sch := vbSchema()
+
+	plan := vbValue(3, false)
+	cfg := vbValue(3, true)
+	out1, err1 := tftypes.Transform(plan, NullifyWriteOnlyAttributes(ctx, sch))
+	out2, err2 := tftypes.Transform(plan, MarkComputedNilsAsUnknown(ctx, cfg, sch))
+	logging.FrameworkTrace(ctx, "after transforms")
+	res := fmt.Sprintf("%s\n%v\n%s\n%v\n", out1, err1, out2, err2) + buf.String()
+	if p := os.Getenv("VB2_OUT"); p != "" {
+		if err := os.WriteFile(p, []byte(res), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Logf("log bytes=%d lines=%d", buf.Len(), bytes.Count(buf.Bytes(), []byte("\n")))
+}
+
+func TestVB2CtxTiming(t *testing.T) {
+	if os.Getenv("VB2_TIMING") == "" {
+		t.Skip()
+	}
+	sch := vbSchema()
+	for _, logOn := range []bool{false, true} {
+		for _, n := range []int{1000, 2000, 4000, 8000} {
+			plan := vbValue(n, false)
+			cfg := vbValue(n, true)
+			for _, which := range []string{"nullify", "markcomputed"} {
+				best := time.Duration(1 << 62)
+				var retained int64
+				for rep := 0; rep < 3; rep++ {
+					ctx := context.Background()
+					if logOn {
+						ctx = tfsdklogtest.RootLogger(ctx, io.Discard)
+						ctx = logging.InitContext(ctx)
+					}
+					var f func(*tftypes.AttributePath, tftypes.Value) (tftypes.Value, error)
+					if which == "nullify" {
+						f = NullifyWriteOnlyAttributes(ctx, sch)
+					} else {
+						f = MarkComputedNilsAsUnknown(ctx, cfg, sch)
+					}
+					runtime.GC()
+					var m0, m2 runtime.MemStats
+					runtime.ReadMemStats(&m0)
+					start := time.Now()
+					_, err := tftypes.Transform(plan, f)
+					el := time.Since(start)
+					if err != nil {
+						t.Fatal(err)
+					}
+					runtime.GC()
+					runtime.ReadMemStats(&m2)
+					runtime.KeepAlive(f)
+					if el < best {
+						best = el
+					}
+					retained = (int64(m2.HeapAlloc) - int64(m0.HeapAlloc)) / 1024
+				}
+				t.Logf("log=%-5v n=%5d %-12s best=%10v retained(closure alive)=%7dKB", logOn, n, which, best.Round(time.Millisecond), retained)
+			}
+		}
+	}
+}

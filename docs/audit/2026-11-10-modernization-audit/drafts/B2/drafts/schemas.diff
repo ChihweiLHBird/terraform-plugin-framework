@@ -1,0 +1,393 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/schema_cache.go b/internal/fwserver/schema_cache.go
+--- a/internal/fwserver/schema_cache.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/schema_cache.go	2026-10-24 23:14:19.370980825 +0000
+@@ -0,0 +1,33 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package fwserver
++
++import "sync"
++
++// schemaCache is a concurrency-safe cache of schemas (or definitions) by
++// type name, populated on first use by the RPCs that need them.
++type schemaCache[S any] struct {
++	mu      sync.RWMutex
++	schemas map[string]S
++}
++
++func (c *schemaCache[S]) get(typeName string) (S, bool) {
++	c.mu.RLock()
++	defer c.mu.RUnlock()
++
++	schema, ok := c.schemas[typeName]
++
++	return schema, ok
++}
++
++func (c *schemaCache[S]) set(typeName string, schema S) {
++	c.mu.Lock()
++	defer c.mu.Unlock()
++
++	if c.schemas == nil {
++		c.schemas = make(map[string]S)
++	}
++
++	c.schemas[typeName] = schema
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server.go b/internal/fwserver/server.go
+--- a/internal/fwserver/server.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server.go	2026-10-24 23:14:19.421484988 +0000
+@@ -76,11 +76,7 @@
+ 	// actionSchemas is the cached Action Schemas for RPCs that need to
+ 	// convert configuration data from the protocol. If not found, it will be
+ 	// fetched from the Action.Schema() method.
+-	actionSchemas map[string]actionschema.Schema
+-
+-	// actionSchemasMutex is a mutex to protect concurrent actionSchemas
+-	// access from race conditions.
+-	actionSchemasMutex sync.RWMutex
++	actionSchemas schemaCache[actionschema.Schema]
+ 
+ 	// actionFuncs is the cached Action functions for RPCs that need to
+ 	// access actions. If not found, it will be fetched from the
+@@ -99,11 +95,7 @@
+ 	// dataSourceSchemas is the cached DataSource Schemas for RPCs that need to
+ 	// convert configuration data from the protocol. If not found, it will be
+ 	// fetched from the DataSourceType.GetSchema() method.
+-	dataSourceSchemas map[string]fwschema.Schema
+-
+-	// dataSourceSchemasMutex is a mutex to protect concurrent dataSourceSchemas
+-	// access from race conditions.
+-	dataSourceSchemasMutex sync.RWMutex
++	dataSourceSchemas schemaCache[fwschema.Schema]
+ 
+ 	// dataSourceFuncs is the cached DataSource functions for RPCs that need to
+ 	// access data sources. If not found, it will be fetched from the
+@@ -122,11 +114,7 @@
+ 	// ephemeralResourceSchemas is the cached EphemeralResource Schemas for RPCs that need to
+ 	// convert configuration data from the protocol. If not found, it will be
+ 	// fetched from the EphemeralResourceType.GetSchema() method.
+-	ephemeralResourceSchemas map[string]fwschema.Schema
+-
+-	// ephemeralResourceSchemasMutex is a mutex to protect concurrent ephemeralResourceSchemas
+-	// access from race conditions.
+-	ephemeralResourceSchemasMutex sync.RWMutex
++	ephemeralResourceSchemas schemaCache[fwschema.Schema]
+ 
+ 	// ephemeralResourceFuncs is the cached EphemeralResource functions for RPCs that need to
+ 	// access ephemeral resources. If not found, it will be fetched from the
+@@ -150,11 +138,7 @@
+ 	// functionDefinitions is the cached Function Definitions for RPCs that need to
+ 	// convert data from the protocol. If not found, it will be fetched from the
+ 	// Function.Definition() method.
+-	functionDefinitions map[string]function.Definition
+-
+-	// functionDefinitionsMutex is a mutex to protect concurrent functionDefinitions
+-	// access from race conditions.
+-	functionDefinitionsMutex sync.RWMutex
++	functionDefinitions schemaCache[function.Definition]
+ 
+ 	// functionFuncs is the cached Function functions for RPCs that need to
+ 	// access functions. If not found, it will be fetched from the
+@@ -185,11 +169,7 @@
+ 	// need to convert configuration data from the protocol. If not found, it
+ 	// will be fetched from the [list.ListResource.ListResourceConfigSchema]
+ 	// method.
+-	listResourceSchemas map[string]fwschema.Schema
+-
+-	// listResourceSchemasMutex is a mutex to protect concurrent
+-	// listResourceSchemas access from race conditions.
+-	listResourceSchemasMutex sync.RWMutex
++	listResourceSchemas schemaCache[fwschema.Schema]
+ 
+ 	// providerSchema is the cached Provider Schema for RPCs that need to
+ 	// convert configuration data from the protocol. If not found, it will be
+@@ -230,20 +210,12 @@
+ 	// resourceSchemas is the cached Resource Schemas for RPCs that need to
+ 	// convert configuration data from the protocol. If not found, it will be
+ 	// fetched from the ResourceType.GetSchema() method.
+-	resourceSchemas map[string]fwschema.Schema
+-
+-	// resourceSchemasMutex is a mutex to protect concurrent resourceSchemas
+-	// access from race conditions.
+-	resourceSchemasMutex sync.RWMutex
++	resourceSchemas schemaCache[fwschema.Schema]
+ 
+ 	// resourceIdentitySchemas is the cached Resource Identity Schemas for RPCs that need to
+ 	// convert resource identity data from the protocol. If not found, it will be
+ 	// fetched from the Resource IdentitySchema method.
+-	resourceIdentitySchemas map[string]fwschema.Schema
+-
+-	// resourceIdentitySchemasMutex is a mutex to protect concurrent resourceIdentitySchemas
+-	// access from race conditions.
+-	resourceIdentitySchemasMutex sync.RWMutex
++	resourceIdentitySchemas schemaCache[fwschema.Schema]
+ 
+ 	// resourceFuncs is the cached Resource functions for RPCs that need to
+ 	// access resources. If not found, it will be fetched from the
+@@ -275,11 +247,7 @@
+ 	// statestoreSchemas is the cached StateStore Schemas for RPCs that need to
+ 	// convert configuration data from the protocol. If not found, it will be
+ 	// fetched from the StateStore.Schema() method.
+-	statestoreSchemas map[string]fwschema.Schema
+-
+-	// statestoreSchemasMutex is a mutex to protect concurrent statestoreSchemas
+-	// access from race conditions.
+-	statestoreSchemasMutex sync.RWMutex
++	statestoreSchemas schemaCache[fwschema.Schema]
+ 
+ 	// statestoreFuncs is the cached StateStore functions for RPCs that need to
+ 	// access statestores. If not found, it will be fetched from the
+@@ -388,9 +356,7 @@
+ // DataSourceSchema returns the DataSource Schema for the given type name and
+ // caches the result for later DataSource operations.
+ func (s *Server) DataSourceSchema(ctx context.Context, typeName string) (fwschema.Schema, diag.Diagnostics) {
+-	s.dataSourceSchemasMutex.RLock()
+-	dataSourceSchema, ok := s.dataSourceSchemas[typeName]
+-	s.dataSourceSchemasMutex.RUnlock()
++	dataSourceSchema, ok := s.dataSourceSchemas.get(typeName)
+ 
+ 	if ok {
+ 		return dataSourceSchema, nil
+@@ -419,15 +385,7 @@
+ 		return schemaResp.Schema, diags
+ 	}
+ 
+-	s.dataSourceSchemasMutex.Lock()
+-
+-	if s.dataSourceSchemas == nil {
+-		s.dataSourceSchemas = make(map[string]fwschema.Schema)
+-	}
+-
+-	s.dataSourceSchemas[typeName] = schemaResp.Schema
+-
+-	s.dataSourceSchemasMutex.Unlock()
++	s.dataSourceSchemas.set(typeName, schemaResp.Schema)
+ 
+ 	return schemaResp.Schema, diags
+ }
+@@ -717,9 +675,7 @@
+ // ResourceSchema returns the Resource Schema for the given type name and
+ // caches the result for later Resource operations.
+ func (s *Server) ResourceSchema(ctx context.Context, typeName string) (fwschema.Schema, diag.Diagnostics) {
+-	s.resourceSchemasMutex.RLock()
+-	resourceSchema, ok := s.resourceSchemas[typeName]
+-	s.resourceSchemasMutex.RUnlock()
++	resourceSchema, ok := s.resourceSchemas.get(typeName)
+ 
+ 	if ok {
+ 		return resourceSchema, nil
+@@ -748,15 +704,7 @@
+ 		return schemaResp.Schema, diags
+ 	}
+ 
+-	s.resourceSchemasMutex.Lock()
+-
+-	if s.resourceSchemas == nil {
+-		s.resourceSchemas = make(map[string]fwschema.Schema)
+-	}
+-
+-	s.resourceSchemas[typeName] = schemaResp.Schema
+-
+-	s.resourceSchemasMutex.Unlock()
++	s.resourceSchemas.set(typeName, schemaResp.Schema)
+ 
+ 	return schemaResp.Schema, diags
+ }
+@@ -805,9 +753,7 @@
+ // so this function will return a nil schema with no diagnostics if the resource type doesn't define
+ // an identity schema.
+ func (s *Server) ResourceIdentitySchema(ctx context.Context, typeName string) (fwschema.Schema, diag.Diagnostics) {
+-	s.resourceIdentitySchemasMutex.RLock()
+-	resourceIdentitySchema, ok := s.resourceIdentitySchemas[typeName]
+-	s.resourceIdentitySchemasMutex.RUnlock()
++	resourceIdentitySchema, ok := s.resourceIdentitySchemas.get(typeName)
+ 
+ 	if ok {
+ 		return resourceIdentitySchema, nil
+@@ -826,13 +772,7 @@
+ 	resourceWithIdentity, ok := r.(resource.ResourceWithIdentity)
+ 	if !ok {
+ 		// It's valid for a resource to not have an identity, so cache and return a nil schema
+-		s.resourceIdentitySchemasMutex.Lock()
+-		if s.resourceIdentitySchemas == nil {
+-			s.resourceIdentitySchemas = make(map[string]fwschema.Schema)
+-		}
+-
+-		s.resourceIdentitySchemas[typeName] = nil
+-		s.resourceIdentitySchemasMutex.Unlock()
++		s.resourceIdentitySchemas.set(typeName, nil)
+ 
+ 		return nil, nil
+ 	}
+@@ -850,13 +790,7 @@
+ 		return identitySchemaResp.IdentitySchema, diags
+ 	}
+ 
+-	s.resourceIdentitySchemasMutex.Lock()
+-	if s.resourceIdentitySchemas == nil {
+-		s.resourceIdentitySchemas = make(map[string]fwschema.Schema)
+-	}
+-
+-	s.resourceIdentitySchemas[typeName] = identitySchemaResp.IdentitySchema
+-	s.resourceIdentitySchemasMutex.Unlock()
++	s.resourceIdentitySchemas.set(typeName, identitySchemaResp.IdentitySchema)
+ 
+ 	return identitySchemaResp.IdentitySchema, diags
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_actions.go b/internal/fwserver/server_actions.go
+--- a/internal/fwserver/server_actions.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server_actions.go	2026-10-24 23:14:19.422606181 +0000
+@@ -113,9 +113,7 @@
+ // ActionSchema returns the Action Schema for the given type name and
+ // caches the result for later Action operations.
+ func (s *Server) ActionSchema(ctx context.Context, actionType string) (actionschema.Schema, diag.Diagnostics) {
+-	s.actionSchemasMutex.RLock()
+-	actionSchema, ok := s.actionSchemas[actionType]
+-	s.actionSchemasMutex.RUnlock()
++	actionSchema, ok := s.actionSchemas.get(actionType)
+ 
+ 	if ok {
+ 		return actionSchema, nil
+@@ -144,15 +142,7 @@
+ 		return schemaResp.Schema, diags
+ 	}
+ 
+-	s.actionSchemasMutex.Lock()
+-
+-	if s.actionSchemas == nil {
+-		s.actionSchemas = make(map[string]actionschema.Schema)
+-	}
+-
+-	s.actionSchemas[actionType] = schemaResp.Schema
+-
+-	s.actionSchemasMutex.Unlock()
++	s.actionSchemas.set(actionType, schemaResp.Schema)
+ 
+ 	return schemaResp.Schema, diags
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_ephemeralresources.go b/internal/fwserver/server_ephemeralresources.go
+--- a/internal/fwserver/server_ephemeralresources.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_ephemeralresources.go	2026-10-24 23:14:19.426858802 +0000
+@@ -114,9 +114,7 @@
+ // EphemeralResourceSchema returns the EphemeralResource Schema for the given type name and
+ // caches the result for later EphemeralResource operations.
+ func (s *Server) EphemeralResourceSchema(ctx context.Context, typeName string) (fwschema.Schema, diag.Diagnostics) {
+-	s.ephemeralResourceSchemasMutex.RLock()
+-	ephemeralResourceSchema, ok := s.ephemeralResourceSchemas[typeName]
+-	s.ephemeralResourceSchemasMutex.RUnlock()
++	ephemeralResourceSchema, ok := s.ephemeralResourceSchemas.get(typeName)
+ 
+ 	if ok {
+ 		return ephemeralResourceSchema, nil
+@@ -145,15 +143,7 @@
+ 		return schemaResp.Schema, diags
+ 	}
+ 
+-	s.ephemeralResourceSchemasMutex.Lock()
+-
+-	if s.ephemeralResourceSchemas == nil {
+-		s.ephemeralResourceSchemas = make(map[string]fwschema.Schema)
+-	}
+-
+-	s.ephemeralResourceSchemas[typeName] = schemaResp.Schema
+-
+-	s.ephemeralResourceSchemasMutex.Unlock()
++	s.ephemeralResourceSchemas.set(typeName, schemaResp.Schema)
+ 
+ 	return schemaResp.Schema, diags
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_functions.go b/internal/fwserver/server_functions.go
+--- a/internal/fwserver/server_functions.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_functions.go	2026-10-24 23:14:19.428110683 +0000
+@@ -33,9 +33,7 @@
+ // FunctionDefinition returns the Function Definition for the given name and
+ // caches the result for later Function operations.
+ func (s *Server) FunctionDefinition(ctx context.Context, name string) (function.Definition, *function.FuncError) {
+-	s.functionDefinitionsMutex.RLock()
+-	functionDefinition, ok := s.functionDefinitions[name]
+-	s.functionDefinitionsMutex.RUnlock()
++	functionDefinition, ok := s.functionDefinitions.get(name)
+ 
+ 	if ok {
+ 		return functionDefinition, nil
+@@ -60,15 +58,7 @@
+ 		return definitionResp.Definition, funcErr
+ 	}
+ 
+-	s.functionDefinitionsMutex.Lock()
+-
+-	if s.functionDefinitions == nil {
+-		s.functionDefinitions = make(map[string]function.Definition)
+-	}
+-
+-	s.functionDefinitions[name] = definitionResp.Definition
+-
+-	s.functionDefinitionsMutex.Unlock()
++	s.functionDefinitions.set(name, definitionResp.Definition)
+ 
+ 	return definitionResp.Definition, funcErr
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_listresources.go b/internal/fwserver/server_listresources.go
+--- a/internal/fwserver/server_listresources.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_listresources.go	2026-10-24 23:14:19.434779694 +0000
+@@ -134,9 +134,7 @@
+ // ListResourceSchema returns the ListResource Schema for the given type name and
+ // caches the result for later ListResource operations.
+ func (s *Server) ListResourceSchema(ctx context.Context, typeName string) (fwschema.Schema, diag.Diagnostics) {
+-	s.listResourceSchemasMutex.RLock()
+-	listResourceSchema, ok := s.listResourceSchemas[typeName]
+-	s.listResourceSchemasMutex.RUnlock()
++	listResourceSchema, ok := s.listResourceSchemas.get(typeName)
+ 
+ 	if ok {
+ 		return listResourceSchema, nil
+@@ -162,15 +160,7 @@
+ 		return schemaResp.Schema, diags
+ 	}
+ 
+-	s.listResourceSchemasMutex.Lock()
+-
+-	if s.listResourceSchemas == nil {
+-		s.listResourceSchemas = make(map[string]fwschema.Schema)
+-	}
+-
+-	s.listResourceSchemas[typeName] = schemaResp.Schema
+-
+-	s.listResourceSchemasMutex.Unlock()
++	s.listResourceSchemas.set(typeName, schemaResp.Schema)
+ 
+ 	return schemaResp.Schema, diags
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_statestore.go b/internal/fwserver/server_statestore.go
+--- a/internal/fwserver/server_statestore.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_statestore.go	2026-10-24 23:14:19.443022940 +0000
+@@ -113,9 +113,7 @@
+ // StateStoreSchema returns the StateStore Schema for the given type name and
+ // caches the result for later StateStore operations.
+ func (s *Server) StateStoreSchema(ctx context.Context, statestoreType string) (fwschema.Schema, diag.Diagnostics) {
+-	s.statestoreSchemasMutex.RLock()
+-	statestoreSchema, ok := s.statestoreSchemas[statestoreType]
+-	s.statestoreSchemasMutex.RUnlock()
++	statestoreSchema, ok := s.statestoreSchemas.get(statestoreType)
+ 
+ 	if ok {
+ 		return statestoreSchema, nil
+@@ -144,15 +142,7 @@
+ 		return schemaResp.Schema, diags
+ 	}
+ 
+-	s.statestoreSchemasMutex.Lock()
+-
+-	if s.statestoreSchemas == nil {
+-		s.statestoreSchemas = make(map[string]fwschema.Schema)
+-	}
+-
+-	s.statestoreSchemas[statestoreType] = schemaResp.Schema
+-
+-	s.statestoreSchemasMutex.Unlock()
++	s.statestoreSchemas.set(statestoreType, schemaResp.Schema)
+ 
+ 	return schemaResp.Schema, diags
+ }

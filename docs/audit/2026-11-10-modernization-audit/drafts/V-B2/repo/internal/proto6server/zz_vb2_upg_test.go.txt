@@ -1,0 +1,53 @@
+package proto6server
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+)
+
+type vbWO struct {
+	*vbPlain
+	version int64
+}
+
+func (r vbWO) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{Version: r.version, Attributes: map[string]schema.Attribute{
+		"id":       schema.StringAttribute{Computed: true},
+		"password": schema.StringAttribute{Optional: true, WriteOnly: true},
+	}}
+}
+
+func (r vbWO) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{0: {StateUpgrader: func(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+		// prior schema not given: copy raw state through DynamicValue path
+		dv, _ := tfprotov6.NewDynamicValue(vbWOType, tftypes.NewValue(vbWOType, map[string]tftypes.Value{
+			"id": tftypes.NewValue(tftypes.String, "x"), "password": tftypes.NewValue(tftypes.String, "stored-secret")}))
+		resp.DynamicValue = &dv
+	}}}
+}
+
+var vbWOType = tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String, "password": tftypes.String}}
+
+func TestVB2_B27(t *testing.T) {
+	t.Parallel()
+	for _, schemaVersion := range []int64{0, 1} {
+		r := vbWO{vbPlain: &vbPlain{}, version: schemaVersion}
+		s := &Server{FrameworkServer: fwserver.Server{Provider: &vbProvider{res: func() resource.Resource { return r }}}}
+		resp, err := s.UpgradeResourceState(context.Background(), &tfprotov6.UpgradeResourceStateRequest{
+			TypeName: "vb_res", Version: 0,
+			RawState: &tfprotov6.RawState{JSON: []byte(`{"id":"x","password":"stored-secret"}`)},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		v, _ := resp.UpgradedState.Unmarshal(vbWOType)
+		t.Logf("B2-7 schema version %d, state version 0: upgraded=%v diags=%s", schemaVersion, v, vbDiags(resp.Diagnostics))
+	}
+}

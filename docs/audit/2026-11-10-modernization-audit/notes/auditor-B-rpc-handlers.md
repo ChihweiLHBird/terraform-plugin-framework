@@ -173,14 +173,14 @@ Extracting the loop body is not mechanical. The source-state unmarshal (163-214)
 
 ## 7. Cross-area hand-offs (verified here)
 
-- **From A (notes-A.md:137): ListResource builds a missing list Config from the managed-resource schema.** Verified by probe `zz_probe_nil2_test.go`:
+- **From A (notes/auditor-A.md:137): ListResource builds a missing list Config from the managed-resource schema.** Verified by probe `zz_probe_nil2_test.go`:
   - With ResourceSchema set, the provider's List receives `Config.Schema == the resource schema`.
   - With ResourceSchema nil and an identity schema set, the handler panics at `:144`.
   - Unreachable from Terraform: core always sends a config (`$W/ext/grpc_provider6.go:1362`).
   - Filed as part (4) of B2-6.
-- **From A (notes-A.md:139): `UpgradeResourceIdentityRequest.TypeName` is dead.** Confirmed by fieldscan; kept as A18 and referenced from B2-20's notes.
-- **From A (notes-A.md:138):** `InvokeActionResponse.SendProgress` (server_invokeaction.go:37-41) does an unconditional send on the consumer's channel. Confirmed as the root cause of A6. The fix belongs to A6 (a protoNserver drain); a fwserver-side alternative is a select on a done channel. Not refiled.
-- **From F (notes-F.md:106, :109):** NoListResults is dead (B2-20) and ConfigureProvider dereferences a nil request (B2-6 part 1, probe-confirmed).
+- **From A (notes/auditor-A.md:139): `UpgradeResourceIdentityRequest.TypeName` is dead.** Confirmed by fieldscan; kept as A18 and referenced from B2-20's notes.
+- **From A (notes/auditor-A.md:138):** `InvokeActionResponse.SendProgress` (server_invokeaction.go:37-41) does an unconditional send on the consumer's channel. Confirmed as the root cause of A6. The fix belongs to A6 (a protoNserver drain); a fwserver-side alternative is a select on a done channel. Not refiled.
+- **From F (notes/auditor-F.md:106, :109):** NoListResults is dead (B2-20) and ConfigureProvider dereferences a nil request (B2-6 part 1, probe-confirmed).
 - **To F, for F4** (list resource for a framework resource without identity panics in NewListResult): Terraform core rejects this client-side before calling the provider. `$W/ext/grpc_provider6.go:1343` returns 'Identity schema not found for resource type %s; this is a bug in the provider'. So the panic is reachable only from non-Terraform clients.
 - **To B1:** B2-18 keeps the `coerce<Type>Typable` names as function values, so B1's spec tables compile unchanged.
 

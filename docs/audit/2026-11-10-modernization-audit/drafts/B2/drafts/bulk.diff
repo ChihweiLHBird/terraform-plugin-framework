@@ -1,0 +1,599 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server.go b/internal/fwserver/server.go
+--- a/internal/fwserver/server.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server.go	2026-10-24 23:16:06.591807329 +0000
+@@ -298,20 +298,9 @@
+ 
+ // DataSource returns the DataSource for a given type name.
+ func (s *Server) DataSource(ctx context.Context, typeName string) (datasource.DataSource, diag.Diagnostics) {
+-	dataSourceFuncs, diags := s.DataSourceFuncs(ctx)
++	funcs, diags := s.DataSourceFuncs(ctx)
+ 
+-	dataSourceFunc, ok := dataSourceFuncs[typeName]
+-
+-	if !ok {
+-		diags.AddError(
+-			"Data Source Type Not Found",
+-			fmt.Sprintf("No data source type named %q was found in the provider.", typeName),
+-		)
+-
+-		return nil, diags
+-	}
+-
+-	return dataSourceFunc(), diags
++	return newInstance(funcs, diags, typeName, "Data Source Type Not Found", "No data source type named %q was found in the provider.")
+ }
+ 
+ // DataSourceFuncs returns a map of DataSource functions. The results are cached
+@@ -372,17 +361,9 @@
+ // DataSourceMetadatas returns a slice of DataSourceMetadata for the GetMetadata
+ // RPC.
+ func (s *Server) DataSourceMetadatas(ctx context.Context) ([]DataSourceMetadata, diag.Diagnostics) {
+-	datasourceFuncs, diags := s.DataSourceFuncs(ctx)
++	funcs, diags := s.DataSourceFuncs(ctx)
+ 
+-	datasourceMetadatas := make([]DataSourceMetadata, 0, len(datasourceFuncs))
+-
+-	for typeName := range datasourceFuncs {
+-		datasourceMetadatas = append(datasourceMetadatas, DataSourceMetadata{
+-			TypeName: typeName,
+-		})
+-	}
+-
+-	return datasourceMetadatas, diags
++	return typeNameMetadatas[DataSourceMetadata](funcs), diags
+ }
+ 
+ // DataSourceSchema returns the DataSource Schema for the given type name and
+@@ -437,38 +418,15 @@
+ // be necessary for later provider operations. The schema implementations are
+ // also validated.
+ func (s *Server) DataSourceSchemas(ctx context.Context) (map[string]fwschema.Schema, diag.Diagnostics) {
+-	dataSourceSchemas := make(map[string]fwschema.Schema)
+-
+-	dataSourceFuncs, diags := s.DataSourceFuncs(ctx)
+-
+-	for typeName, dataSourceFunc := range dataSourceFuncs {
+-		dataSource := dataSourceFunc()
++	funcs, diags := s.DataSourceFuncs(ctx)
+ 
+-		schemaReq := datasource.SchemaRequest{}
+-		schemaResp := datasource.SchemaResponse{}
++	return validatedSchemas(ctx, funcs, diags, logging.KeyDataSourceType, "Calling provider defined DataSource Schema", "Called provider defined DataSource Schema",
++		func(dataSource datasource.DataSource) (fwschema.Schema, func(context.Context) diag.Diagnostics, diag.Diagnostics) {
++			schemaResp := datasource.SchemaResponse{}
++			dataSource.Schema(ctx, datasource.SchemaRequest{}, &schemaResp)
+ 
+-		logging.FrameworkTrace(ctx, "Calling provider defined DataSource Schema", map[string]interface{}{logging.KeyDataSourceType: typeName})
+-		dataSource.Schema(ctx, schemaReq, &schemaResp)
+-		logging.FrameworkTrace(ctx, "Called provider defined DataSource Schema", map[string]interface{}{logging.KeyDataSourceType: typeName})
+-
+-		diags.Append(schemaResp.Diagnostics...)
+-
+-		if schemaResp.Diagnostics.HasError() {
+-			continue
+-		}
+-
+-		validateDiags := schemaResp.Schema.ValidateImplementation(ctx)
+-
+-		diags.Append(validateDiags...)
+-
+-		if validateDiags.HasError() {
+-			continue
+-		}
+-
+-		dataSourceSchemas[typeName] = schemaResp.Schema
+-	}
+-
+-	return dataSourceSchemas, diags
++			return schemaResp.Schema, schemaResp.Schema.ValidateImplementation, schemaResp.Diagnostics
++		})
+ }
+ 
+ // ProviderTypeName returns the TypeName associated with the Provider. The TypeName is cached on first use.
+@@ -555,20 +513,9 @@
+ 
+ // Resource returns the Resource for a given type name.
+ func (s *Server) Resource(ctx context.Context, typeName string) (resource.Resource, diag.Diagnostics) {
+-	resourceFuncs, diags := s.ResourceFuncs(ctx)
+-
+-	resourceFunc, ok := resourceFuncs[typeName]
++	funcs, diags := s.ResourceFuncs(ctx)
+ 
+-	if !ok {
+-		diags.AddError(
+-			"Resource Type Not Found",
+-			fmt.Sprintf("No resource type named %q was found in the provider.", typeName),
+-		)
+-
+-		return nil, diags
+-	}
+-
+-	return resourceFunc(), diags
++	return newInstance(funcs, diags, typeName, "Resource Type Not Found", "No resource type named %q was found in the provider.")
+ }
+ 
+ // ResourceBehavior returns the ResourceBehavior for a given type name.
+@@ -701,17 +648,9 @@
+ // ResourceMetadatas returns a slice of ResourceMetadata for the GetMetadata
+ // RPC.
+ func (s *Server) ResourceMetadatas(ctx context.Context) ([]ResourceMetadata, diag.Diagnostics) {
+-	resourceFuncs, diags := s.ResourceFuncs(ctx)
++	funcs, diags := s.ResourceFuncs(ctx)
+ 
+-	resourceMetadatas := make([]ResourceMetadata, 0, len(resourceFuncs))
+-
+-	for typeName := range resourceFuncs {
+-		resourceMetadatas = append(resourceMetadatas, ResourceMetadata{
+-			TypeName: typeName,
+-		})
+-	}
+-
+-	return resourceMetadatas, diags
++	return typeNameMetadatas[ResourceMetadata](funcs), diags
+ }
+ 
+ // ResourceSchema returns the Resource Schema for the given type name and
+@@ -766,38 +705,15 @@
+ // be necessary for later provider operations. The schema implementations are
+ // also validated.
+ func (s *Server) ResourceSchemas(ctx context.Context) (map[string]fwschema.Schema, diag.Diagnostics) {
+-	resourceSchemas := make(map[string]fwschema.Schema)
+-
+-	resourceFuncs, diags := s.ResourceFuncs(ctx)
+-
+-	for typeName, resourceFunc := range resourceFuncs {
+-		r := resourceFunc()
+-
+-		schemaReq := resource.SchemaRequest{}
+-		schemaResp := resource.SchemaResponse{}
+-
+-		logging.FrameworkTrace(ctx, "Calling provider defined Resource Schema method", map[string]interface{}{logging.KeyResourceType: typeName})
+-		r.Schema(ctx, schemaReq, &schemaResp)
+-		logging.FrameworkTrace(ctx, "Called provider defined Resource Schema method", map[string]interface{}{logging.KeyResourceType: typeName})
+-
+-		diags.Append(schemaResp.Diagnostics...)
+-
+-		if schemaResp.Diagnostics.HasError() {
+-			continue
+-		}
++	funcs, diags := s.ResourceFuncs(ctx)
+ 
+-		validateDiags := schemaResp.Schema.ValidateImplementation(ctx)
++	return validatedSchemas(ctx, funcs, diags, logging.KeyResourceType, "Calling provider defined Resource Schema method", "Called provider defined Resource Schema method",
++		func(r resource.Resource) (fwschema.Schema, func(context.Context) diag.Diagnostics, diag.Diagnostics) {
++			schemaResp := resource.SchemaResponse{}
++			r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+ 
+-		diags.Append(validateDiags...)
+-
+-		if validateDiags.HasError() {
+-			continue
+-		}
+-
+-		resourceSchemas[typeName] = schemaResp.Schema
+-	}
+-
+-	return resourceSchemas, diags
++			return schemaResp.Schema, schemaResp.Schema.ValidateImplementation, schemaResp.Diagnostics
++		})
+ }
+ 
+ // ResourceIdentitySchema returns the Resource Identity Schema for the given type name and
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_actions.go b/internal/fwserver/server_actions.go
+--- a/internal/fwserver/server_actions.go	2026-10-24 21:30:10.515597580 +0000
++++ b/internal/fwserver/server_actions.go	2026-10-24 23:16:06.591992730 +0000
+@@ -16,20 +16,9 @@
+ 
+ // Action returns the Action for a given action type.
+ func (s *Server) Action(ctx context.Context, actionType string) (action.Action, diag.Diagnostics) {
+-	actionFuncs, diags := s.ActionFuncs(ctx)
++	funcs, diags := s.ActionFuncs(ctx)
+ 
+-	actionFunc, ok := actionFuncs[actionType]
+-
+-	if !ok {
+-		diags.AddError(
+-			"Action Type Not Found",
+-			fmt.Sprintf("No action type named %q was found in the provider.", actionType),
+-		)
+-
+-		return nil, diags
+-	}
+-
+-	return actionFunc(), diags
++	return newInstance(funcs, diags, actionType, "Action Type Not Found", "No action type named %q was found in the provider.")
+ }
+ 
+ // ActionFuncs returns a map of Action functions. The results are cached
+@@ -97,17 +86,9 @@
+ // ActionMetadatas returns a slice of ActionMetadata for the GetMetadata
+ // RPC.
+ func (s *Server) ActionMetadatas(ctx context.Context) ([]ActionMetadata, diag.Diagnostics) {
+-	actionFuncs, diags := s.ActionFuncs(ctx)
+-
+-	actionMetadatas := make([]ActionMetadata, 0, len(actionFuncs))
++	funcs, diags := s.ActionFuncs(ctx)
+ 
+-	for typeName := range actionFuncs {
+-		actionMetadatas = append(actionMetadatas, ActionMetadata{
+-			TypeName: typeName,
+-		})
+-	}
+-
+-	return actionMetadatas, diags
++	return typeNameMetadatas[ActionMetadata](funcs), diags
+ }
+ 
+ // ActionSchema returns the Action Schema for the given type name and
+@@ -162,36 +143,13 @@
+ // be necessary for later provider operations. The schema implementations are
+ // also validated.
+ func (s *Server) ActionSchemas(ctx context.Context) (map[string]actionschema.Schema, diag.Diagnostics) {
+-	actionSchemas := make(map[string]actionschema.Schema)
+-
+-	actionFuncs, diags := s.ActionFuncs(ctx)
+-
+-	for typeName, actionFunc := range actionFuncs {
+-		actionImpl := actionFunc()
+-
+-		schemaReq := action.SchemaRequest{}
+-		schemaResp := action.SchemaResponse{}
++	funcs, diags := s.ActionFuncs(ctx)
+ 
+-		logging.FrameworkTrace(ctx, "Calling provider defined Action Schema", map[string]interface{}{logging.KeyActionType: typeName})
+-		actionImpl.Schema(ctx, schemaReq, &schemaResp)
+-		logging.FrameworkTrace(ctx, "Called provider defined Action Schema", map[string]interface{}{logging.KeyActionType: typeName})
++	return validatedSchemas(ctx, funcs, diags, logging.KeyActionType, "Calling provider defined Action Schema", "Called provider defined Action Schema",
++		func(actionImpl action.Action) (actionschema.Schema, func(context.Context) diag.Diagnostics, diag.Diagnostics) {
++			schemaResp := action.SchemaResponse{}
++			actionImpl.Schema(ctx, action.SchemaRequest{}, &schemaResp)
+ 
+-		diags.Append(schemaResp.Diagnostics...)
+-
+-		if schemaResp.Diagnostics.HasError() {
+-			continue
+-		}
+-
+-		validateDiags := schemaResp.Schema.ValidateImplementation(ctx)
+-
+-		diags.Append(validateDiags...)
+-
+-		if validateDiags.HasError() {
+-			continue
+-		}
+-
+-		actionSchemas[typeName] = schemaResp.Schema
+-	}
+-
+-	return actionSchemas, diags
++			return schemaResp.Schema, schemaResp.Schema.ValidateImplementation, schemaResp.Diagnostics
++		})
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_concepts.go b/internal/fwserver/server_concepts.go
+--- a/internal/fwserver/server_concepts.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/server_concepts.go	2026-10-24 23:15:34.892440623 +0000
+@@ -0,0 +1,82 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package fwserver
++
++import (
++	"context"
++	"fmt"
++
++	"github.com/hashicorp/terraform-plugin-framework/diag"
++	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++)
++
++// newInstance returns a new instance from the factory function registered for
++// typeName in funcs, otherwise it adds an error diagnostic with the given
++// summary and detail, a format with a single %q verb for the type name.
++func newInstance[T any](funcs map[string]func() T, diags diag.Diagnostics, typeName, summary, detail string) (T, diag.Diagnostics) {
++	factory, ok := funcs[typeName]
++
++	if !ok {
++		diags.AddError(summary, fmt.Sprintf(detail, typeName))
++
++		var zero T
++
++		return zero, diags
++	}
++
++	return factory(), diags
++}
++
++// typeNameMetadatas returns a metadata value for each type name in funcs for
++// the GetMetadata RPC.
++func typeNameMetadatas[M ~struct{ TypeName string }, F any](funcs map[string]F) []M {
++	metadatas := make([]M, 0, len(funcs))
++
++	for typeName := range funcs {
++		metadatas = append(metadatas, M{TypeName: typeName})
++	}
++
++	return metadatas
++}
++
++// validatedSchemas returns the schemas of the instances created from funcs for
++// the GetProviderSchema RPC, without caching. getSchema calls the
++// provider-defined Schema method of an instance and returns the schema, its
++// ValidateImplementation method and the method diagnostics. Schemas with error
++// diagnostics are omitted; all diagnostics are appended to diags.
++func validatedSchemas[T, S any](
++	ctx context.Context,
++	funcs map[string]func() T,
++	diags diag.Diagnostics,
++	logKey, callingLog, calledLog string,
++	getSchema func(T) (S, func(context.Context) diag.Diagnostics, diag.Diagnostics),
++) (map[string]S, diag.Diagnostics) {
++	schemas := make(map[string]S)
++
++	for typeName, factory := range funcs {
++		instance := factory()
++
++		logging.FrameworkTrace(ctx, callingLog, map[string]interface{}{logKey: typeName})
++		schema, validateImplementation, schemaDiags := getSchema(instance)
++		logging.FrameworkTrace(ctx, calledLog, map[string]interface{}{logKey: typeName})
++
++		diags.Append(schemaDiags...)
++
++		if schemaDiags.HasError() {
++			continue
++		}
++
++		validateDiags := validateImplementation(ctx)
++
++		diags.Append(validateDiags...)
++
++		if validateDiags.HasError() {
++			continue
++		}
++
++		schemas[typeName] = schema
++	}
++
++	return schemas, diags
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_ephemeralresources.go b/internal/fwserver/server_ephemeralresources.go
+--- a/internal/fwserver/server_ephemeralresources.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_ephemeralresources.go	2026-10-24 23:16:06.591949171 +0000
+@@ -16,20 +16,9 @@
+ 
+ // EphemeralResource returns the EphemeralResource for a given type name.
+ func (s *Server) EphemeralResource(ctx context.Context, typeName string) (ephemeral.EphemeralResource, diag.Diagnostics) {
+-	ephemeralResourceFuncs, diags := s.EphemeralResourceFuncs(ctx)
++	funcs, diags := s.EphemeralResourceFuncs(ctx)
+ 
+-	ephemeralResourceFunc, ok := ephemeralResourceFuncs[typeName]
+-
+-	if !ok {
+-		diags.AddError(
+-			"Ephemeral Resource Type Not Found",
+-			fmt.Sprintf("No ephemeral resource type named %q was found in the provider.", typeName),
+-		)
+-
+-		return nil, diags
+-	}
+-
+-	return ephemeralResourceFunc(), diags
++	return newInstance(funcs, diags, typeName, "Ephemeral Resource Type Not Found", "No ephemeral resource type named %q was found in the provider.")
+ }
+ 
+ // EphemeralResourceFuncs returns a map of EphemeralResource functions. The results are cached
+@@ -98,17 +87,9 @@
+ // EphemeralResourceMetadatas returns a slice of EphemeralResourceMetadata for the GetMetadata
+ // RPC.
+ func (s *Server) EphemeralResourceMetadatas(ctx context.Context) ([]EphemeralResourceMetadata, diag.Diagnostics) {
+-	ephemeralResourceFuncs, diags := s.EphemeralResourceFuncs(ctx)
+-
+-	ephemeralResourceMetadatas := make([]EphemeralResourceMetadata, 0, len(ephemeralResourceFuncs))
++	funcs, diags := s.EphemeralResourceFuncs(ctx)
+ 
+-	for typeName := range ephemeralResourceFuncs {
+-		ephemeralResourceMetadatas = append(ephemeralResourceMetadatas, EphemeralResourceMetadata{
+-			TypeName: typeName,
+-		})
+-	}
+-
+-	return ephemeralResourceMetadatas, diags
++	return typeNameMetadatas[EphemeralResourceMetadata](funcs), diags
+ }
+ 
+ // EphemeralResourceSchema returns the EphemeralResource Schema for the given type name and
+@@ -163,36 +144,13 @@
+ // be necessary for later provider operations. The schema implementations are
+ // also validated.
+ func (s *Server) EphemeralResourceSchemas(ctx context.Context) (map[string]fwschema.Schema, diag.Diagnostics) {
+-	ephemeralResourceSchemas := make(map[string]fwschema.Schema)
+-
+-	ephemeralResourceFuncs, diags := s.EphemeralResourceFuncs(ctx)
+-
+-	for typeName, ephemeralResourceFunc := range ephemeralResourceFuncs {
+-		ephemeralResource := ephemeralResourceFunc()
++	funcs, diags := s.EphemeralResourceFuncs(ctx)
+ 
+-		schemaReq := ephemeral.SchemaRequest{}
+-		schemaResp := ephemeral.SchemaResponse{}
++	return validatedSchemas(ctx, funcs, diags, logging.KeyEphemeralResourceType, "Calling provider defined EphemeralResource Schema", "Called provider defined EphemeralResource Schema",
++		func(ephemeralResource ephemeral.EphemeralResource) (fwschema.Schema, func(context.Context) diag.Diagnostics, diag.Diagnostics) {
++			schemaResp := ephemeral.SchemaResponse{}
++			ephemeralResource.Schema(ctx, ephemeral.SchemaRequest{}, &schemaResp)
+ 
+-		logging.FrameworkTrace(ctx, "Calling provider defined EphemeralResource Schema", map[string]interface{}{logging.KeyEphemeralResourceType: typeName})
+-		ephemeralResource.Schema(ctx, schemaReq, &schemaResp)
+-		logging.FrameworkTrace(ctx, "Called provider defined EphemeralResource Schema", map[string]interface{}{logging.KeyEphemeralResourceType: typeName})
+-
+-		diags.Append(schemaResp.Diagnostics...)
+-
+-		if schemaResp.Diagnostics.HasError() {
+-			continue
+-		}
+-
+-		validateDiags := schemaResp.Schema.ValidateImplementation(ctx)
+-
+-		diags.Append(validateDiags...)
+-
+-		if validateDiags.HasError() {
+-			continue
+-		}
+-
+-		ephemeralResourceSchemas[typeName] = schemaResp.Schema
+-	}
+-
+-	return ephemeralResourceSchemas, diags
++			return schemaResp.Schema, schemaResp.Schema.ValidateImplementation, schemaResp.Diagnostics
++		})
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_listresources.go b/internal/fwserver/server_listresources.go
+--- a/internal/fwserver/server_listresources.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_listresources.go	2026-10-24 23:16:06.592125116 +0000
+@@ -118,17 +118,9 @@
+ // ListResourceMetadatas returns a slice of ListResourceMetadata for the GetMetadata
+ // RPC.
+ func (s *Server) ListResourceMetadatas(ctx context.Context) ([]ListResourceMetadata, diag.Diagnostics) {
+-	listResourceFuncs, diags := s.ListResourceFuncs(ctx)
++	funcs, diags := s.ListResourceFuncs(ctx)
+ 
+-	listResourceMetadatas := make([]ListResourceMetadata, 0, len(listResourceFuncs))
+-
+-	for typeName := range listResourceFuncs {
+-		listResourceMetadatas = append(listResourceMetadatas, ListResourceMetadata{
+-			TypeName: typeName,
+-		})
+-	}
+-
+-	return listResourceMetadatas, diags
++	return typeNameMetadatas[ListResourceMetadata](funcs), diags
+ }
+ 
+ // ListResourceSchema returns the ListResource Schema for the given type name and
+@@ -180,31 +172,13 @@
+ // be necessary for later provider operations. The schema implementations are
+ // also validated.
+ func (s *Server) ListResourceSchemas(ctx context.Context) (map[string]fwschema.Schema, diag.Diagnostics) {
+-	listResourceSchemas := make(map[string]fwschema.Schema)
+-	listResourceFuncs, diags := s.ListResourceFuncs(ctx)
++	funcs, diags := s.ListResourceFuncs(ctx)
+ 
+-	for typeName, listResourceFunc := range listResourceFuncs {
+-		listResource := listResourceFunc()
+-		schemaReq := list.ListResourceSchemaRequest{}
+-		schemaResp := list.ListResourceSchemaResponse{}
+-
+-		logging.FrameworkTrace(ctx, "Calling provider defined ListResource Schemas", map[string]interface{}{logging.KeyListResourceType: typeName})
+-		listResource.ListResourceConfigSchema(ctx, schemaReq, &schemaResp)
+-		logging.FrameworkTrace(ctx, "Called provider defined ListResource Schemas", map[string]interface{}{logging.KeyListResourceType: typeName})
+-
+-		diags.Append(schemaResp.Diagnostics...)
+-		if schemaResp.Diagnostics.HasError() {
+-			continue
+-		}
+-
+-		validateDiags := schemaResp.Schema.ValidateImplementation(ctx)
+-		diags.Append(validateDiags...)
+-		if validateDiags.HasError() {
+-			continue
+-		}
++	return validatedSchemas(ctx, funcs, diags, logging.KeyListResourceType, "Calling provider defined ListResource Schemas", "Called provider defined ListResource Schemas",
++		func(listResource list.ListResource) (fwschema.Schema, func(context.Context) diag.Diagnostics, diag.Diagnostics) {
++			schemaResp := list.ListResourceSchemaResponse{}
++			listResource.ListResourceConfigSchema(ctx, list.ListResourceSchemaRequest{}, &schemaResp)
+ 
+-		listResourceSchemas[typeName] = schemaResp.Schema
+-	}
+-
+-	return listResourceSchemas, diags
++			return schemaResp.Schema, schemaResp.Schema.ValidateImplementation, schemaResp.Diagnostics
++		})
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_statestore.go b/internal/fwserver/server_statestore.go
+--- a/internal/fwserver/server_statestore.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_statestore.go	2026-10-24 23:16:06.592057304 +0000
+@@ -16,20 +16,9 @@
+ 
+ // StateStore returns the StateStore for a given state store type.
+ func (s *Server) StateStore(ctx context.Context, statestoreType string) (statestore.StateStore, diag.Diagnostics) {
+-	statestoreFuncs, diags := s.StateStoreFuncs(ctx)
++	funcs, diags := s.StateStoreFuncs(ctx)
+ 
+-	statestoreFunc, ok := statestoreFuncs[statestoreType]
+-
+-	if !ok {
+-		diags.AddError(
+-			"State Store Type Not Found",
+-			fmt.Sprintf("No state store type named %q was found in the provider.", statestoreType),
+-		)
+-
+-		return nil, diags
+-	}
+-
+-	return statestoreFunc(), diags
++	return newInstance(funcs, diags, statestoreType, "State Store Type Not Found", "No state store type named %q was found in the provider.")
+ }
+ 
+ // StateStoreFuncs returns a map of StateStore functions. The results are cached
+@@ -97,17 +86,9 @@
+ // StateStoreMetadatas returns a slice of StateStoreMetadata for the GetMetadata
+ // RPC.
+ func (s *Server) StateStoreMetadatas(ctx context.Context) ([]StateStoreMetadata, diag.Diagnostics) {
+-	statestoreFuncs, diags := s.StateStoreFuncs(ctx)
+-
+-	statestoreMetadatas := make([]StateStoreMetadata, 0, len(statestoreFuncs))
++	funcs, diags := s.StateStoreFuncs(ctx)
+ 
+-	for typeName := range statestoreFuncs {
+-		statestoreMetadatas = append(statestoreMetadatas, StateStoreMetadata{
+-			TypeName: typeName,
+-		})
+-	}
+-
+-	return statestoreMetadatas, diags
++	return typeNameMetadatas[StateStoreMetadata](funcs), diags
+ }
+ 
+ // StateStoreSchema returns the StateStore Schema for the given type name and
+@@ -162,36 +143,13 @@
+ // be necessary for later provider operations. The schema implementations are
+ // also validated.
+ func (s *Server) StateStoreSchemas(ctx context.Context) (map[string]fwschema.Schema, diag.Diagnostics) {
+-	statestoreSchemas := make(map[string]fwschema.Schema)
+-
+-	statestoreFuncs, diags := s.StateStoreFuncs(ctx)
+-
+-	for typeName, statestoreFunc := range statestoreFuncs {
+-		statestoreImpl := statestoreFunc()
+-
+-		schemaReq := statestore.SchemaRequest{}
+-		schemaResp := statestore.SchemaResponse{}
++	funcs, diags := s.StateStoreFuncs(ctx)
+ 
+-		logging.FrameworkTrace(ctx, "Calling provider defined StateStore Schema", map[string]interface{}{logging.KeyStateStoreType: typeName})
+-		statestoreImpl.Schema(ctx, schemaReq, &schemaResp)
+-		logging.FrameworkTrace(ctx, "Called provider defined StateStore Schema", map[string]interface{}{logging.KeyStateStoreType: typeName})
++	return validatedSchemas(ctx, funcs, diags, logging.KeyStateStoreType, "Calling provider defined StateStore Schema", "Called provider defined StateStore Schema",
++		func(statestoreImpl statestore.StateStore) (fwschema.Schema, func(context.Context) diag.Diagnostics, diag.Diagnostics) {
++			schemaResp := statestore.SchemaResponse{}
++			statestoreImpl.Schema(ctx, statestore.SchemaRequest{}, &schemaResp)
+ 
+-		diags.Append(schemaResp.Diagnostics...)
+-
+-		if schemaResp.Diagnostics.HasError() {
+-			continue
+-		}
+-
+-		validateDiags := schemaResp.Schema.ValidateImplementation(ctx)
+-
+-		diags.Append(validateDiags...)
+-
+-		if validateDiags.HasError() {
+-			continue
+-		}
+-
+-		statestoreSchemas[typeName] = schemaResp.Schema
+-	}
+-
+-	return statestoreSchemas, diags
++			return schemaResp.Schema, schemaResp.Schema.ValidateImplementation, schemaResp.Diagnostics
++		})
+ }

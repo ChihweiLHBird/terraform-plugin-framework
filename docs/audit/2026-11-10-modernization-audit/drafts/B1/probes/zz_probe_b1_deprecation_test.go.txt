@@ -1,0 +1,50 @@
+package fwserver_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+func TestProbeB1Deprecation(t *testing.T) {
+	t.Parallel()
+	for _, fail := range []bool{false, true} {
+		var lv []validator.List
+		if fail {
+			lv = []validator.List{testvalidator.List{ValidateListMethod: func(ctx context.Context, req validator.ListRequest, resp *validator.ListResponse) {
+				resp.Diagnostics.AddAttributeError(req.Path, "list validator error", "")
+			}}}
+		}
+		inner := map[string]schema.Attribute{"s": schema.StringAttribute{Optional: true}}
+		s := schema.Schema{
+			Attributes: map[string]schema.Attribute{
+				"attr": schema.ListNestedAttribute{Optional: true, DeprecationMessage: "attr is deprecated", Validators: lv, NestedObject: schema.NestedAttributeObject{Attributes: inner}},
+			},
+			Blocks: map[string]schema.Block{
+				"blk": schema.ListNestedBlock{DeprecationMessage: "blk is deprecated", Validators: lv, NestedObject: schema.NestedBlockObject{Attributes: inner}},
+			},
+		}
+		elemT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"s": tftypes.String}}
+		lt := tftypes.List{ElementType: elemT}
+		rootT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"attr": lt, "blk": lt}}
+		elems := []tftypes.Value{tftypes.NewValue(elemT, map[string]tftypes.Value{"s": tftypes.NewValue(tftypes.String, "x")})}
+		val := tftypes.NewValue(rootT, map[string]tftypes.Value{"attr": tftypes.NewValue(lt, elems), "blk": tftypes.NewValue(lt, elems)})
+		resp := &fwserver.ValidateResourceConfigResponse{}
+		(&fwserver.Server{Provider: &testprovider.Provider{}}).ValidateResourceConfig(context.Background(), &fwserver.ValidateResourceConfigRequest{
+			Config: &tfsdk.Config{Raw: val, Schema: s}, Resource: &testprovider.Resource{},
+			ClientCapabilities: resource.ValidateConfigClientCapabilities{WriteOnlyAttributesAllowed: true},
+		}, resp)
+		for _, d := range resp.Diagnostics {
+			t.Logf("validatorFails=%v: %s %q %q", fail, d.Severity(), d.Summary(), d.Detail())
+		}
+	}
+}

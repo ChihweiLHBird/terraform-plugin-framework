@@ -1,0 +1,15 @@
+import re, sys, os, json
+src, out = sys.argv[1], sys.argv[2]
+defn = re.compile(r'\n// schema(Attributes|Blocks) is an? [^\n]*\nfunc schema(Attributes|Blocks)\([^\n]*\{\n(?:.*\n)*?\}\n')
+changed=[]; ndef=0; ncall=0
+for f in sorted(os.listdir(src)):
+    if not f.endswith('.go') or f.endswith('_test.go'): continue
+    s=open(os.path.join(src,f)).read()
+    s2, nd = defn.subn('', s)
+    s2, nc1 = re.subn(r'\bschemaAttributes\(', 'fwschema.AttributesMap(', s2)
+    s2, nc2 = re.subn(r'\bschemaBlocks\(', 'fwschema.BlocksMap(', s2)
+    ndef+=nd; ncall+=nc1+nc2
+    if s2!=s:
+        open(os.path.join(out,f),'w').write(s2); changed.append(f)
+print(json.dumps({"defs_removed":ndef,"calls":ncall}), file=sys.stderr)
+print("\n".join(changed))

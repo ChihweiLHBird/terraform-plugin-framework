@@ -1,0 +1,38 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"math/big"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+func main() {
+	ctx := context.Background()
+	s := schema.Schema{Attributes: map[string]schema.Attribute{
+		"i64": schema.Int64Attribute{Optional: true},
+		"i32": schema.Int32Attribute{Optional: true},
+	}}
+	raw := tftypes.NewValue(s.Type().TerraformType(ctx), map[string]tftypes.Value{
+		"i64": tftypes.NewValue(tftypes.Number, big.NewFloat(32.1)),
+		"i32": tftypes.NewValue(tftypes.Number, big.NewFloat(3000000000)),
+	})
+	cfg := tfsdk.Config{Schema: s, Raw: raw}
+	var i64 types.Int64
+	var i32 types.Int32
+	for _, d := range cfg.GetAttribute(ctx, path.Root("i64"), &i64) {
+		fmt.Printf("%s | %s\n%s\n\n", d.Severity(), d.Summary(), d.Detail())
+	}
+	for _, d := range cfg.GetAttribute(ctx, path.Root("i32"), &i32) {
+		fmt.Printf("%s | %s\n%s\n\n", d.Severity(), d.Summary(), d.Detail())
+	}
+	// deprecated Validate path (Int64Type implements xattr.TypeWithValidate)
+	for _, d := range types.Int64Type.Validate(ctx, tftypes.NewValue(tftypes.Number, big.NewFloat(32.1)), path.Root("i64")) {
+		fmt.Printf("Validate: %s | %s\n%s\n", d.Severity(), d.Summary(), d.Detail())
+	}
+}

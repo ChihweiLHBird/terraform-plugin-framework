@@ -1,0 +1,3 @@
+module convprobe
+
+go 1.26.0

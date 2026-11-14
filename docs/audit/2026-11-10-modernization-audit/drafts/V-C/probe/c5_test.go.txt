@@ -1,0 +1,59 @@
+package vcprobe
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+type mism struct {
+	X1 types.String `tfsdk:"x1"`
+	X2 types.String `tfsdk:"x2"`
+	X3 types.String `tfsdk:"x3"`
+}
+
+func TestC5(t *testing.T) {
+	ctx := context.Background()
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{
+		"a1": schema.StringAttribute{Optional: true},
+		"a2": schema.StringAttribute{Optional: true},
+		"a3": schema.StringAttribute{Optional: true},
+	}}
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"a1": tftypes.String, "a2": tftypes.String, "a3": tftypes.String}}
+	raw := tftypes.NewValue(objT, map[string]tftypes.Value{"a1": tftypes.NewValue(tftypes.String, nil), "a2": tftypes.NewValue(tftypes.String, nil), "a3": tftypes.NewValue(tftypes.String, nil)})
+	getTexts := map[string]int{}
+	setTexts := map[string]int{}
+	ovfTexts := map[string]int{}
+	for range 500 {
+		st := tfsdk.State{Schema: sch, Raw: raw}
+		var m mism
+		d := st.Get(ctx, &m)
+		getTexts[d[0].Detail()]++
+		d = st.Set(ctx, &m)
+		setTexts[d[0].Detail()]++
+		_, d = types.ObjectValueFrom(ctx, map[string]attr.Type{"a1": types.StringType, "a2": types.StringType, "a3": types.StringType}, m)
+		ovfTexts[d[0].Detail()]++
+	}
+	t.Logf("State.Get (Struct/Into) distinct detail texts over 500 runs: %d", len(getTexts))
+	t.Logf("State.Set (FromStruct) distinct detail texts over 500 runs: %d", len(setTexts))
+	t.Logf("ObjectValueFrom (FromStruct) distinct detail texts over 500 runs: %d", len(ovfTexts))
+	n := 0
+	for k := range getTexts {
+		if n < 2 {
+			t.Logf("example Get detail: %q", k)
+		}
+		n++
+	}
+	n = 0
+	for k := range setTexts {
+		if n < 2 {
+			t.Logf("example Set detail: %q", k)
+		}
+		n++
+	}
+}

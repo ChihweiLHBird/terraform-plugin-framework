@@ -1,0 +1,56 @@
+package probepublic
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+type Port int64
+
+type model struct {
+	Name types.String `tfsdk:"name"`
+	Port Port         `tfsdk:"port"`
+}
+
+func TestNamedIntPanicsViaPublicAPI(t *testing.T) {
+	ctx := context.Background()
+	s := schema.Schema{Attributes: map[string]schema.Attribute{
+		"name": schema.StringAttribute{Required: true},
+		"port": schema.Int64Attribute{Required: true},
+	}}
+	state := tfsdk.State{
+		Schema: s,
+		Raw: tftypes.NewValue(s.Type().TerraformType(ctx), map[string]tftypes.Value{
+			"name": tftypes.NewValue(tftypes.String, "x"),
+			"port": tftypes.NewValue(tftypes.Number, 8080),
+		}),
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("tfsdk.State.Get PANIC:", r)
+		}
+	}()
+	var m model
+	diags := state.Get(ctx, &m)
+	fmt.Println("diags:", diags, "model:", m)
+}
+
+func TestNamedIntGetAttribute(t *testing.T) {
+	ctx := context.Background()
+	s := schema.Schema{Attributes: map[string]schema.Attribute{"port": schema.Int64Attribute{Required: true}}}
+	state := tfsdk.State{Schema: s, Raw: tftypes.NewValue(s.Type().TerraformType(ctx), map[string]tftypes.Value{"port": tftypes.NewValue(tftypes.Number, 8080)})}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("tfsdk.State.GetAttribute PANIC:", r)
+		}
+	}()
+	var p Port
+	diags := state.GetAttribute(ctx, pathRoot("port"), &p)
+	fmt.Println("diags:", diags, "port:", p)
+}

@@ -1,0 +1,27 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func main() {
+	// Only the method set matters: does MapNestedAttribute get validated?
+	s := schema.Schema{Attributes: map[string]schema.Attribute{
+		"m": schema.MapNestedAttribute{Optional: true, NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+			"l": schema.ListAttribute{Optional: true, ElementType: types.DynamicType},
+		}}},
+		"m2": schema.MapNestedAttribute{Optional: true, NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+			"d": schema.DynamicAttribute{Optional: true},
+		}}},
+	}}
+	var d diag.Diagnostics = s.ValidateImplementation(context.Background())
+	fmt.Println("diags:", len(d))
+	for _, x := range d {
+		fmt.Println(" -", x.Detail()[150:230])
+	}
+}

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Usage: run.sh <copy-of-repo-dir>   (never point this at the real repository)
+# Copies the repro tests into the given repository copy and runs them verbosely.
+set -e
+HERE=$(cd "$(dirname "$0")" && pwd)
+DST=$1
+cp "$HERE"/reflect/zz_*_test.go "$DST/internal/reflect/"
+cp "$HERE"/fwschemadata/zz_*_test.go "$DST/internal/fwschemadata/"
+cd "$DST"
+go test -count=1 -v -run 'TestRepro|TestProbe' ./internal/reflect/ ./internal/fwschemadata/ 2>&1 | grep -v '^=== '
+go test -run XXX -bench 'Struct10Fields' -benchmem -benchtime=20000x ./internal/reflect/ 2>&1 | grep Benchmark

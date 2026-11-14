@@ -1,0 +1,55 @@
+package reflect_test
+
+import (
+	"context"
+	"fmt"
+	"math/big"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	refl "github.com/hashicorp/terraform-plugin-framework/internal/reflect"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type bigModel struct {
+	F *big.Float `tfsdk:"f"`
+	I *big.Int   `tfsdk:"i"`
+}
+
+func TestProbeNilBig(t *testing.T) {
+	ctx := context.Background()
+	for name, v := range map[string]any{
+		"nil *big.Float": (*big.Float)(nil),
+		"nil *big.Int":   (*big.Int)(nil),
+		"nil *string":    (*string)(nil),
+	} {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("FromValue(%s) PANICKED: %v\n", name, r)
+				}
+			}()
+			got, diags := refl.FromValue(ctx, types.NumberType, v, path.Root("a"))
+			fmt.Printf("FromValue(%s) = %v, diags=%v\n", name, got, diags)
+		}()
+	}
+	// Into direction: null number into *big.Float / *big.Int fields
+	ot := types.ObjectType{AttrTypes: map[string]attr.Type{"f": types.NumberType, "i": types.NumberType}}
+	obj := tftypes.NewValue(ot.TerraformType(ctx), map[string]tftypes.Value{"f": tftypes.NewValue(tftypes.Number, nil), "i": tftypes.NewValue(tftypes.Number, nil)})
+	var m bigModel
+	diags := refl.Into(ctx, ot, obj, &m, refl.Options{}, path.Empty())
+	fmt.Printf("Into null numbers into *big fields: diags=%v model=%+v\n", diags, m)
+	// round trip the resulting model back
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("FromValue(model with nil *big fields) PANICKED: %v\n", r)
+			}
+		}()
+		got, diags := refl.FromValue(ctx, ot, m, path.Empty())
+		fmt.Printf("FromValue(model with nil *big fields) = %v diags=%v\n", got, diags)
+	}()
+}

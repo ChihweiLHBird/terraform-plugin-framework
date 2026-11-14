@@ -1,0 +1,29 @@
+package reflect_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	refl "github.com/hashicorp/terraform-plugin-framework/internal/reflect"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testtypes"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+)
+
+// C5: FromUnknownable (both branches) and FromNullable (null branch) drop warning diagnostics.
+// Uses unknownableString / nullableString from interfaces_test.go (same package reflect_test).
+func TestReproDroppedWarnings(t *testing.T) {
+	ctx := context.Background()
+	for name, typ := range map[string]attr.Type{
+		"TypeWithValidateWarning":      testtypes.StringTypeWithValidateWarning{StringType: testtypes.StringType{}},
+		"ValidateableAttributeWarning": testtypes.StringTypeWithValidateAttributeWarning{StringType: testtypes.StringType{}},
+	} {
+		_, d1 := refl.FromUnknownable(ctx, typ, &unknownableString{Unknown: true}, path.Root("a"))
+		_, d2 := refl.FromUnknownable(ctx, typ, &unknownableString{String: "x"}, path.Root("a"))
+		_, d3 := refl.FromNullable(ctx, typ, &nullableString{Null: true}, path.Root("a"))
+		_, d4 := refl.FromNullable(ctx, typ, &nullableString{String: "x"}, path.Root("a"))
+		_, d5 := refl.FromValue(ctx, typ, "x", path.Root("a"))
+		fmt.Printf("%s: FromUnknownable(unknown)=%d FromUnknownable(known)=%d FromNullable(null)=%d FromNullable(non-null)=%d FromString=%d\n", name, len(d1), len(d2), len(d3), len(d4), len(d5))
+	}
+}

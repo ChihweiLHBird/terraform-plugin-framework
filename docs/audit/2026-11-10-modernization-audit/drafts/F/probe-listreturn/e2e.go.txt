@@ -1,0 +1,57 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+)
+
+type prov struct{ ret function.Return; val any }
+
+func (p prov) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) { resp.TypeName = "p" }
+func (p prov) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse)          {}
+func (p prov) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse)  {}
+func (p prov) DataSources(context.Context) []func() datasource.DataSource                       { return nil }
+func (p prov) Resources(context.Context) []func() resource.Resource                             { return nil }
+func (p prov) Functions(context.Context) []func() function.Function {
+	return []func() function.Function{func() function.Function { return fn{ret: p.ret, val: p.val} }}
+}
+
+type fn struct{ ret function.Return; val any }
+
+func (f fn) Metadata(_ context.Context, _ function.MetadataRequest, resp *function.MetadataResponse) { resp.Name = "f" }
+func (f fn) Definition(_ context.Context, _ function.DefinitionRequest, resp *function.DefinitionResponse) {
+	resp.Definition = function.Definition{Return: f.ret}
+}
+func (f fn) Run(ctx context.Context, req function.RunRequest, resp *function.RunResponse) {
+	resp.Error = function.ConcatFuncErrors(resp.Error, resp.Result.Set(ctx, f.val))
+}
+
+func e2e(name string, ret function.Return, val any) {
+	ctx := context.Background()
+	srv, err := providerserver.NewProtocol6WithError(prov{ret: ret, val: val})()
+	if err != nil { panic(err) }
+	resp, err := srv.CallFunction(ctx, &tfprotov6.CallFunctionRequest{Name: "f"})
+	if err != nil { fmt.Println(name, "rpc err", err); return }
+	if resp.Error != nil {
+		fmt.Printf("%s: FUNC ERROR: %s\n", name, resp.Error.Text)
+		return
+	}
+	fmt.Printf("%s: OK result=%v\n", name, resp.Result)
+}
+
+func runE2E() {
+	ct := MyListType{ListType: basetypes.ListType{ElemType: types.StringType}}
+	e2e("ListReturn{ElementType: String}", function.ListReturn{ElementType: types.StringType}, []string{"a"})
+	e2e("ListReturn{CustomType only}", function.ListReturn{CustomType: ct}, []string{"a"})
+	e2e("ListReturn{CustomType+ElementType}", function.ListReturn{CustomType: ct, ElementType: types.StringType}, []string{"a"})
+	e2e("ListReturn{CustomType only} attr.Value", function.ListReturn{CustomType: ct}, MyListValue{ListValue: types.ListValueMust(types.StringType, nil)})
+}

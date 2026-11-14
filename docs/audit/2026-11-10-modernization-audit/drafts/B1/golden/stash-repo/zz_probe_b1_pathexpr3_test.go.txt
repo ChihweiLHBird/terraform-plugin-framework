@@ -1,0 +1,42 @@
+package fwserver_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+func TestProbeB1PathExpressionTopSibling(t *testing.T) {
+	t.Parallel()
+	var log []string
+	sibling := path.MatchRelative().AtParent().AtName("sibling")
+	pm := testplanmodifier.String{PlanModifyStringMethod: func(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+		expr := req.PathExpression.Merge(sibling)
+		paths, diags := req.Plan.PathMatches(ctx, expr)
+		log = append(log, fmt.Sprintf("path=%s expr=%q merged=%q matched=%v diags=%v", req.Path, req.PathExpression, expr.Resolve(), paths, diags))
+	}}
+	s := schema.Schema{Attributes: map[string]schema.Attribute{
+		"top":     schema.StringAttribute{Optional: true, PlanModifiers: []planmodifier.String{pm}},
+		"sibling": schema.StringAttribute{Optional: true},
+	}}
+	rootT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"top": tftypes.String, "sibling": tftypes.String}}
+	val := tftypes.NewValue(rootT, map[string]tftypes.Value{"top": tftypes.NewValue(tftypes.String, "a"), "sibling": tftypes.NewValue(tftypes.String, "b")})
+	presp := &fwserver.PlanResourceChangeResponse{}
+	(&fwserver.Server{Provider: &testprovider.Provider{}}).PlanResourceChange(context.Background(), &fwserver.PlanResourceChangeRequest{
+		Config: &tfsdk.Config{Raw: val, Schema: s}, ProposedNewState: &tfsdk.Plan{Raw: val, Schema: s},
+		PriorState: &tfsdk.State{Raw: tftypes.NewValue(rootT, nil), Schema: s}, ResourceSchema: s, Resource: &testprovider.Resource{},
+	}, presp)
+	for _, l := range log {
+		t.Log(l)
+	}
+}

@@ -1,0 +1,533 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_createresource.go b/internal/fwserver/server_createresource.go
+--- a/internal/fwserver/server_createresource.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_createresource.go	2026-10-24 23:25:21.857234513 +0000
+@@ -102,25 +102,13 @@
+ 
+ 	// If the resource supports identity and there is no planned identity data, pre-populate with a null value.
+ 	if req.PlannedIdentity == nil && req.IdentitySchema != nil {
+-		nullIdentityTfValue := tftypes.NewValue(req.IdentitySchema.Type().TerraformType(ctx), nil)
+-
+-		req.PlannedIdentity = &tfsdk.ResourceIdentity{
+-			Schema: req.IdentitySchema,
+-			Raw:    nullIdentityTfValue.Copy(),
+-		}
++		req.PlannedIdentity = nullIdentity(ctx, req.IdentitySchema)
+ 	}
+ 
+ 	// Pre-populate the new identity with the planned identity.
+ 	if req.PlannedIdentity != nil {
+-		createReq.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.PlannedIdentity.Schema,
+-			Raw:    req.PlannedIdentity.Raw.Copy(),
+-		}
+-
+-		createResp.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.PlannedIdentity.Schema,
+-			Raw:    req.PlannedIdentity.Raw.Copy(),
+-		}
++		createReq.Identity = copyIdentity(req.PlannedIdentity)
++		createResp.Identity = copyIdentity(req.PlannedIdentity)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined Resource Create")
+@@ -180,36 +168,12 @@
+ 		}
+ 	}
+ 
+-	semanticEqualityReq := SchemaSemanticEqualityRequest{
+-		PriorData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionPlan,
+-			Schema:         req.PlannedState.Schema,
+-			TerraformValue: req.PlannedState.Raw.Copy(),
+-		},
+-		ProposedNewData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         resp.NewState.Schema,
+-			TerraformValue: resp.NewState.Raw.Copy(),
+-		},
+-	}
+-	semanticEqualityResp := &SchemaSemanticEqualityResponse{
+-		NewData: semanticEqualityReq.ProposedNewData,
+-	}
+-
+-	SchemaSemanticEquality(ctx, semanticEqualityReq, semanticEqualityResp)
+-
+-	resp.Diagnostics.Append(semanticEqualityResp.Diagnostics...)
++	resp.Diagnostics.Append(stateSemanticEquality(ctx, fwschemadata.DataDescriptionPlan, req.PlannedState.Schema, req.PlannedState.Raw, resp.NewState)...)
+ 
+ 	if resp.Diagnostics.HasError() {
+ 		return
+ 	}
+ 
+-	if !semanticEqualityResp.NewData.TerraformValue.Equal(resp.NewState.Raw) {
+-		logging.FrameworkDebug(ctx, "State updated due to semantic equality")
+-
+-		resp.NewState.Raw = semanticEqualityResp.NewData.TerraformValue
+-	}
+-
+ 	// Set any write-only attributes in the state to null
+ 	modifiedState, err := tftypes.Transform(resp.NewState.Raw, NullifyWriteOnlyAttributes(ctx, resp.NewState.Schema))
+ 	if err != nil {
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_deleteresource.go b/internal/fwserver/server_deleteresource.go
+--- a/internal/fwserver/server_deleteresource.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_deleteresource.go	2026-10-24 23:25:21.855604128 +0000
+@@ -100,24 +100,12 @@
+ 	}
+ 
+ 	if req.PriorIdentity == nil && req.IdentitySchema != nil {
+-		nullIdentityTfValue := tftypes.NewValue(req.IdentitySchema.Type().TerraformType(ctx), nil)
+-
+-		req.PriorIdentity = &tfsdk.ResourceIdentity{
+-			Schema: req.IdentitySchema,
+-			Raw:    nullIdentityTfValue.Copy(),
+-		}
++		req.PriorIdentity = nullIdentity(ctx, req.IdentitySchema)
+ 	}
+ 
+ 	if req.PriorIdentity != nil {
+-		deleteReq.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.PriorIdentity.Schema,
+-			Raw:    req.PriorIdentity.Raw.Copy(),
+-		}
+-
+-		deleteResp.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.PriorIdentity.Schema,
+-			Raw:    req.PriorIdentity.Raw.Copy(),
+-		}
++		deleteReq.Identity = copyIdentity(req.PriorIdentity)
++		deleteResp.Identity = copyIdentity(req.PriorIdentity)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined Resource Delete")
+@@ -135,12 +123,7 @@
+ 
+ 		// If the resource supports identity send a null value.
+ 		if req.IdentitySchema != nil {
+-			nullIdentityTfValue := tftypes.NewValue(req.IdentitySchema.Type().TerraformType(ctx), nil)
+-
+-			deleteResp.Identity = &tfsdk.ResourceIdentity{
+-				Schema: req.IdentitySchema,
+-				Raw:    nullIdentityTfValue.Copy(),
+-			}
++			deleteResp.Identity = nullIdentity(ctx, req.IdentitySchema)
+ 		}
+ 	}
+ 
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_importresourcestate.go b/internal/fwserver/server_importresourcestate.go
+--- a/internal/fwserver/server_importresourcestate.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_importresourcestate.go	2026-10-24 23:25:21.851779381 +0000
+@@ -150,24 +150,12 @@
+ 
+ 	// If the resource supports identity and we are not importing by identity, pre-populate with a null value.
+ 	if req.Identity == nil && req.IdentitySchema != nil {
+-		nullTfValue := tftypes.NewValue(req.IdentitySchema.Type().TerraformType(ctx), nil)
+-
+-		req.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.IdentitySchema,
+-			Raw:    nullTfValue.Copy(),
+-		}
++		req.Identity = nullIdentity(ctx, req.IdentitySchema)
+ 	}
+ 
+ 	if req.Identity != nil {
+-		importReq.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.Identity.Schema,
+-			Raw:    req.Identity.Raw.Copy(),
+-		}
+-
+-		importResp.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.Identity.Schema,
+-			Raw:    req.Identity.Raw.Copy(),
+-		}
++		importReq.Identity = copyIdentity(req.Identity)
++		importResp.Identity = copyIdentity(req.Identity)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined Resource ImportState")
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_planresourcechange.go b/internal/fwserver/server_planresourcechange.go
+--- a/internal/fwserver/server_planresourcechange.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_planresourcechange.go	2026-10-24 23:25:21.853257126 +0000
+@@ -120,20 +120,12 @@
+ 
+ 	// If the resource supports identity and there is no prior identity data, pre-populate with a null value.
+ 	if req.PriorIdentity == nil && req.IdentitySchema != nil {
+-		nullIdentityTfValue := tftypes.NewValue(req.IdentitySchema.Type().TerraformType(ctx), nil)
+-
+-		req.PriorIdentity = &tfsdk.ResourceIdentity{
+-			Schema: req.IdentitySchema,
+-			Raw:    nullIdentityTfValue.Copy(),
+-		}
++		req.PriorIdentity = nullIdentity(ctx, req.IdentitySchema)
+ 	}
+ 
+ 	// Set the planned identity to the prior identity by default (can be modified later).
+ 	if req.PriorIdentity != nil {
+-		resp.PlannedIdentity = &tfsdk.ResourceIdentity{
+-			Schema: req.PriorIdentity.Schema,
+-			Raw:    req.PriorIdentity.Raw.Copy(),
+-		}
++		resp.PlannedIdentity = copyIdentity(req.PriorIdentity)
+ 	}
+ 
+ 	// Ensure that resp.PlannedPrivate is never nil.
+@@ -203,48 +195,7 @@
+ 		// plan outputs and only needs to be done for resource update plans.
+ 		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/627
+ 		if !req.PriorState.Raw.IsNull() {
+-			var allPaths, changedPaths path.Paths
+-
+-			for attrName := range resp.PlannedState.Schema.GetAttributes() {
+-				allPaths.Append(path.Root(attrName))
+-			}
+-
+-			for blockName := range resp.PlannedState.Schema.GetBlocks() {
+-				allPaths.Append(path.Root(blockName))
+-			}
+-
+-			for _, p := range allPaths {
+-				var plannedState, priorState attr.Value
+-
+-				// This logging is best effort and any errors should not be
+-				// returned to practitioners.
+-				_ = resp.PlannedState.GetAttribute(ctx, p, &plannedState)
+-				_ = req.PriorState.GetAttribute(ctx, p, &priorState)
+-
+-				// Due to ignoring diagnostics, the value may not be populated.
+-				// Prevent the panic and show the path as changed.
+-				if plannedState == nil {
+-					changedPaths.Append(p)
+-
+-					continue
+-				}
+-
+-				if plannedState.Equal(priorState) {
+-					continue
+-				}
+-
+-				changedPaths.Append(p)
+-			}
+-
+-			// Colocate these log entries to not intermix with GetAttribute logging
+-			for _, p := range changedPaths {
+-				logging.FrameworkDebug(ctx,
+-					"Detected value change between proposed new state and prior state",
+-					map[string]any{
+-						logging.KeyAttributePath: p.String(),
+-					},
+-				)
+-			}
++			logPlannedValueChanges(ctx, resp.PlannedState, req.PriorState)
+ 		}
+ 
+ 		logging.FrameworkDebug(ctx, "Marking Computed attributes with null configuration values as unknown (known after apply) in the plan to prevent potential Terraform errors")
+@@ -333,14 +284,8 @@
+ 		}
+ 
+ 		if resp.PlannedIdentity != nil {
+-			modifyPlanReq.Identity = &tfsdk.ResourceIdentity{
+-				Schema: resp.PlannedIdentity.Schema,
+-				Raw:    resp.PlannedIdentity.Raw.Copy(),
+-			}
+-			modifyPlanResp.Identity = &tfsdk.ResourceIdentity{
+-				Schema: resp.PlannedIdentity.Schema,
+-				Raw:    resp.PlannedIdentity.Raw.Copy(),
+-			}
++			modifyPlanReq.Identity = copyIdentity(resp.PlannedIdentity)
++			modifyPlanResp.Identity = copyIdentity(resp.PlannedIdentity)
+ 		}
+ 
+ 		logging.FrameworkTrace(ctx, "Calling provider defined Resource ModifyPlan")
+@@ -411,6 +356,54 @@
+ 	}
+ }
+ 
++// logPlannedValueChanges emits a debug log for each top level attribute or
++// block whose planned value differs from its prior state value. This logging
++// is best effort and any errors are not returned to practitioners.
++func logPlannedValueChanges(ctx context.Context, plannedState *tfsdk.State, priorState *tfsdk.State) {
++	var allPaths, changedPaths path.Paths
++
++	for attrName := range plannedState.Schema.GetAttributes() {
++		allPaths.Append(path.Root(attrName))
++	}
++
++	for blockName := range plannedState.Schema.GetBlocks() {
++		allPaths.Append(path.Root(blockName))
++	}
++
++	for _, p := range allPaths {
++		var plannedValue, priorValue attr.Value
++
++		// This logging is best effort and any errors should not be
++		// returned to practitioners.
++		_ = plannedState.GetAttribute(ctx, p, &plannedValue)
++		_ = priorState.GetAttribute(ctx, p, &priorValue)
++
++		// Due to ignoring diagnostics, the value may not be populated.
++		// Prevent the panic and show the path as changed.
++		if plannedValue == nil {
++			changedPaths.Append(p)
++
++			continue
++		}
++
++		if plannedValue.Equal(priorValue) {
++			continue
++		}
++
++		changedPaths.Append(p)
++	}
++
++	// Colocate these log entries to not intermix with GetAttribute logging
++	for _, p := range changedPaths {
++		logging.FrameworkDebug(ctx,
++			"Detected value change between proposed new state and prior state",
++			map[string]any{
++				logging.KeyAttributePath: p.String(),
++			},
++		)
++	}
++}
++
+ func MarkComputedNilsAsUnknown(ctx context.Context, config tftypes.Value, resourceSchema fwschema.Schema) func(*tftypes.AttributePath, tftypes.Value) (tftypes.Value, error) {
+ 	return func(path *tftypes.AttributePath, val tftypes.Value) (tftypes.Value, error) {
+ 		ctx = logging.FrameworkWithAttributePath(ctx, path.String())
+@@ -586,3 +579,19 @@
+ 		Schema: state.Schema,
+ 	}
+ }
++
++// nullIdentity returns a resource identity with a null value of identitySchema.
++func nullIdentity(ctx context.Context, identitySchema fwschema.Schema) *tfsdk.ResourceIdentity {
++	return &tfsdk.ResourceIdentity{
++		Schema: identitySchema,
++		Raw:    tftypes.NewValue(identitySchema.Type().TerraformType(ctx), nil),
++	}
++}
++
++// copyIdentity returns a copy of identity with a copied value.
++func copyIdentity(identity *tfsdk.ResourceIdentity) *tfsdk.ResourceIdentity {
++	return &tfsdk.ResourceIdentity{
++		Schema: identity.Schema,
++		Raw:    identity.Raw.Copy(),
++	}
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readdatasource.go b/internal/fwserver/server_readdatasource.go
+--- a/internal/fwserver/server_readdatasource.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_readdatasource.go	2026-10-24 23:25:21.858272157 +0000
+@@ -111,35 +111,5 @@
+ 		return
+ 	}
+ 
+-	semanticEqualityReq := SchemaSemanticEqualityRequest{
+-		PriorData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionConfiguration,
+-			Schema:         req.Config.Schema,
+-			TerraformValue: req.Config.Raw.Copy(),
+-		},
+-		ProposedNewData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         resp.State.Schema,
+-			TerraformValue: resp.State.Raw.Copy(),
+-		},
+-	}
+-	semanticEqualityResp := &SchemaSemanticEqualityResponse{
+-		NewData: semanticEqualityReq.ProposedNewData,
+-	}
+-
+-	SchemaSemanticEquality(ctx, semanticEqualityReq, semanticEqualityResp)
+-
+-	resp.Diagnostics.Append(semanticEqualityResp.Diagnostics...)
+-
+-	if resp.Diagnostics.HasError() {
+-		return
+-	}
+-
+-	if semanticEqualityResp.NewData.TerraformValue.Equal(resp.State.Raw) {
+-		return
+-	}
+-
+-	logging.FrameworkDebug(ctx, "State updated due to semantic equality")
+-
+-	resp.State.Raw = semanticEqualityResp.NewData.TerraformValue
++	resp.Diagnostics.Append(stateSemanticEquality(ctx, fwschemadata.DataDescriptionConfiguration, req.Config.Schema, req.Config.Raw, resp.State)...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readresource.go b/internal/fwserver/server_readresource.go
+--- a/internal/fwserver/server_readresource.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_readresource.go	2026-10-24 23:25:21.854094476 +0000
+@@ -132,24 +132,12 @@
+ 
+ 	// If the resource supports identity and there is no current identity data, pre-populate with a null value.
+ 	if req.CurrentIdentity == nil && req.IdentitySchema != nil {
+-		nullTfValue := tftypes.NewValue(req.IdentitySchema.Type().TerraformType(ctx), nil)
+-
+-		req.CurrentIdentity = &tfsdk.ResourceIdentity{
+-			Schema: req.IdentitySchema,
+-			Raw:    nullTfValue.Copy(),
+-		}
++		req.CurrentIdentity = nullIdentity(ctx, req.IdentitySchema)
+ 	}
+ 
+ 	if req.CurrentIdentity != nil {
+-		readReq.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.CurrentIdentity.Schema,
+-			Raw:    req.CurrentIdentity.Raw.Copy(),
+-		}
+-
+-		readResp.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.CurrentIdentity.Schema,
+-			Raw:    req.CurrentIdentity.Raw.Copy(),
+-		}
++		readReq.Identity = copyIdentity(req.CurrentIdentity)
++		readResp.Identity = copyIdentity(req.CurrentIdentity)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined Resource Read")
+@@ -209,16 +197,39 @@
+ 		}
+ 	}
+ 
++	resp.Diagnostics.Append(stateSemanticEquality(ctx, fwschemadata.DataDescriptionState, req.CurrentState.Schema, req.CurrentState.Raw, resp.NewState)...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	// Set any write-only attributes in the state to null
++	modifiedState, err := tftypes.Transform(resp.NewState.Raw, NullifyWriteOnlyAttributes(ctx, resp.NewState.Schema))
++	if err != nil {
++		resp.Diagnostics.AddError(
++			"Error Modifying State",
++			"There was an unexpected error modifying the NewState. This is always a problem with the provider. Please report the following to the provider developer:\n\n"+err.Error(),
++		)
++		return
++	}
++
++	resp.NewState.Raw = modifiedState
++}
++
++// stateSemanticEquality runs the schema semantic equality logic of newState
++// against the prior data and, unless an error diagnostic is returned, updates
++// newState to keep any semantically equal prior values.
++func stateSemanticEquality(ctx context.Context, priorDescription fwschemadata.DataDescription, priorSchema fwschema.Schema, priorRaw tftypes.Value, newState *tfsdk.State) diag.Diagnostics {
+ 	semanticEqualityReq := SchemaSemanticEqualityRequest{
+ 		PriorData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         req.CurrentState.Schema,
+-			TerraformValue: req.CurrentState.Raw.Copy(),
++			Description:    priorDescription,
++			Schema:         priorSchema,
++			TerraformValue: priorRaw.Copy(),
+ 		},
+ 		ProposedNewData: fwschemadata.Data{
+ 			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         resp.NewState.Schema,
+-			TerraformValue: resp.NewState.Raw.Copy(),
++			Schema:         newState.Schema,
++			TerraformValue: newState.Raw.Copy(),
+ 		},
+ 	}
+ 	semanticEqualityResp := &SchemaSemanticEqualityResponse{
+@@ -227,27 +238,15 @@
+ 
+ 	SchemaSemanticEquality(ctx, semanticEqualityReq, semanticEqualityResp)
+ 
+-	resp.Diagnostics.Append(semanticEqualityResp.Diagnostics...)
+-
+-	if resp.Diagnostics.HasError() {
+-		return
++	if semanticEqualityResp.Diagnostics.HasError() {
++		return semanticEqualityResp.Diagnostics
+ 	}
+ 
+-	if !semanticEqualityResp.NewData.TerraformValue.Equal(resp.NewState.Raw) {
++	if !semanticEqualityResp.NewData.TerraformValue.Equal(newState.Raw) {
+ 		logging.FrameworkDebug(ctx, "State updated due to semantic equality")
+ 
+-		resp.NewState.Raw = semanticEqualityResp.NewData.TerraformValue
++		newState.Raw = semanticEqualityResp.NewData.TerraformValue
+ 	}
+ 
+-	// Set any write-only attributes in the state to null
+-	modifiedState, err := tftypes.Transform(resp.NewState.Raw, NullifyWriteOnlyAttributes(ctx, resp.NewState.Schema))
+-	if err != nil {
+-		resp.Diagnostics.AddError(
+-			"Error Modifying State",
+-			"There was an unexpected error modifying the NewState. This is always a problem with the provider. Please report the following to the provider developer:\n\n"+err.Error(),
+-		)
+-		return
+-	}
+-
+-	resp.NewState.Raw = modifiedState
++	return semanticEqualityResp.Diagnostics
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_updateresource.go b/internal/fwserver/server_updateresource.go
+--- a/internal/fwserver/server_updateresource.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_updateresource.go	2026-10-24 23:25:21.857133169 +0000
+@@ -125,25 +125,13 @@
+ 
+ 	// If the resource supports identity and there is no planned identity data, pre-populate with a null value.
+ 	if req.PlannedIdentity == nil && req.IdentitySchema != nil {
+-		nullIdentityTfValue := tftypes.NewValue(req.IdentitySchema.Type().TerraformType(ctx), nil)
+-
+-		req.PlannedIdentity = &tfsdk.ResourceIdentity{
+-			Schema: req.IdentitySchema,
+-			Raw:    nullIdentityTfValue.Copy(),
+-		}
++		req.PlannedIdentity = nullIdentity(ctx, req.IdentitySchema)
+ 	}
+ 
+ 	// Pre-populate the new identity with the planned identity.
+ 	if req.PlannedIdentity != nil {
+-		updateReq.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.PlannedIdentity.Schema,
+-			Raw:    req.PlannedIdentity.Raw.Copy(),
+-		}
+-
+-		updateResp.Identity = &tfsdk.ResourceIdentity{
+-			Schema: req.PlannedIdentity.Schema,
+-			Raw:    req.PlannedIdentity.Raw.Copy(),
+-		}
++		updateReq.Identity = copyIdentity(req.PlannedIdentity)
++		updateResp.Identity = copyIdentity(req.PlannedIdentity)
+ 	}
+ 
+ 	logging.FrameworkTrace(ctx, "Calling provider defined Resource Update")
+@@ -210,36 +198,12 @@
+ 		}
+ 	}
+ 
+-	semanticEqualityReq := SchemaSemanticEqualityRequest{
+-		PriorData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionPlan,
+-			Schema:         req.PlannedState.Schema,
+-			TerraformValue: req.PlannedState.Raw.Copy(),
+-		},
+-		ProposedNewData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         resp.NewState.Schema,
+-			TerraformValue: resp.NewState.Raw.Copy(),
+-		},
+-	}
+-	semanticEqualityResp := &SchemaSemanticEqualityResponse{
+-		NewData: semanticEqualityReq.ProposedNewData,
+-	}
+-
+-	SchemaSemanticEquality(ctx, semanticEqualityReq, semanticEqualityResp)
+-
+-	resp.Diagnostics.Append(semanticEqualityResp.Diagnostics...)
++	resp.Diagnostics.Append(stateSemanticEquality(ctx, fwschemadata.DataDescriptionPlan, req.PlannedState.Schema, req.PlannedState.Raw, resp.NewState)...)
+ 
+ 	if resp.Diagnostics.HasError() {
+ 		return
+ 	}
+ 
+-	if !semanticEqualityResp.NewData.TerraformValue.Equal(resp.NewState.Raw) {
+-		logging.FrameworkDebug(ctx, "State updated due to semantic equality")
+-
+-		resp.NewState.Raw = semanticEqualityResp.NewData.TerraformValue
+-	}
+-
+ 	// Set any write-only attributes in the state to null
+ 	modifiedState, err := tftypes.Transform(resp.NewState.Raw, NullifyWriteOnlyAttributes(ctx, resp.NewState.Schema))
+ 	if err != nil {

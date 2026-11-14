@@ -1,0 +1,32 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
+// PlainListType mirrors internal/testing/testtypes.ListType: embeds basetypes.ListType, no ValueFromList override.
+type PlainListType struct{ basetypes.ListType }
+
+func (t PlainListType) Equal(o attr.Type) bool {
+	other, ok := o.(PlainListType)
+	return ok && t.ListType.Equal(other.ListType)
+}
+
+func runPlain() {
+	ctx := context.Background()
+	ct := PlainListType{ListType: basetypes.ListType{ElemType: basetypes.StringType{}}}
+	r := function.ListReturn{CustomType: ct}
+	rd, ferr := r.NewResultData(ctx)
+	fmt.Printf("plain: NewResultData err=%v value=%#v\n", ferr, rd.Value())
+	fmt.Printf("plain: Set([]string) err=%v\n", rd.Set(ctx, []string{"a"}))
+	safe("plain e2e set", func() { e2e("plain e2e set []string", r, []string{"a"}) })
+	safe("plain e2e Run error", func() { errE2E("plain e2e Run error", r) })
+	r2 := function.ListReturn{CustomType: ct, ElementType: basetypes.StringType{}}
+	safe("plain+ElementType e2e set", func() { e2e("plain+ElementType e2e set []string", r2, []string{"a"}) })
+	safe("plain+ElementType e2e Run error", func() { errE2E("plain+ElementType e2e Run error", r2) })
+}

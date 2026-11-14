@@ -1,0 +1,18 @@
+import re, sys, json, os
+src_dir, out_dir = sys.argv[1], sys.argv[2]
+pat_a = re.compile(r'(func \(a (\w+)\) Equal\(o fwschema\.Attribute\) bool \{\n)\tif _, ok := o\.\(\2\); !ok \{\n\t\treturn false\n\t\}\n\n\treturn fwschema\.AttributesEqual\(a, o\)\n\}')
+pat_n = re.compile(r'(func \(a (\w+)\) Equal\(o fwschema\.Attribute\) bool \{\n)\tother, ok := o\.\(\2\)\n\n\tif !ok \{\n\t\treturn false\n\t\}\n\n\treturn fwschema\.NestedAttributesEqual\(a, other\)\n\}')
+pat_b = re.compile(r'(func \(b (\w+)\) Equal\(o fwschema\.Block\) bool \{\n)\tif _, ok := o\.\(\2\); !ok \{\n\t\treturn false\n\t\}\n\n\treturn fwschema\.BlocksEqual\(b, o\)\n\}')
+counts = {"a":0,"n":0,"b":0}
+changed = []
+for f in sorted(os.listdir(src_dir)):
+    if not f.endswith('.go') or f.endswith('_test.go'): continue
+    s = open(os.path.join(src_dir,f)).read()
+    s2, na = pat_a.subn(r'\1\treturn fwschema.TypedAttributesEqual(a, o)\n}', s)
+    s2, nn = pat_n.subn(r'\1\treturn fwschema.TypedNestedAttributesEqual(a, o)\n}', s2)
+    s2, nb = pat_b.subn(r'\1\treturn fwschema.TypedBlocksEqual(b, o)\n}', s2)
+    counts["a"]+=na; counts["n"]+=nn; counts["b"]+=nb
+    if s2 != s:
+        open(os.path.join(out_dir,f),'w').write(s2); changed.append(f)
+print(json.dumps(counts), len(changed), file=sys.stderr)
+print("\n".join(changed))

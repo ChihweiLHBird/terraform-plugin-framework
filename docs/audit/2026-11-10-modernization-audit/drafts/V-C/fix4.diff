@@ -1,0 +1,24 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/reflect/helpers.go b/internal/reflect/helpers.go
+--- a/internal/reflect/helpers.go	2026-10-24 21:30:10.588381323 +0000
++++ b/internal/reflect/helpers.go	2026-11-10 21:13:50.216120683 +0000
+@@ -7,9 +7,9 @@
+ 	"context"
+ 	"fmt"
+ 	"reflect"
+-	"regexp"
+ 	"strings"
+ 
++	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+ 	"github.com/hashicorp/terraform-plugin-framework/path"
+ )
+ 
+@@ -133,8 +133,7 @@
+ // isValidFieldName returns true if `name` can be used as a field name in a
+ // Terraform resource or data source.
+ func isValidFieldName(name string) bool {
+-	re := regexp.MustCompile("^[a-z][a-z0-9_]*$")
+-	return re.MatchString(name)
++	return fwschema.ValidAttributeNameRegex.MatchString(name)
+ }
+ 
+ // canBeNil returns true if `target`'s type can hold a nil value

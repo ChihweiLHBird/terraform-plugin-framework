@@ -1,0 +1,37 @@
+package vcprobe
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+// nil-safe pointer-receiver Unknownable: nil means "unknown".
+type nilSafeU struct{ s string; unknown bool }
+
+func (u *nilSafeU) SetUnknown(_ context.Context, b bool) error { u.unknown = b; return nil }
+func (u *nilSafeU) SetValue(_ context.Context, v interface{}) error { u.s, _ = v.(string); return nil }
+func (u *nilSafeU) GetUnknown(_ context.Context) bool { return u == nil || u.unknown }
+func (u *nilSafeU) GetValue(_ context.Context) interface{} { if u == nil { return nil }; return u.s }
+
+// nil-safe pointer-receiver Nullable: nil means null.
+type nilSafeN struct{ s string; null bool }
+
+func (u *nilSafeN) SetNull(_ context.Context, b bool) error { u.null = b; return nil }
+func (u *nilSafeN) SetValue(_ context.Context, v interface{}) error { u.s, _ = v.(string); return nil }
+func (u *nilSafeN) GetNull(_ context.Context) bool { return u == nil || u.null }
+func (u *nilSafeN) GetValue(_ context.Context) interface{} { if u == nil { return nil }; return u.s }
+
+func TestC2NilSafe(t *testing.T) {
+	ctx := context.Background()
+	try(t, "ListValueFrom []*nilSafeU{nil}", func() string {
+		l, d := types.ListValueFrom(ctx, types.StringType, []*nilSafeU{nil})
+		return fmt.Sprintf("diags=%d %v", len(d), l)
+	})
+	try(t, "ListValueFrom []*nilSafeN{nil}", func() string {
+		l, d := types.ListValueFrom(ctx, types.StringType, []*nilSafeN{nil})
+		return fmt.Sprintf("diags=%d %v", len(d), l)
+	})
+}

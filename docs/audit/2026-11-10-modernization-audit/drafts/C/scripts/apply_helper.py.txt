@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""Replace each 26-line validation switch in the scratch copy of internal/reflect with a call
+to validateAttributeValue. Skips the FromAttributeValue variant (lazy ToTerraformValue)."""
+import re, sys, os
+repo = sys.argv[1]
+files = ['interfaces.go','map.go','number.go','pointer.go','primitive.go','slice.go','struct.go']
+start_re = re.compile(r'^(\s*)switch t := (\S+)\.\(type\) \{\s*$')
+total_removed = total_added = 0
+for fn in files:
+    p = os.path.join(repo, 'internal/reflect', fn)
+    lines = open(p).read().split('\n')
+    out = []
+    i = 0
+    while i < len(lines):
+        m = start_re.match(lines[i])
+        if m and i + 1 < len(lines) and 'case xattr.ValidateableAttribute:' in lines[i+1]:
+            indent = m.group(1)
+            j = i + 1
+            while lines[j] != indent + '}':
+                j += 1
+            block = lines[i:j+1]
+            text = '\n'.join(block)
+            if 'ToTerraformValue' in text:   # FromAttributeValue variant: keep inline
+                out.extend(block); i = j + 1; continue
+            value = m.group(2)
+            path = re.search(r'Path: (\w+),', text).group(1)
+            typ = re.search(r'ok := (.+?)\.\(xattr\.TypeWithValidate\)', text).group(1)
+            tfval, path2 = re.search(r'typeWithValidate\.Validate\(ctx, (\w+), (\w+)\)', text).groups()
+            assert path == path2, (fn, i, path, path2)
+            rets = set(re.findall(r'return (\w+), diags', text))
+            assert len(rets) == 1, rets
+            ret = rets.pop()
+            new = [f'{indent}diags.Append(validateAttributeValue(ctx, {typ}, {value}, {tfval}, {path})...)',
+                   '',
+                   f'{indent}if diags.HasError() {{',
+                   f'{indent}\treturn {ret}, diags',
+                   f'{indent}}}']
+            total_removed += len(block); total_added += len(new)
+            out.extend(new)
+            i = j + 1
+        else:
+            out.append(lines[i]); i += 1
+    open(p, 'w').write('\n'.join(out))
+print('removed', total_removed, 'added', total_added)

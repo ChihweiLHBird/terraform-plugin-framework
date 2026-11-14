@@ -1,6 +1,6 @@
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_closeephemeralresource.go configure/internal/fwserver/server_closeephemeralresource.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_closeephemeralresource.go	2026-10-24 21:30:10.519597580 +0000
-+++ configure/internal/fwserver/server_closeephemeralresource.go	2026-10-24 23:09:40.272743829 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_closeephemeralresource.go b/internal/fwserver/server_closeephemeralresource.go
+--- a/internal/fwserver/server_closeephemeralresource.go	2026-10-24 21:30:10.519597580 +0000
++++ b/internal/fwserver/server_closeephemeralresource.go	2026-10-24 23:09:40.272743829 +0000
 @@ -33,19 +33,8 @@
  		return
  	}
@@ -23,9 +23,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_closeep
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_configure.go configure/internal/fwserver/server_configure.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_configure.go	1970-01-01 00:00:00.000000000 +0000
-+++ configure/internal/fwserver/server_configure.go	2026-10-24 23:09:40.241562977 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_configure.go b/internal/fwserver/server_configure.go
+--- a/internal/fwserver/server_configure.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/server_configure.go	2026-10-24 23:09:40.241562977 +0000
 @@ -0,0 +1,141 @@
 +// Copyright IBM Corp. 2021, 2026
 +// SPDX-License-Identifier: MPL-2.0
@@ -168,9 +168,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_configu
 +
 +	return configureResp.Diagnostics, true
 +}
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_createresource.go configure/internal/fwserver/server_createresource.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_createresource.go	2026-10-24 21:30:10.524494707 +0000
-+++ configure/internal/fwserver/server_createresource.go	2026-10-24 23:09:40.273082062 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_createresource.go b/internal/fwserver/server_createresource.go
+--- a/internal/fwserver/server_createresource.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_createresource.go	2026-10-24 23:09:40.273082062 +0000
 @@ -46,19 +46,8 @@
  		return
  	}
@@ -193,9 +193,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_creater
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_deleteresource.go configure/internal/fwserver/server_deleteresource.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_deleteresource.go	2026-10-24 21:30:10.524494707 +0000
-+++ configure/internal/fwserver/server_deleteresource.go	2026-10-24 23:09:40.273342602 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_deleteresource.go b/internal/fwserver/server_deleteresource.go
+--- a/internal/fwserver/server_deleteresource.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_deleteresource.go	2026-10-24 23:09:40.273342602 +0000
 @@ -44,19 +44,8 @@
  		return
  	}
@@ -218,9 +218,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_deleter
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_deletestate.go configure/internal/fwserver/server_deletestate.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_deletestate.go	2026-10-24 21:30:10.524494707 +0000
-+++ configure/internal/fwserver/server_deletestate.go	2026-10-24 23:09:40.273584124 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_deletestate.go b/internal/fwserver/server_deletestate.go
+--- a/internal/fwserver/server_deletestate.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_deletestate.go	2026-10-24 23:09:40.273584124 +0000
 @@ -26,19 +26,8 @@
  		return
  	}
@@ -243,9 +243,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_deletes
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_getstates.go configure/internal/fwserver/server_getstates.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_getstates.go	2026-10-24 21:30:10.527626907 +0000
-+++ configure/internal/fwserver/server_getstates.go	2026-10-24 23:09:40.273959744 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_getstates.go b/internal/fwserver/server_getstates.go
+--- a/internal/fwserver/server_getstates.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_getstates.go	2026-10-24 23:09:40.273959744 +0000
 @@ -26,19 +26,8 @@
  		return
  	}
@@ -268,9 +268,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_getstat
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_importresourcestate.go configure/internal/fwserver/server_importresourcestate.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_importresourcestate.go	2026-10-24 21:30:10.527626907 +0000
-+++ configure/internal/fwserver/server_importresourcestate.go	2026-10-24 23:09:40.274158489 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_importresourcestate.go b/internal/fwserver/server_importresourcestate.go
+--- a/internal/fwserver/server_importresourcestate.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_importresourcestate.go	2026-10-24 23:09:40.274158489 +0000
 @@ -94,19 +94,8 @@
  		return
  	}
@@ -293,9 +293,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_importr
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_invokeaction.go configure/internal/fwserver/server_invokeaction.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_invokeaction.go	2026-10-24 21:30:10.527626907 +0000
-+++ configure/internal/fwserver/server_invokeaction.go	2026-10-24 23:09:40.274342099 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_invokeaction.go b/internal/fwserver/server_invokeaction.go
+--- a/internal/fwserver/server_invokeaction.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_invokeaction.go	2026-10-24 23:09:40.274342099 +0000
 @@ -46,19 +46,8 @@
  		return
  	}
@@ -318,9 +318,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_invokea
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_lockstate.go configure/internal/fwserver/server_lockstate.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_lockstate.go	2026-10-24 21:30:10.527626907 +0000
-+++ configure/internal/fwserver/server_lockstate.go	2026-10-24 23:09:40.274597817 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_lockstate.go b/internal/fwserver/server_lockstate.go
+--- a/internal/fwserver/server_lockstate.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_lockstate.go	2026-10-24 23:09:40.274597817 +0000
 @@ -27,19 +27,8 @@
  		return
  	}
@@ -343,9 +343,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_locksta
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_openephemeralresource.go configure/internal/fwserver/server_openephemeralresource.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_openephemeralresource.go	2026-10-24 21:30:10.527626907 +0000
-+++ configure/internal/fwserver/server_openephemeralresource.go	2026-10-24 23:09:40.274844768 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_openephemeralresource.go b/internal/fwserver/server_openephemeralresource.go
+--- a/internal/fwserver/server_openephemeralresource.go	2026-10-24 21:30:10.527626907 +0000
++++ b/internal/fwserver/server_openephemeralresource.go	2026-10-24 23:09:40.274844768 +0000
 @@ -60,19 +60,8 @@
  		return
  	}
@@ -368,9 +368,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_openeph
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_planaction.go configure/internal/fwserver/server_planaction.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_planaction.go	2026-10-24 21:30:10.531597579 +0000
-+++ configure/internal/fwserver/server_planaction.go	2026-10-24 23:09:40.275026547 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_planaction.go b/internal/fwserver/server_planaction.go
+--- a/internal/fwserver/server_planaction.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_planaction.go	2026-10-24 23:09:40.275026547 +0000
 @@ -48,19 +48,8 @@
  		return
  	}
@@ -393,9 +393,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_planact
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_planresourcechange.go configure/internal/fwserver/server_planresourcechange.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_planresourcechange.go	2026-10-24 21:30:10.531597579 +0000
-+++ configure/internal/fwserver/server_planresourcechange.go	2026-10-24 23:09:40.275242670 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_planresourcechange.go b/internal/fwserver/server_planresourcechange.go
+--- a/internal/fwserver/server_planresourcechange.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_planresourcechange.go	2026-10-24 23:09:40.275242670 +0000
 @@ -74,19 +74,8 @@
  		return
  	}
@@ -418,9 +418,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_planres
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_readdatasource.go configure/internal/fwserver/server_readdatasource.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_readdatasource.go	2026-10-24 21:30:10.531597579 +0000
-+++ configure/internal/fwserver/server_readdatasource.go	2026-10-24 23:09:40.275451824 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readdatasource.go b/internal/fwserver/server_readdatasource.go
+--- a/internal/fwserver/server_readdatasource.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_readdatasource.go	2026-10-24 23:09:40.275451824 +0000
 @@ -59,19 +59,8 @@
  		return
  	}
@@ -443,9 +443,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_readdat
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_readresource.go configure/internal/fwserver/server_readresource.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_readresource.go	2026-10-24 21:30:10.531597579 +0000
-+++ configure/internal/fwserver/server_readresource.go	2026-10-24 23:09:40.275668279 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readresource.go b/internal/fwserver/server_readresource.go
+--- a/internal/fwserver/server_readresource.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_readresource.go	2026-10-24 23:09:40.275668279 +0000
 @@ -70,19 +70,8 @@
  		return
  	}
@@ -468,9 +468,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_readres
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_readstatebytes.go configure/internal/fwserver/server_readstatebytes.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_readstatebytes.go	2026-10-24 21:30:10.535597579 +0000
-+++ configure/internal/fwserver/server_readstatebytes.go	2026-10-24 23:09:40.275845906 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readstatebytes.go b/internal/fwserver/server_readstatebytes.go
+--- a/internal/fwserver/server_readstatebytes.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_readstatebytes.go	2026-10-24 23:09:40.275845906 +0000
 @@ -27,19 +27,8 @@
  		return
  	}
@@ -493,9 +493,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_readsta
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_renewephemeralresource.go configure/internal/fwserver/server_renewephemeralresource.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_renewephemeralresource.go	2026-10-24 21:30:10.535597579 +0000
-+++ configure/internal/fwserver/server_renewephemeralresource.go	2026-10-24 23:09:40.276024772 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_renewephemeralresource.go b/internal/fwserver/server_renewephemeralresource.go
+--- a/internal/fwserver/server_renewephemeralresource.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_renewephemeralresource.go	2026-10-24 23:09:40.276024772 +0000
 @@ -36,19 +36,8 @@
  		return
  	}
@@ -518,9 +518,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_renewep
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_unlockstate.go configure/internal/fwserver/server_unlockstate.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_unlockstate.go	2026-10-24 21:30:10.535597579 +0000
-+++ configure/internal/fwserver/server_unlockstate.go	2026-10-24 23:09:40.276230204 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_unlockstate.go b/internal/fwserver/server_unlockstate.go
+--- a/internal/fwserver/server_unlockstate.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_unlockstate.go	2026-10-24 23:09:40.276230204 +0000
 @@ -26,19 +26,8 @@
  		return
  	}
@@ -543,9 +543,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_unlocks
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_updateresource.go configure/internal/fwserver/server_updateresource.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_updateresource.go	2026-10-24 21:30:10.535597579 +0000
-+++ configure/internal/fwserver/server_updateresource.go	2026-10-24 23:09:40.276413648 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_updateresource.go b/internal/fwserver/server_updateresource.go
+--- a/internal/fwserver/server_updateresource.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_updateresource.go	2026-10-24 23:09:40.276413648 +0000
 @@ -49,19 +49,8 @@
  		return
  	}
@@ -568,9 +568,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_updater
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_upgraderesourceidentity.go configure/internal/fwserver/server_upgraderesourceidentity.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_upgraderesourceidentity.go	2026-10-24 21:30:10.535597579 +0000
-+++ configure/internal/fwserver/server_upgraderesourceidentity.go	2026-10-24 23:09:40.276631343 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_upgraderesourceidentity.go b/internal/fwserver/server_upgraderesourceidentity.go
+--- a/internal/fwserver/server_upgraderesourceidentity.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_upgraderesourceidentity.go	2026-10-24 23:09:40.276631343 +0000
 @@ -75,19 +75,8 @@
  		return
  	}
@@ -593,9 +593,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_upgrade
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_upgraderesourcestate.go configure/internal/fwserver/server_upgraderesourcestate.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_upgraderesourcestate.go	2026-10-24 21:30:10.535597579 +0000
-+++ configure/internal/fwserver/server_upgraderesourcestate.go	2026-10-24 23:09:40.276817242 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_upgraderesourcestate.go b/internal/fwserver/server_upgraderesourcestate.go
+--- a/internal/fwserver/server_upgraderesourcestate.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_upgraderesourcestate.go	2026-10-24 23:09:40.276817242 +0000
 @@ -109,19 +109,8 @@
  		return
  	}
@@ -618,9 +618,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_upgrade
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validateactionconfig.go configure/internal/fwserver/server_validateactionconfig.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_validateactionconfig.go	2026-10-24 21:30:10.535597579 +0000
-+++ configure/internal/fwserver/server_validateactionconfig.go	2026-10-24 23:09:40.276997599 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validateactionconfig.go b/internal/fwserver/server_validateactionconfig.go
+--- a/internal/fwserver/server_validateactionconfig.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_validateactionconfig.go	2026-10-24 23:09:40.276997599 +0000
 @@ -32,19 +32,8 @@
  		return
  	}
@@ -643,9 +643,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validat
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validatedatasourceconfig.go configure/internal/fwserver/server_validatedatasourceconfig.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_validatedatasourceconfig.go	2026-10-24 21:30:10.539597579 +0000
-+++ configure/internal/fwserver/server_validatedatasourceconfig.go	2026-10-24 23:09:40.277162959 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validatedatasourceconfig.go b/internal/fwserver/server_validatedatasourceconfig.go
+--- a/internal/fwserver/server_validatedatasourceconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validatedatasourceconfig.go	2026-10-24 23:09:40.277162959 +0000
 @@ -32,19 +32,8 @@
  		return
  	}
@@ -668,9 +668,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validat
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validateephemeralresourceconfig.go configure/internal/fwserver/server_validateephemeralresourceconfig.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_validateephemeralresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
-+++ configure/internal/fwserver/server_validateephemeralresourceconfig.go	2026-10-24 23:09:40.277376388 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validateephemeralresourceconfig.go b/internal/fwserver/server_validateephemeralresourceconfig.go
+--- a/internal/fwserver/server_validateephemeralresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validateephemeralresourceconfig.go	2026-10-24 23:09:40.277376388 +0000
 @@ -32,19 +32,8 @@
  		return
  	}
@@ -693,9 +693,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validat
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validatelistresourceconfig.go configure/internal/fwserver/server_validatelistresourceconfig.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_validatelistresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
-+++ configure/internal/fwserver/server_validatelistresourceconfig.go	2026-10-24 23:09:58.975170190 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validatelistresourceconfig.go b/internal/fwserver/server_validatelistresourceconfig.go
+--- a/internal/fwserver/server_validatelistresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validatelistresourceconfig.go	2026-10-24 23:09:58.975170190 +0000
 @@ -8,7 +8,6 @@
  	"github.com/hashicorp/terraform-plugin-framework/diag"
  	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
@@ -726,9 +726,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validat
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validateresourceconfig.go configure/internal/fwserver/server_validateresourceconfig.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_validateresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
-+++ configure/internal/fwserver/server_validateresourceconfig.go	2026-10-24 23:09:40.277786967 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validateresourceconfig.go b/internal/fwserver/server_validateresourceconfig.go
+--- a/internal/fwserver/server_validateresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validateresourceconfig.go	2026-10-24 23:09:40.277786967 +0000
 @@ -33,19 +33,8 @@
  		return
  	}
@@ -751,9 +751,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validat
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validatestatestoreconfig.go configure/internal/fwserver/server_validatestatestoreconfig.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_validatestatestoreconfig.go	2026-10-24 21:30:10.539597579 +0000
-+++ configure/internal/fwserver/server_validatestatestoreconfig.go	2026-10-24 23:09:40.277958757 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validatestatestoreconfig.go b/internal/fwserver/server_validatestatestoreconfig.go
+--- a/internal/fwserver/server_validatestatestoreconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validatestatestoreconfig.go	2026-10-24 23:09:40.277958757 +0000
 @@ -32,19 +32,8 @@
  		return
  	}
@@ -776,9 +776,9 @@ diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_validat
  
  		if resp.Diagnostics.HasError() {
  			return
-diff -ruN /home/user/terraform-plugin-framework/internal/fwserver/server_writestatebytes.go configure/internal/fwserver/server_writestatebytes.go
---- /home/user/terraform-plugin-framework/internal/fwserver/server_writestatebytes.go	2026-10-24 21:30:10.539597579 +0000
-+++ configure/internal/fwserver/server_writestatebytes.go	2026-10-24 23:09:40.278118717 +0000
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_writestatebytes.go b/internal/fwserver/server_writestatebytes.go
+--- a/internal/fwserver/server_writestatebytes.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_writestatebytes.go	2026-10-24 23:09:40.278118717 +0000
 @@ -27,19 +27,8 @@
  		return
  	}

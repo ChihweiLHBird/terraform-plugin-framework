@@ -1,0 +1,5 @@
+{
+ "Replace": {
+  "internal/fwserver/zz_vd2_test.go": "docs/audit/2026-11-10-modernization-audit/drafts/V-D/d2/zz_vd2_test.go.txt"
+ }
+}

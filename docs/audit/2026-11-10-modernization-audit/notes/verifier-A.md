@@ -80,7 +80,7 @@ VA_N=20000 GOTOOLCHAIN=auto go test -count=1 -v -run TestVALeakRealStack ./inter
 - Fix applied in sandbox (both converters +1 line): exactly 30 subtests fail, 13 TestServerGetMetadata (6 v5 + 7 v6) + 17 TestServerGetProviderSchema (8+9);
   every failure diff is the single line '- GenerateResourceConfig: false / + true' (30/30). toproto5/6 tests pass. Reverted.
 - Core snippet: author's fetched main-branch node_resource_plan_instance.go:1191 reads `if providerSchema.ServerCapabilities.GenerateResourceConfig {` -> UNVERIFIABLE CONTEXT (downloaded, main branch, not a release tag).
-- fwserver/server_generateresourceconfig.go:39-43 MAINTAINER NOTE: logic "transcribed from Terraform Core's default ... no functionality changes ... in v1.19.0".
+- internal/fwserver/server_generateresourceconfig.go:39-43 MAINTAINER NOTE: logic "transcribed from Terraform Core's default ... no functionality changes ... in v1.19.0".
   => user-visible generated config is identical today either way; the bug's effect is that 434 lines (fwserver 192 + protoNserver 82 + fromproto 98 + toproto 62) never run in production.
 - Callers: toproto5/6 getmetadata.go:28 and getproviderschema.go:32/28 are the only users of ServerCapabilities().
 
@@ -149,7 +149,7 @@ VA_N=20000 GOTOOLCHAIN=auto go test -count=1 -v -run TestVALeakRealStack ./inter
 
 ## A9
 - proto6server/server_listresource.go:67-83 guards only ProtoV6IdentitySchema != nil; fromproto6.ResourceSchema returns (nil,nil) for s==nil || s.Block==nil -> typed nil in fwschema.Schema.
-- fwserver/server_listresources.go:98-110: validation only when NO managed resource of that type exists, and accepts a complete v5 pair OR complete v6 pair.
+- internal/fwserver/server_listresources.go:98-110: validation only when NO managed resource of that type exists, and accepts a complete v5 pair OR complete v6 pair.
 - My probe (scripts/zz_va_a9_test.go), path 2 (no managed resource; complete v5 pair + identity-only v6 pair, served over v6): ListResourceFuncs diags = 0; provider List sees
   req.ResourceSchema==nil false (dynamic *schema.Schema); NewListResult PANIC "value method .../resource/schema.Schema.Type called using nil *Schema pointer". (author reproduced path 1.)
 - HOLE in proposed fix: with ProtoV6Schema = &tfprotov6.Schema{} (Block nil) both pointers are non-nil, the proposed guard passes and the same panic occurs (reproduced).

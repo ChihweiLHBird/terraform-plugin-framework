@@ -1,0 +1,147 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+// Minimal "fixed type" custom Set/Map/Object types (value Type() is fixed, not derived).
+type FixedSetType struct{ basetypes.SetType }
+
+func (t FixedSetType) Equal(o attr.Type) bool { _, ok := o.(FixedSetType); return ok }
+func (t FixedSetType) String() string        { return "FixedSetType" }
+func (t FixedSetType) ValueFromSet(ctx context.Context, in basetypes.SetValue) (basetypes.SetValuable, diag.Diagnostics) {
+	return FixedSetValue{SetValue: in}, nil
+}
+func (t FixedSetType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	v, err := t.SetType.ValueFromTerraform(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	sv, _ := v.(basetypes.SetValue)
+	return FixedSetValue{SetValue: sv}, nil
+}
+func (t FixedSetType) ValueType(ctx context.Context) attr.Value { return FixedSetValue{} }
+
+type FixedSetValue struct{ basetypes.SetValue }
+
+func (v FixedSetValue) Type(ctx context.Context) attr.Type {
+	return FixedSetType{SetType: basetypes.SetType{ElemType: types.StringType}}
+}
+func (v FixedSetValue) Equal(o attr.Value) bool { other, ok := o.(FixedSetValue); return ok && v.SetValue.Equal(other.SetValue) }
+
+type FixedMapType struct{ basetypes.MapType }
+
+func (t FixedMapType) Equal(o attr.Type) bool { _, ok := o.(FixedMapType); return ok }
+func (t FixedMapType) String() string        { return "FixedMapType" }
+func (t FixedMapType) ValueFromMap(ctx context.Context, in basetypes.MapValue) (basetypes.MapValuable, diag.Diagnostics) {
+	return FixedMapValue{MapValue: in}, nil
+}
+func (t FixedMapType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	v, err := t.MapType.ValueFromTerraform(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	mv, _ := v.(basetypes.MapValue)
+	return FixedMapValue{MapValue: mv}, nil
+}
+func (t FixedMapType) ValueType(ctx context.Context) attr.Value { return FixedMapValue{} }
+
+type FixedMapValue struct{ basetypes.MapValue }
+
+func (v FixedMapValue) Type(ctx context.Context) attr.Type {
+	return FixedMapType{MapType: basetypes.MapType{ElemType: types.StringType}}
+}
+func (v FixedMapValue) Equal(o attr.Value) bool { other, ok := o.(FixedMapValue); return ok && v.MapValue.Equal(other.MapValue) }
+
+var objAttrTypes = map[string]attr.Type{"a": types.StringType}
+
+type FixedObjectType struct{ basetypes.ObjectType }
+
+func (t FixedObjectType) Equal(o attr.Type) bool { _, ok := o.(FixedObjectType); return ok }
+func (t FixedObjectType) String() string        { return "FixedObjectType" }
+func (t FixedObjectType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	return FixedObjectValue{ObjectValue: in}, nil
+}
+func (t FixedObjectType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	v, err := t.ObjectType.ValueFromTerraform(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	ov, _ := v.(basetypes.ObjectValue)
+	return FixedObjectValue{ObjectValue: ov}, nil
+}
+func (t FixedObjectType) ValueType(ctx context.Context) attr.Value { return FixedObjectValue{} }
+
+type FixedObjectValue struct{ basetypes.ObjectValue }
+
+func (v FixedObjectValue) Type(ctx context.Context) attr.Type {
+	return FixedObjectType{ObjectType: basetypes.ObjectType{AttrTypes: objAttrTypes}}
+}
+func (v FixedObjectValue) Equal(o attr.Value) bool { other, ok := o.(FixedObjectValue); return ok && v.ObjectValue.Equal(other.ObjectValue) }
+
+// errProv: function whose Run only returns an argument error (no Set).
+type errProv struct{ ret function.Return }
+
+func (p errProv) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) { resp.TypeName = "p" }
+func (p errProv) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse)          {}
+func (p errProv) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse)  {}
+func (p errProv) DataSources(context.Context) []func() datasource.DataSource                       { return nil }
+func (p errProv) Resources(context.Context) []func() resource.Resource                             { return nil }
+func (p errProv) Functions(context.Context) []func() function.Function {
+	return []func() function.Function{func() function.Function { return errFunc{ret: p.ret} }}
+}
+
+type errFunc struct{ ret function.Return }
+
+func (f errFunc) Metadata(_ context.Context, _ function.MetadataRequest, resp *function.MetadataResponse) { resp.Name = "f" }
+func (f errFunc) Definition(_ context.Context, _ function.DefinitionRequest, resp *function.DefinitionResponse) {
+	resp.Definition = function.Definition{Return: f.ret}
+}
+func (f errFunc) Run(ctx context.Context, req function.RunRequest, resp *function.RunResponse) {
+	resp.Error = function.NewFuncError("boom")
+}
+
+func errE2E(name string, ret function.Return) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("%-48s PANIC: %v\n", name, r)
+		}
+	}()
+	ctx := context.Background()
+	srv5, _ := providerserver.NewProtocol5WithError(errProv{ret: ret})()
+	srv6, _ := providerserver.NewProtocol6WithError(errProv{ret: ret})()
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("%-48s v5 PANIC: %v\n", name, r)
+			}
+		}()
+		r5, _ := srv5.CallFunction(ctx, &tfprotov5.CallFunctionRequest{Name: "f"})
+		fmt.Printf("%-48s v5 err=%q\n", name, r5.Error.Text)
+	}()
+	r6, _ := srv6.CallFunction(ctx, &tfprotov6.CallFunctionRequest{Name: "f"})
+	fmt.Printf("%-48s v6 err=%q\n", name, r6.Error.Text)
+}
+
+func runGeneric() {
+	errE2E("ListReturn{ElementType}", function.ListReturn{ElementType: types.StringType})
+	errE2E("ListReturn{CustomType}", function.ListReturn{CustomType: FixedListType{ListType: basetypes.ListType{ElemType: types.StringType}}})
+	errE2E("SetReturn{CustomType}", function.SetReturn{CustomType: FixedSetType{SetType: basetypes.SetType{ElemType: types.StringType}}})
+	errE2E("MapReturn{CustomType}", function.MapReturn{CustomType: FixedMapType{MapType: basetypes.MapType{ElemType: types.StringType}}})
+	errE2E("ObjectReturn{CustomType}", function.ObjectReturn{CustomType: FixedObjectType{ObjectType: basetypes.ObjectType{AttrTypes: objAttrTypes}}})
+	errE2E("StringReturn{}", function.StringReturn{})
+}

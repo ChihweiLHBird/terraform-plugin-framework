@@ -1,0 +1,78 @@
+package vcprobe
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+// Value-type Unknownable/Nullable with pointer receivers (as the repo's own tests do).
+type uStr struct {
+	S       string
+	Unknown bool
+}
+
+func (u *uStr) SetUnknown(_ context.Context, b bool) error      { u.Unknown = b; return nil }
+func (u *uStr) SetValue(_ context.Context, v interface{}) error { u.S, _ = v.(string); return nil }
+func (u *uStr) GetUnknown(_ context.Context) bool               { return u.Unknown }
+func (u *uStr) GetValue(_ context.Context) interface{}          { return u.S }
+
+type nStr struct {
+	S    string
+	Null bool
+}
+
+func (u *nStr) SetNull(_ context.Context, b bool) error         { u.Null = b; return nil }
+func (u *nStr) SetValue(_ context.Context, v interface{}) error { u.S, _ = v.(string); return nil }
+func (u *nStr) GetNull(_ context.Context) bool                  { return u.Null }
+func (u *nStr) GetValue(_ context.Context) interface{} {
+	if u.Null {
+		return nil
+	}
+	return u.S
+}
+
+// Null-warning type: warns on null too.
+func TestC3Unknownable(t *testing.T) {
+	ctx := context.Background()
+	run := func(label string, f func() diag.Diagnostics) {
+		vCalls.Store(0)
+		d := f()
+		t.Logf("%-40s calls=%d n=%d %s", label, vCalls.Load(), len(d), dump(d))
+	}
+	run("ListValueFrom []*uStr{a}", func() diag.Diagnostics {
+		_, d := types.ListValueFrom(ctx, vStrType{}, []*uStr{{S: "a"}})
+		return d
+	})
+	run("MapValueFrom map[string]*uStr{k:a}", func() diag.Diagnostics {
+		_, d := types.MapValueFrom(ctx, vStrType{}, map[string]*uStr{"k": {S: "a"}})
+		return d
+	})
+	run("ObjectValueFrom struct{*uStr a}", func() diag.Diagnostics {
+		type o struct {
+			S *uStr `tfsdk:"s"`
+		}
+		_, d := types.ObjectValueFrom(ctx, map[string]attr.Type{"s": vStrType{}}, o{S: &uStr{S: "a"}})
+		return d
+	})
+	run("ListValueFrom []*nStr{a} (non-null)", func() diag.Diagnostics {
+		_, d := types.ListValueFrom(ctx, vStrType{}, []*nStr{{S: "a"}})
+		return d
+	})
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{
+		"name": schema.StringAttribute{CustomType: vStrType{}, Optional: true},
+	}}
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"name": tftypes.String}}
+	raw := tftypes.NewValue(objT, map[string]tftypes.Value{"name": tftypes.NewValue(tftypes.String, nil)})
+	run("State.SetAttribute name *uStr{a}", func() diag.Diagnostics {
+		st := tfsdk.State{Schema: sch, Raw: raw}
+		return st.SetAttribute(ctx, path.Root("name"), &uStr{S: "a"})
+	})
+}

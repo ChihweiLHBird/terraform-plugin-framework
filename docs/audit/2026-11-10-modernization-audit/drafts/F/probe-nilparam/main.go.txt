@@ -1,0 +1,49 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+)
+
+// nilTypeParam is a custom Parameter implementation whose GetType returns nil.
+type nilTypeParam struct{}
+
+func (nilTypeParam) GetAllowNullValue() bool        { return false }
+func (nilTypeParam) GetAllowUnknownValues() bool    { return false }
+func (nilTypeParam) GetDescription() string         { return "" }
+func (nilTypeParam) GetMarkdownDescription() string { return "" }
+func (nilTypeParam) GetName() string                { return "p" }
+func (nilTypeParam) GetType() attr.Type             { return nil }
+
+type prov struct{}
+
+func (prov) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) { resp.TypeName = "p" }
+func (prov) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse)          {}
+func (prov) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse)  {}
+func (prov) DataSources(context.Context) []func() datasource.DataSource                       { return nil }
+func (prov) Resources(context.Context) []func() resource.Resource                             { return nil }
+func (prov) Functions(context.Context) []func() function.Function {
+	return []func() function.Function{func() function.Function { return fn{} }}
+}
+
+type fn struct{}
+
+func (fn) Metadata(_ context.Context, _ function.MetadataRequest, resp *function.MetadataResponse) { resp.Name = "f" }
+func (fn) Definition(_ context.Context, _ function.DefinitionRequest, resp *function.DefinitionResponse) {
+	resp.Definition = function.Definition{Parameters: []function.Parameter{nilTypeParam{}}, Return: function.StringReturn{}}
+}
+func (fn) Run(context.Context, function.RunRequest, *function.RunResponse) {}
+
+func main() {
+	srv, _ := providerserver.NewProtocol6WithError(prov{})()
+	resp, _ := srv.GetProviderSchema(context.Background(), &tfprotov6.GetProviderSchemaRequest{})
+	fmt.Println("diags:", len(resp.Diagnostics))
+}

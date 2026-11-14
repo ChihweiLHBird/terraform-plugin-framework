@@ -1,0 +1,15 @@
+{
+ "Replace": {
+  "internal/fwschema/schema_validate_implementation.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/schema_validate_implementation.go.txt",
+  "resource/schema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/resource_schema.go.txt",
+  "provider/metaschema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/provider_metaschema.go.txt",
+  "action/schema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/action_schema.go.txt",
+  "list/schema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/list_schema.go.txt",
+  "statestore/schema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/statestore_schema.go.txt",
+  "resource/identityschema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/resource_identityschema.go.txt",
+  "provider/schema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/provider_schema.go.txt",
+  "datasource/schema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/datasource_schema.go.txt",
+  "ephemeral/schema/schema.go": "docs/audit/2026-11-10-modernization-audit/drafts/D/drafts/D-schemavi/ephemeral_schema.go.txt"
+ },
+ "Note": "Replacements for existing repository files are not shipped; apply the matching .diff in this folder instead. go -overlay ignores this key."
+}

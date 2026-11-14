@@ -1,0 +1,5 @@
+{
+ "Replace": {
+  "action/schema/zz_vd45_test.go": "docs/audit/2026-11-10-modernization-audit/drafts/V-D/d45/zz_vd45_test.go.txt"
+ }
+}

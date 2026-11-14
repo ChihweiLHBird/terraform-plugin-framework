@@ -140,7 +140,7 @@ No top-level declaration in the area lacks a non-test reference. Only-comment or
   primitive.go:26: defaults are correct (error diagnostic or false for every unlisted kind).
 
 ### 3.7 dupword (23 leads)
-All real: 1 comment (fwschema/schema.go:70-71), 5 diagnostic strings in privatestate/data.go, 17 test expectations that
+All real: 1 comment (internal/fwschema/schema.go:70-71), 5 diagnostic strings in privatestate/data.go, 17 test expectations that
 pin those strings. Filed as C9.
 
 ## 4. Rejected rewrites ("looks equivalent but is not")
@@ -226,7 +226,7 @@ filed (C5).
 ## 8. Reproduction files and drafts
 
 - Repros (all reproduce at 00badb1): drafts/C/repros/reflect/zz_*_test.go and drafts/C/repros/fwschemadata/zz_*_test.go.
-  Run `sh drafts/C/repros/run.sh <path-to-a-COPY-of-the-repo>` (copies the files into the copy and runs
+  Run `sh drafts/C/repros/run.sh.txt <path-to-a-COPY-of-the-repo>` (copies the files into the copy and runs
   `go test -run 'TestRepro|TestProbe'` plus the struct benchmarks). Never point it at the real repository.
 - Public-API repros: drafts/C/probe-public/*.go.
 - Draft diffs against the repository: drafts/C/draft-validate-helper.diff (C10), draft-fromprimitive.diff (C13, on top of

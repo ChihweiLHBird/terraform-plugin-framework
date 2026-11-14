@@ -1,0 +1,191 @@
+package fwserver_test
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-log/tfsdklogtest"
+
+	"github.com/hashicorp/terraform-plugin-framework/action"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/list"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/statestore"
+)
+
+var vbNames = []string{"vb_one", "", "vb_two", "vb_one", "vb_three", "vb_two"}
+
+func vbRegistryProvider() provider.Provider {
+	p := &testprovider.Provider{
+		MetadataMethod: func(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) { resp.TypeName = "vb" },
+		DataSourcesMethod: func(context.Context) []func() datasource.DataSource {
+			var out []func() datasource.DataSource
+			for _, n := range vbNames {
+				out = append(out, func() datasource.DataSource {
+					return &testprovider.DataSource{MetadataMethod: func(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+						if n != "" {
+							resp.TypeName = req.ProviderTypeName + "|" + n
+						}
+					}}
+				})
+			}
+			return out
+		},
+		ResourcesMethod: func(context.Context) []func() resource.Resource {
+			var out []func() resource.Resource
+			for _, n := range vbNames {
+				out = append(out, func() resource.Resource {
+					return &testprovider.Resource{MetadataMethod: func(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+						if n != "" {
+							resp.TypeName = req.ProviderTypeName + "|" + n
+						}
+					}}
+				})
+			}
+			return out
+		},
+		EphemeralResourcesMethod: func(context.Context) []func() ephemeral.EphemeralResource {
+			var out []func() ephemeral.EphemeralResource
+			for _, n := range vbNames {
+				out = append(out, func() ephemeral.EphemeralResource {
+					return &testprovider.EphemeralResource{MetadataMethod: func(_ context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
+						if n != "" {
+							resp.TypeName = req.ProviderTypeName + "|" + n
+						}
+					}}
+				})
+			}
+			return out
+		},
+		ActionsMethod: func(context.Context) []func() action.Action {
+			var out []func() action.Action
+			for _, n := range vbNames {
+				out = append(out, func() action.Action {
+					return &testprovider.Action{MetadataMethod: func(_ context.Context, req action.MetadataRequest, resp *action.MetadataResponse) {
+						if n != "" {
+							resp.TypeName = req.ProviderTypeName + "|" + n
+						}
+					}}
+				})
+			}
+			return out
+		},
+		StateStoresMethod: func(context.Context) []func() statestore.StateStore {
+			var out []func() statestore.StateStore
+			for _, n := range vbNames {
+				out = append(out, func() statestore.StateStore {
+					return &testprovider.StateStore{MetadataMethod: func(_ context.Context, req statestore.MetadataRequest, resp *statestore.MetadataResponse) {
+						if n != "" {
+							resp.TypeName = req.ProviderTypeName + "|" + n
+						}
+					}}
+				})
+			}
+			return out
+		},
+		ListResourcesMethod: func(context.Context) []func() list.ListResource {
+			var out []func() list.ListResource
+			for _, n := range append([]string{"vb_nomatch"}, vbNames...) {
+				out = append(out, func() list.ListResource {
+					return &testprovider.ListResource{MetadataMethod: func(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+						if n != "" {
+							resp.TypeName = req.ProviderTypeName + "|" + n
+						}
+					}}
+				})
+			}
+			return out
+		},
+	}
+	return &testprovider.ProviderWithFunctions{Provider: p, FunctionsMethod: func(context.Context) []func() function.Function {
+		var out []func() function.Function
+		for _, n := range vbNames {
+			out = append(out, func() function.Function {
+				return &testprovider.Function{MetadataMethod: func(_ context.Context, _ function.MetadataRequest, resp *function.MetadataResponse) {
+					resp.Name = n
+				}}
+			})
+		}
+		return out
+	}}
+}
+
+type vbBareProvider struct{}
+
+func (vbBareProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "bare"
+}
+func (vbBareProvider) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse) {}
+func (vbBareProvider) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse) {
+}
+func (vbBareProvider) DataSources(context.Context) []func() datasource.DataSource { return nil }
+func (vbBareProvider) Resources(context.Context) []func() resource.Resource        { return nil }
+
+func vbDump(buf *bytes.Buffer, name string, keys []string, diags diag.Diagnostics) {
+	fmt.Fprintf(buf, "## %s keys(sorted)=%v\n", name, keys)
+	for _, d := range diags {
+		fmt.Fprintf(buf, "  %v | %q | %q\n", d.Severity(), d.Summary(), d.Detail())
+	}
+}
+
+func sortedKeys[V any](m map[string]V) []string {
+	var out []string
+	for k := range m {
+		out = append(out, k)
+	}
+	for i := range out {
+		for j := i + 1; j < len(out); j++ {
+			if out[j] < out[i] {
+				out[i], out[j] = out[j], out[i]
+			}
+		}
+	}
+	if m == nil {
+		return []string{"<nil map>"}
+	}
+	return out
+}
+
+func TestVB2Registry(t *testing.T) {
+	var logs, out bytes.Buffer
+	ctx := tfsdklogtest.RootLogger(context.Background(), &logs)
+	ctx = logging.InitContext(ctx)
+	for _, prov := range []provider.Provider{vbRegistryProvider(), &testprovider.Provider{}, vbBareProvider{}} {
+		s := &fwserver.Server{Provider: prov}
+		for round := 0; round < 2; round++ {
+			fmt.Fprintf(&out, "# provider %T round %d\n", prov, round)
+			m1, d1 := s.DataSourceFuncs(ctx)
+			vbDump(&out, "DataSourceFuncs", sortedKeys(m1), d1)
+			m2, d2 := s.ResourceFuncs(ctx)
+			vbDump(&out, "ResourceFuncs", sortedKeys(m2), d2)
+			m3, d3 := s.EphemeralResourceFuncs(ctx)
+			vbDump(&out, "EphemeralResourceFuncs", sortedKeys(m3), d3)
+			m4, d4 := s.ActionFuncs(ctx)
+			vbDump(&out, "ActionFuncs", sortedKeys(m4), d4)
+			m5, d5 := s.StateStoreFuncs(ctx)
+			vbDump(&out, "StateStoreFuncs", sortedKeys(m5), d5)
+			m6, d6 := s.FunctionFuncs(ctx)
+			vbDump(&out, "FunctionFuncs", sortedKeys(m6), d6)
+			m7, d7 := s.ListResourceFuncs(ctx)
+			vbDump(&out, "ListResourceFuncs", sortedKeys(m7), d7)
+			fmt.Fprintf(&out, "nil-diags: %v %v %v %v %v %v %v\n", d1 == nil, d2 == nil, d3 == nil, d4 == nil, d5 == nil, d6 == nil, d7 == nil)
+		}
+	}
+	out.WriteString("# LOGS\n")
+	out.Write(logs.Bytes())
+	if p := os.Getenv("VB2_OUT"); p != "" {
+		if err := os.WriteFile(p, out.Bytes(), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

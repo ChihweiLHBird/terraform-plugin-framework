@@ -1,0 +1,52 @@
+package fwserver_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+func TestProbeDeferralEnablePlanModificationWithoutModifyPlan(t *testing.T) {
+	t.Parallel()
+
+	testSchemaType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"test_computed": tftypes.String, "test_required": tftypes.String}}
+	testSchema := schema.Schema{Attributes: map[string]schema.Attribute{
+		"test_computed": schema.StringAttribute{Computed: true},
+		"test_required": schema.StringAttribute{Required: true},
+	}}
+	val := tftypes.NewValue(testSchemaType, map[string]tftypes.Value{
+		"test_computed": tftypes.NewValue(tftypes.String, nil),
+		"test_required": tftypes.NewValue(tftypes.String, "v"),
+	})
+
+	for name, res := range map[string]resource.Resource{
+		"without-modifyplan": &testprovider.Resource{},
+		"with-modifyplan":    &testprovider.ResourceWithModifyPlan{ModifyPlanMethod: func(context.Context, resource.ModifyPlanRequest, *resource.ModifyPlanResponse) {}},
+	} {
+		s := &fwserver.Server{Provider: &testprovider.Provider{
+			ConfigureMethod: func(_ context.Context, _ provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+				resp.Deferred = &provider.Deferred{Reason: provider.DeferredReasonProviderConfigUnknown}
+			},
+		}}
+		s.ConfigureProvider(context.Background(), &provider.ConfigureRequest{ClientCapabilities: provider.ConfigureProviderClientCapabilities{DeferralAllowed: true}}, &provider.ConfigureResponse{})
+
+		resp := &fwserver.PlanResourceChangeResponse{}
+		s.PlanResourceChange(context.Background(), &fwserver.PlanResourceChangeRequest{
+			ResourceBehavior: resource.ResourceBehavior{ProviderDeferred: resource.ProviderDeferredBehavior{EnablePlanModification: true}},
+			Config:           &tfsdk.Config{Raw: val, Schema: testSchema},
+			ProposedNewState: &tfsdk.Plan{Raw: val, Schema: testSchema},
+			PriorState:       &tfsdk.State{Raw: tftypes.NewValue(testSchemaType, nil), Schema: testSchema},
+			ResourceSchema:   testSchema,
+			Resource:         res,
+		}, resp)
+		t.Logf("%s: Deferred=%v diags=%v", name, resp.Deferred, resp.Diagnostics)
+	}
+}

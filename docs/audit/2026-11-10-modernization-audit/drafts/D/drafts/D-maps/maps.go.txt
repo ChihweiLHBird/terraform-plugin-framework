@@ -1,0 +1,27 @@
+// Copyright IBM Corp. 2021, 2026
+// SPDX-License-Identifier: MPL-2.0
+
+package fwschema
+
+// AttributesMap converts a map of concept-specific attributes into a map of
+// Attribute.
+func AttributesMap[T Attribute](attributes map[string]T) map[string]Attribute {
+	result := make(map[string]Attribute, len(attributes))
+
+	for name, attribute := range attributes {
+		result[name] = attribute
+	}
+
+	return result
+}
+
+// BlocksMap converts a map of concept-specific blocks into a map of Block.
+func BlocksMap[T Block](blocks map[string]T) map[string]Block {
+	result := make(map[string]Block, len(blocks))
+
+	for name, block := range blocks {
+		result[name] = block
+	}
+
+	return result
+}

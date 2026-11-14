@@ -1,0 +1,35 @@
+package fwschemadata_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwschema"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwschemadata"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testschema"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testtypes"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+)
+
+// C5: GetAtPath with a *attr.Value target returns nil instead of ValueAtPath's warnings.
+func TestReproGenericTargetDropsWarnings(t *testing.T) {
+	ctx := context.Background()
+	for name, typ := range map[string]attr.Type{
+		"TypeWithValidateWarning":      testtypes.StringTypeWithValidateWarning{},
+		"ValidateableAttributeWarning": testtypes.StringTypeWithValidateAttributeWarning{},
+	} {
+		data := fwschemadata.Data{
+			Schema: testschema.Schema{Attributes: map[string]fwschema.Attribute{"s": testschema.Attribute{Type: typ, Required: true}}},
+			TerraformValue: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{"s": tftypes.String}},
+				map[string]tftypes.Value{"s": tftypes.NewValue(tftypes.String, "x")}),
+		}
+		var generic attr.Value
+		d1 := data.GetAtPath(ctx, path.Root("s"), &generic)
+		_, d2 := data.ValueAtPath(ctx, path.Root("s"))
+		fmt.Printf("%s: GetAtPath(*attr.Value) diags=%d, ValueAtPath diags=%d\n", name, len(d1), len(d2))
+	}
+}

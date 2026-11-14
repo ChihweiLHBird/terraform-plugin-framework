@@ -1,0 +1,40 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func try(name string, f func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("%s: PANIC: %v\n", name, r)
+		}
+	}()
+	f()
+}
+
+func main() {
+	ctx := context.Background()
+	args := function.NewArgumentsData([]attr.Value{types.StringValue("x")})
+	try("GetArgument(1)", func() {
+		var s string
+		fmt.Printf("GetArgument(1): %v\n", args.GetArgument(ctx, 1, &s))
+	})
+	try("GetArgument(-1)", func() {
+		var s string
+		fmt.Printf("GetArgument(-1): %v\n", args.GetArgument(ctx, -1, &s))
+	})
+	try("zero ResultData.Set", func() {
+		var rd function.ResultData
+		fmt.Printf("zero ResultData.Set: %v\n", rd.Set(ctx, "x"))
+	})
+	try("zero RunResponse Result.Set", func() {
+		resp := function.RunResponse{}
+		fmt.Printf("RunResponse{}.Result.Set: %v\n", resp.Result.Set(ctx, "x"))
+	})
+}

@@ -1,0 +1,58 @@
+package reflect_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	refl "github.com/hashicorp/terraform-plugin-framework/internal/reflect"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type myInt int64
+type myFloat float64
+type myString string
+type myBool bool
+
+type namedModel struct {
+	I myInt    `tfsdk:"i"`
+	F myFloat  `tfsdk:"f"`
+	S myString `tfsdk:"s"`
+	B myBool   `tfsdk:"b"`
+}
+
+func TestReproNamedNumber(t *testing.T) {
+	ctx := context.Background()
+	objType := types.ObjectType{AttrTypes: map[string]attr.Type{"i": types.Int64Type, "f": types.Float64Type, "s": types.StringType, "b": types.BoolType}}
+	obj := tftypes.NewValue(objType.TerraformType(ctx), map[string]tftypes.Value{
+		"i": tftypes.NewValue(tftypes.Number, 5), "f": tftypes.NewValue(tftypes.Number, 1.5),
+		"s": tftypes.NewValue(tftypes.String, "x"), "b": tftypes.NewValue(tftypes.Bool, true),
+	})
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Into struct with named numeric fields PANICKED:", r)
+			}
+		}()
+		var m namedModel
+		diags := refl.Into(ctx, objType, obj, &m, refl.Options{}, path.Empty())
+		fmt.Printf("Into struct: diags=%v model=%+v\n", diags, m)
+	}()
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Into *myInt PANICKED:", r)
+			}
+		}()
+		var i myInt
+		diags := refl.Into(ctx, types.Int64Type, tftypes.NewValue(tftypes.Number, 5), &i, refl.Options{}, path.Empty())
+		fmt.Printf("Into *myInt: diags=%v i=%v\n", diags, i)
+	}()
+	// FromValue direction for named numbers
+	v, diags := refl.FromValue(ctx, objType, namedModel{I: 5, F: 1.5, S: "x", B: true}, path.Empty())
+	fmt.Printf("FromValue named: %v diags=%v\n", v, diags)
+}

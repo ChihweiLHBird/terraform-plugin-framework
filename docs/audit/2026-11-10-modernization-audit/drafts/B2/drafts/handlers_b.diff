@@ -1,0 +1,311 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_createresource.go b/internal/fwserver/server_createresource.go
+--- a/internal/fwserver/server_createresource.go	2026-10-24 21:30:10.524494707 +0000
++++ b/internal/fwserver/server_createresource.go	2026-10-24 23:24:35.624411456 +0000
+@@ -180,36 +180,12 @@
+ 		}
+ 	}
+ 
+-	semanticEqualityReq := SchemaSemanticEqualityRequest{
+-		PriorData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionPlan,
+-			Schema:         req.PlannedState.Schema,
+-			TerraformValue: req.PlannedState.Raw.Copy(),
+-		},
+-		ProposedNewData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         resp.NewState.Schema,
+-			TerraformValue: resp.NewState.Raw.Copy(),
+-		},
+-	}
+-	semanticEqualityResp := &SchemaSemanticEqualityResponse{
+-		NewData: semanticEqualityReq.ProposedNewData,
+-	}
+-
+-	SchemaSemanticEquality(ctx, semanticEqualityReq, semanticEqualityResp)
+-
+-	resp.Diagnostics.Append(semanticEqualityResp.Diagnostics...)
++	resp.Diagnostics.Append(stateSemanticEquality(ctx, fwschemadata.DataDescriptionPlan, req.PlannedState.Schema, req.PlannedState.Raw, resp.NewState)...)
+ 
+ 	if resp.Diagnostics.HasError() {
+ 		return
+ 	}
+ 
+-	if !semanticEqualityResp.NewData.TerraformValue.Equal(resp.NewState.Raw) {
+-		logging.FrameworkDebug(ctx, "State updated due to semantic equality")
+-
+-		resp.NewState.Raw = semanticEqualityResp.NewData.TerraformValue
+-	}
+-
+ 	// Set any write-only attributes in the state to null
+ 	modifiedState, err := tftypes.Transform(resp.NewState.Raw, NullifyWriteOnlyAttributes(ctx, resp.NewState.Schema))
+ 	if err != nil {
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_planresourcechange.go b/internal/fwserver/server_planresourcechange.go
+--- a/internal/fwserver/server_planresourcechange.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_planresourcechange.go	2026-10-24 23:24:35.621163912 +0000
+@@ -203,48 +203,7 @@
+ 		// plan outputs and only needs to be done for resource update plans.
+ 		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/627
+ 		if !req.PriorState.Raw.IsNull() {
+-			var allPaths, changedPaths path.Paths
+-
+-			for attrName := range resp.PlannedState.Schema.GetAttributes() {
+-				allPaths.Append(path.Root(attrName))
+-			}
+-
+-			for blockName := range resp.PlannedState.Schema.GetBlocks() {
+-				allPaths.Append(path.Root(blockName))
+-			}
+-
+-			for _, p := range allPaths {
+-				var plannedState, priorState attr.Value
+-
+-				// This logging is best effort and any errors should not be
+-				// returned to practitioners.
+-				_ = resp.PlannedState.GetAttribute(ctx, p, &plannedState)
+-				_ = req.PriorState.GetAttribute(ctx, p, &priorState)
+-
+-				// Due to ignoring diagnostics, the value may not be populated.
+-				// Prevent the panic and show the path as changed.
+-				if plannedState == nil {
+-					changedPaths.Append(p)
+-
+-					continue
+-				}
+-
+-				if plannedState.Equal(priorState) {
+-					continue
+-				}
+-
+-				changedPaths.Append(p)
+-			}
+-
+-			// Colocate these log entries to not intermix with GetAttribute logging
+-			for _, p := range changedPaths {
+-				logging.FrameworkDebug(ctx,
+-					"Detected value change between proposed new state and prior state",
+-					map[string]any{
+-						logging.KeyAttributePath: p.String(),
+-					},
+-				)
+-			}
++			logPlannedValueChanges(ctx, resp.PlannedState, req.PriorState)
+ 		}
+ 
+ 		logging.FrameworkDebug(ctx, "Marking Computed attributes with null configuration values as unknown (known after apply) in the plan to prevent potential Terraform errors")
+@@ -411,6 +370,54 @@
+ 	}
+ }
+ 
++// logPlannedValueChanges emits a debug log for each top level attribute or
++// block whose planned value differs from its prior state value. This logging
++// is best effort and any errors are not returned to practitioners.
++func logPlannedValueChanges(ctx context.Context, plannedState *tfsdk.State, priorState *tfsdk.State) {
++	var allPaths, changedPaths path.Paths
++
++	for attrName := range plannedState.Schema.GetAttributes() {
++		allPaths.Append(path.Root(attrName))
++	}
++
++	for blockName := range plannedState.Schema.GetBlocks() {
++		allPaths.Append(path.Root(blockName))
++	}
++
++	for _, p := range allPaths {
++		var plannedValue, priorValue attr.Value
++
++		// This logging is best effort and any errors should not be
++		// returned to practitioners.
++		_ = plannedState.GetAttribute(ctx, p, &plannedValue)
++		_ = priorState.GetAttribute(ctx, p, &priorValue)
++
++		// Due to ignoring diagnostics, the value may not be populated.
++		// Prevent the panic and show the path as changed.
++		if plannedValue == nil {
++			changedPaths.Append(p)
++
++			continue
++		}
++
++		if plannedValue.Equal(priorValue) {
++			continue
++		}
++
++		changedPaths.Append(p)
++	}
++
++	// Colocate these log entries to not intermix with GetAttribute logging
++	for _, p := range changedPaths {
++		logging.FrameworkDebug(ctx,
++			"Detected value change between proposed new state and prior state",
++			map[string]any{
++				logging.KeyAttributePath: p.String(),
++			},
++		)
++	}
++}
++
+ func MarkComputedNilsAsUnknown(ctx context.Context, config tftypes.Value, resourceSchema fwschema.Schema) func(*tftypes.AttributePath, tftypes.Value) (tftypes.Value, error) {
+ 	return func(path *tftypes.AttributePath, val tftypes.Value) (tftypes.Value, error) {
+ 		ctx = logging.FrameworkWithAttributePath(ctx, path.String())
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readdatasource.go b/internal/fwserver/server_readdatasource.go
+--- a/internal/fwserver/server_readdatasource.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_readdatasource.go	2026-10-24 23:24:35.625034063 +0000
+@@ -111,35 +111,5 @@
+ 		return
+ 	}
+ 
+-	semanticEqualityReq := SchemaSemanticEqualityRequest{
+-		PriorData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionConfiguration,
+-			Schema:         req.Config.Schema,
+-			TerraformValue: req.Config.Raw.Copy(),
+-		},
+-		ProposedNewData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         resp.State.Schema,
+-			TerraformValue: resp.State.Raw.Copy(),
+-		},
+-	}
+-	semanticEqualityResp := &SchemaSemanticEqualityResponse{
+-		NewData: semanticEqualityReq.ProposedNewData,
+-	}
+-
+-	SchemaSemanticEquality(ctx, semanticEqualityReq, semanticEqualityResp)
+-
+-	resp.Diagnostics.Append(semanticEqualityResp.Diagnostics...)
+-
+-	if resp.Diagnostics.HasError() {
+-		return
+-	}
+-
+-	if semanticEqualityResp.NewData.TerraformValue.Equal(resp.State.Raw) {
+-		return
+-	}
+-
+-	logging.FrameworkDebug(ctx, "State updated due to semantic equality")
+-
+-	resp.State.Raw = semanticEqualityResp.NewData.TerraformValue
++	resp.Diagnostics.Append(stateSemanticEquality(ctx, fwschemadata.DataDescriptionConfiguration, req.Config.Schema, req.Config.Raw, resp.State)...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_readresource.go b/internal/fwserver/server_readresource.go
+--- a/internal/fwserver/server_readresource.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_readresource.go	2026-10-24 23:24:35.621852003 +0000
+@@ -209,16 +209,39 @@
+ 		}
+ 	}
+ 
++	resp.Diagnostics.Append(stateSemanticEquality(ctx, fwschemadata.DataDescriptionState, req.CurrentState.Schema, req.CurrentState.Raw, resp.NewState)...)
++
++	if resp.Diagnostics.HasError() {
++		return
++	}
++
++	// Set any write-only attributes in the state to null
++	modifiedState, err := tftypes.Transform(resp.NewState.Raw, NullifyWriteOnlyAttributes(ctx, resp.NewState.Schema))
++	if err != nil {
++		resp.Diagnostics.AddError(
++			"Error Modifying State",
++			"There was an unexpected error modifying the NewState. This is always a problem with the provider. Please report the following to the provider developer:\n\n"+err.Error(),
++		)
++		return
++	}
++
++	resp.NewState.Raw = modifiedState
++}
++
++// stateSemanticEquality runs the schema semantic equality logic of newState
++// against the prior data and, unless an error diagnostic is returned, updates
++// newState to keep any semantically equal prior values.
++func stateSemanticEquality(ctx context.Context, priorDescription fwschemadata.DataDescription, priorSchema fwschema.Schema, priorRaw tftypes.Value, newState *tfsdk.State) diag.Diagnostics {
+ 	semanticEqualityReq := SchemaSemanticEqualityRequest{
+ 		PriorData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         req.CurrentState.Schema,
+-			TerraformValue: req.CurrentState.Raw.Copy(),
++			Description:    priorDescription,
++			Schema:         priorSchema,
++			TerraformValue: priorRaw.Copy(),
+ 		},
+ 		ProposedNewData: fwschemadata.Data{
+ 			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         resp.NewState.Schema,
+-			TerraformValue: resp.NewState.Raw.Copy(),
++			Schema:         newState.Schema,
++			TerraformValue: newState.Raw.Copy(),
+ 		},
+ 	}
+ 	semanticEqualityResp := &SchemaSemanticEqualityResponse{
+@@ -227,27 +250,15 @@
+ 
+ 	SchemaSemanticEquality(ctx, semanticEqualityReq, semanticEqualityResp)
+ 
+-	resp.Diagnostics.Append(semanticEqualityResp.Diagnostics...)
+-
+-	if resp.Diagnostics.HasError() {
+-		return
++	if semanticEqualityResp.Diagnostics.HasError() {
++		return semanticEqualityResp.Diagnostics
+ 	}
+ 
+-	if !semanticEqualityResp.NewData.TerraformValue.Equal(resp.NewState.Raw) {
++	if !semanticEqualityResp.NewData.TerraformValue.Equal(newState.Raw) {
+ 		logging.FrameworkDebug(ctx, "State updated due to semantic equality")
+ 
+-		resp.NewState.Raw = semanticEqualityResp.NewData.TerraformValue
+-	}
+-
+-	// Set any write-only attributes in the state to null
+-	modifiedState, err := tftypes.Transform(resp.NewState.Raw, NullifyWriteOnlyAttributes(ctx, resp.NewState.Schema))
+-	if err != nil {
+-		resp.Diagnostics.AddError(
+-			"Error Modifying State",
+-			"There was an unexpected error modifying the NewState. This is always a problem with the provider. Please report the following to the provider developer:\n\n"+err.Error(),
+-		)
+-		return
++		newState.Raw = semanticEqualityResp.NewData.TerraformValue
+ 	}
+ 
+-	resp.NewState.Raw = modifiedState
++	return semanticEqualityResp.Diagnostics
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_updateresource.go b/internal/fwserver/server_updateresource.go
+--- a/internal/fwserver/server_updateresource.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_updateresource.go	2026-10-24 23:24:35.624361059 +0000
+@@ -210,36 +210,12 @@
+ 		}
+ 	}
+ 
+-	semanticEqualityReq := SchemaSemanticEqualityRequest{
+-		PriorData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionPlan,
+-			Schema:         req.PlannedState.Schema,
+-			TerraformValue: req.PlannedState.Raw.Copy(),
+-		},
+-		ProposedNewData: fwschemadata.Data{
+-			Description:    fwschemadata.DataDescriptionState,
+-			Schema:         resp.NewState.Schema,
+-			TerraformValue: resp.NewState.Raw.Copy(),
+-		},
+-	}
+-	semanticEqualityResp := &SchemaSemanticEqualityResponse{
+-		NewData: semanticEqualityReq.ProposedNewData,
+-	}
+-
+-	SchemaSemanticEquality(ctx, semanticEqualityReq, semanticEqualityResp)
+-
+-	resp.Diagnostics.Append(semanticEqualityResp.Diagnostics...)
++	resp.Diagnostics.Append(stateSemanticEquality(ctx, fwschemadata.DataDescriptionPlan, req.PlannedState.Schema, req.PlannedState.Raw, resp.NewState)...)
+ 
+ 	if resp.Diagnostics.HasError() {
+ 		return
+ 	}
+ 
+-	if !semanticEqualityResp.NewData.TerraformValue.Equal(resp.NewState.Raw) {
+-		logging.FrameworkDebug(ctx, "State updated due to semantic equality")
+-
+-		resp.NewState.Raw = semanticEqualityResp.NewData.TerraformValue
+-	}
+-
+ 	// Set any write-only attributes in the state to null
+ 	modifiedState, err := tftypes.Transform(resp.NewState.Raw, NullifyWriteOnlyAttributes(ctx, resp.NewState.Schema))
+ 	if err != nil {

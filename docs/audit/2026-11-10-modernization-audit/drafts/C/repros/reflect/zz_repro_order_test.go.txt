@@ -1,0 +1,40 @@
+package reflect_test
+
+import (
+	"context"
+	"fmt"
+	"reflect"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	refl "github.com/hashicorp/terraform-plugin-framework/internal/reflect"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type threeFields struct {
+	A string `tfsdk:"a"`
+	B string `tfsdk:"b"`
+	C string `tfsdk:"c"`
+}
+
+// C4: the "mismatch between struct and object" detail text is non-deterministic.
+func TestReproMissingFieldOrder(t *testing.T) {
+	ctx := context.Background()
+	objType := types.ObjectType{AttrTypes: map[string]attr.Type{"x": types.StringType, "y": types.StringType, "z": types.StringType}}
+	obj := tftypes.NewValue(objType.TerraformType(ctx), map[string]tftypes.Value{
+		"x": tftypes.NewValue(tftypes.String, "1"), "y": tftypes.NewValue(tftypes.String, "2"), "z": tftypes.NewValue(tftypes.String, "3"),
+	})
+	intoTexts := map[string]int{}
+	fromTexts := map[string]int{}
+	for i := 0; i < 200; i++ {
+		_, diags := refl.Struct(ctx, objType, obj, reflect.ValueOf(threeFields{}), refl.Options{}, path.Empty())
+		intoTexts[diags[0].Detail()]++
+		_, diags = refl.FromStruct(ctx, objType, reflect.ValueOf(threeFields{}), path.Empty())
+		fromTexts[diags[0].Detail()]++
+	}
+	fmt.Println("Struct (Into) distinct detail texts over 200 runs:", len(intoTexts))
+	fmt.Println("FromStruct distinct detail texts over 200 runs:", len(fromTexts))
+}

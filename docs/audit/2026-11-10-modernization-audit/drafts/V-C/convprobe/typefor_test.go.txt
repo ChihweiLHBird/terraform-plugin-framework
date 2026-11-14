@@ -1,0 +1,32 @@
+package convprobe
+
+import (
+	"math/big"
+	"reflect"
+	"testing"
+)
+
+var sink bool
+var tgt = reflect.TypeFor[*big.Int]()
+
+func BenchmarkTypeOfNew(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		sink = tgt == reflect.TypeOf(big.NewFloat(0)) || tgt == reflect.TypeOf(big.NewInt(0))
+	}
+}
+func BenchmarkTypeFor(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		sink = tgt == reflect.TypeFor[*big.Float]() || tgt == reflect.TypeFor[*big.Int]()
+	}
+}
+func TestSame(t *testing.T) {
+	if reflect.TypeOf(big.NewFloat(0)) != reflect.TypeFor[*big.Float]() || reflect.TypeOf(big.NewInt(0)) != reflect.TypeFor[*big.Int]() {
+		t.Fatal("differ")
+	}
+	type U interface{ M() }
+	if reflect.TypeOf((*U)(nil)).Elem() != reflect.TypeFor[U]() {
+		t.Fatal("differ iface")
+	}
+}

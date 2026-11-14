@@ -1,0 +1,31 @@
+switch t := VALUE.(type) {
+case xattr.ValidateableAttribute:
+	resp := xattr.ValidateAttributeResponse{}
+
+	t.ValidateAttribute(ctx,
+		xattr.ValidateAttributeRequest{
+			Path: PATH,
+		},
+		&resp,
+	)
+
+	diags.Append(resp.Diagnostics...)
+
+	if diags.HasError() {
+		return RET, diags
+	}
+default:
+	//nolint:staticcheck // xattr.TypeWithValidate is deprecated, but we still need to support it.
+	if typeWithValidate, ok := TYPE.(xattr.TypeWithValidate); ok {
+		tfVal, err := val.ToTerraformValue(ctx)
+		if err != nil {
+			return RET, append(diags, toTerraformValueErrorDiag(err, path))
+		}
+
+		diags.Append(typeWithValidate.Validate(ctx, TFVAL, PATH)...)
+
+		if diags.HasError() {
+			return RET, diags
+		}
+	}
+}

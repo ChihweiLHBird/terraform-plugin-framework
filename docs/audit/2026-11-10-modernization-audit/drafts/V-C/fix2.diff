@@ -1,0 +1,42 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/reflect/number.go b/internal/reflect/number.go
+--- a/internal/reflect/number.go	2026-10-24 21:30:10.590939641 +0000
++++ b/internal/reflect/number.go	2026-11-10 21:31:43.124595756 +0000
+@@ -374,6 +374,10 @@
+ //
+ // It is meant to be called through FromValue, not directly.
+ func FromBigInt(ctx context.Context, typ attr.Type, val *big.Int, path path.Path) (attr.Value, diag.Diagnostics) {
++	if val == nil {
++		return FromBigFloat(ctx, typ, nil, path)
++	}
++
+ 	var diags diag.Diagnostics
+ 	fl := big.NewFloat(0).SetInt(val)
+ 	err := tftypes.ValidateValue(tftypes.Number, fl)
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/reflect/outof.go b/internal/reflect/outof.go
+--- a/internal/reflect/outof.go	2026-10-24 21:30:10.590939641 +0000
++++ b/internal/reflect/outof.go	2026-11-10 21:31:43.124448153 +0000
+@@ -22,6 +22,13 @@
+ func FromValue(ctx context.Context, typ attr.Type, val interface{}, path path.Path) (attr.Value, diag.Diagnostics) {
+ 	var diags diag.Diagnostics
+ 
++	// A nil pointer whose element type implements one of the interfaces below
++	// by value receivers would panic when its methods are called: treat it as
++	// a null value, like any other nil pointer.
++	if rv := reflect.ValueOf(val); rv.Kind() == reflect.Pointer && rv.IsNil() && implementsValueInterface(rv.Type().Elem()) {
++		return FromPointer(ctx, typ, rv, path)
++	}
++
+ 	if v, ok := val.(attr.Value); ok {
+ 		return FromAttributeValue(ctx, typ, v, path)
+ 	}
+@@ -93,3 +100,10 @@
+ 		return nil, diags
+ 	}
+ }
++
++func implementsValueInterface(t reflect.Type) bool {
++	return t.Implements(reflect.TypeFor[attr.Value]()) ||
++		t.Implements(reflect.TypeFor[tftypes.ValueCreator]()) ||
++		t.Implements(reflect.TypeFor[Unknownable]()) ||
++		t.Implements(reflect.TypeFor[Nullable]())
++}

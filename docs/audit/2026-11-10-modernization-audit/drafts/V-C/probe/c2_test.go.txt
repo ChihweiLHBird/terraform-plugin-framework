@@ -1,0 +1,98 @@
+package vcprobe
+
+import (
+	"context"
+	"fmt"
+	"math/big"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+type bigModel struct {
+	ID    string     `tfsdk:"id"`
+	Count *big.Int   `tfsdk:"count"`
+	Size  *big.Float `tfsdk:"size"`
+	Opt   *int64     `tfsdk:"opt"`
+}
+
+func c2Schema() schema.Schema {
+	return schema.Schema{Attributes: map[string]schema.Attribute{
+		"id":    schema.StringAttribute{Computed: true},
+		"count": schema.NumberAttribute{Optional: true},
+		"size":  schema.NumberAttribute{Optional: true},
+		"opt":   schema.Int64Attribute{Optional: true},
+	}}
+}
+
+func c2Raw() tftypes.Value {
+	objT := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String, "count": tftypes.Number, "size": tftypes.Number, "opt": tftypes.Number}}
+	return tftypes.NewValue(objT, map[string]tftypes.Value{
+		"id":    tftypes.NewValue(tftypes.String, "x"),
+		"count": tftypes.NewValue(tftypes.Number, nil),
+		"size":  tftypes.NewValue(tftypes.Number, nil),
+		"opt":   tftypes.NewValue(tftypes.Number, nil),
+	})
+}
+
+func TestC2(t *testing.T) {
+	ctx := context.Background()
+	st := tfsdk.State{Schema: c2Schema(), Raw: c2Raw()}
+	var m bigModel
+	d := st.Get(ctx, &m)
+	t.Logf("Get: diags=%d Count==nil:%v Size==nil:%v Opt==nil:%v", len(d), m.Count == nil, m.Size == nil, m.Opt == nil)
+
+	// Set back only Size and Opt nil (Count non-nil) -> works?
+	try(t, "Set with nil *big.Float/*int64 only", func() string {
+		m2 := m
+		m2.Count = big.NewInt(3)
+		s2 := tfsdk.State{Schema: c2Schema(), Raw: c2Raw()}
+		d := s2.Set(ctx, &m2)
+		return fmt.Sprintf("diags=%d", len(d))
+	})
+	try(t, "Set round trip (nil *big.Int)", func() string {
+		s2 := tfsdk.State{Schema: c2Schema(), Raw: c2Raw()}
+		d := s2.Set(ctx, &m)
+		return fmt.Sprintf("diags=%d", len(d))
+	})
+	try(t, "SetAttribute (*big.Int)(nil)", func() string {
+		s2 := tfsdk.State{Schema: c2Schema(), Raw: c2Raw()}
+		d := s2.SetAttribute(ctx, path.Root("count"), (*big.Int)(nil))
+		return fmt.Sprintf("diags=%d", len(d))
+	})
+	try(t, "SetAttribute (*types.String)(nil)", func() string {
+		s2 := tfsdk.State{Schema: c2Schema(), Raw: c2Raw()}
+		d := s2.SetAttribute(ctx, path.Root("id"), (*types.String)(nil))
+		return fmt.Sprintf("diags=%d", len(d))
+	})
+	try(t, "SetAttribute non-nil *types.String", func() string {
+		s2 := tfsdk.State{Schema: c2Schema(), Raw: c2Raw()}
+		v := types.StringValue("y")
+		d := s2.SetAttribute(ctx, path.Root("id"), &v)
+		return fmt.Sprintf("diags=%d %v", len(d), d)
+	})
+	try(t, "types.NumberValue? ListValueFrom []*big.Int{nil}", func() string {
+		l, d := types.ListValueFrom(ctx, types.NumberType, []*big.Int{nil})
+		return fmt.Sprintf("diags=%d %v", len(d), l)
+	})
+	try(t, "ListValueFrom []*big.Float{nil}", func() string {
+		l, d := types.ListValueFrom(ctx, types.NumberType, []*big.Float{nil})
+		return fmt.Sprintf("diags=%d %v", len(d), l)
+	})
+	// Get into struct with *types.String field
+	try(t, "Get into *types.String field", func() string {
+		type pm struct {
+			ID    *types.String `tfsdk:"id"`
+			Count types.Number  `tfsdk:"count"`
+			Size  types.Number  `tfsdk:"size"`
+			Opt   types.Int64   `tfsdk:"opt"`
+		}
+		var x pm
+		d := st.Get(ctx, &x)
+		return fmt.Sprintf("diags=%d %v", len(d), d)
+	})
+}

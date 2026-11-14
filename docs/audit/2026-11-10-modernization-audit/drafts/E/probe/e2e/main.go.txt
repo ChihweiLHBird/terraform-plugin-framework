@@ -1,0 +1,68 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"math/big"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+type prov struct{}
+
+func (prov) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "ex"
+}
+func (prov) Schema(context.Context, provider.SchemaRequest, *provider.SchemaResponse)          {}
+func (prov) Configure(context.Context, provider.ConfigureRequest, *provider.ConfigureResponse) {}
+func (prov) DataSources(context.Context) []func() datasource.DataSource                       { return nil }
+func (prov) Resources(context.Context) []func() resource.Resource {
+	return []func() resource.Resource{func() resource.Resource { return res{} }}
+}
+
+type res struct{}
+
+func (res) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "ex_thing"
+}
+func (res) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{Attributes: map[string]schema.Attribute{
+		"port":  schema.Int64Attribute{Optional: true},
+		"small": schema.Int32Attribute{Optional: true},
+	}}
+}
+func (res) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {}
+func (res) Read(context.Context, resource.ReadRequest, *resource.ReadResponse)       {}
+func (res) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {}
+func (res) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {}
+
+func main() {
+	ctx := context.Background()
+	srv, err := providerserver.NewProtocol6WithError(prov{})()
+	if err != nil {
+		panic(err)
+	}
+	typ := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"port": tftypes.Number, "small": tftypes.Number}}
+	for _, vals := range []map[string]tftypes.Value{
+		{"port": tftypes.NewValue(tftypes.Number, big.NewFloat(80.5)), "small": tftypes.NewValue(tftypes.Number, nil)},
+		{"port": tftypes.NewValue(tftypes.Number, nil), "small": tftypes.NewValue(tftypes.Number, big.NewFloat(3000000000))},
+	} {
+		dv, err := tfprotov6.NewDynamicValue(typ, tftypes.NewValue(typ, vals))
+		if err != nil {
+			panic(err)
+		}
+		resp, err := srv.ValidateResourceConfig(ctx, &tfprotov6.ValidateResourceConfigRequest{TypeName: "ex_thing", Config: &dv})
+		if err != nil {
+			panic(err)
+		}
+		for _, d := range resp.Diagnostics {
+			fmt.Printf("[%v] %s | %s\n", d.Severity, d.Summary, d.Detail)
+		}
+	}
+}

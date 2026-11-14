@@ -1,0 +1,218 @@
+[
+ {
+  "id": 0,
+  "file": "internal/reflect/interfaces.go",
+  "lines": "83-108",
+  "func": "FromUnknownable",
+  "nlines": 26,
+  "next": "return res, nil",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 1,
+  "file": "internal/reflect/interfaces.go",
+  "lines": "124-149",
+  "func": "FromUnknownable",
+  "nlines": 26,
+  "next": "return res, nil",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 2,
+  "file": "internal/reflect/interfaces.go",
+  "lines": "217-242",
+  "func": "FromNullable",
+  "nlines": 26,
+  "next": "return res, nil",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 3,
+  "file": "internal/reflect/interfaces.go",
+  "lines": "258-283",
+  "func": "FromNullable",
+  "nlines": 26,
+  "next": "return res, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 4,
+  "file": "internal/reflect/interfaces.go",
+  "lines": "349-374",
+  "func": "FromValueCreator",
+  "nlines": 26,
+  "next": "return res, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 5,
+  "file": "internal/reflect/interfaces.go",
+  "lines": "392-417",
+  "func": "NewAttributeValue",
+  "nlines": 26,
+  "next": "if reflect.TypeOf(res) != target.Type() {",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 6,
+  "file": "internal/reflect/interfaces.go",
+  "lines": "458-488",
+  "func": "FromAttributeValue",
+  "nlines": 31,
+  "next": "return val, diags",
+  "norm_hash": 5821625697843787202
+ },
+ {
+  "id": 7,
+  "file": "internal/reflect/map.go",
+  "lines": "118-143",
+  "func": "FromMap",
+  "nlines": 26,
+  "next": "return attrVal, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 8,
+  "file": "internal/reflect/map.go",
+  "lines": "178-203",
+  "func": "FromMap",
+  "nlines": 26,
+  "next": "tfElems[key.String()] = tfVal",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 9,
+  "file": "internal/reflect/map.go",
+  "lines": "226-251",
+  "func": "FromMap",
+  "nlines": 26,
+  "next": "return attrVal, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 10,
+  "file": "internal/reflect/number.go",
+  "lines": "205-230",
+  "func": "FromInt",
+  "nlines": 26,
+  "next": "return num, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 11,
+  "file": "internal/reflect/number.go",
+  "lines": "251-276",
+  "func": "FromUint",
+  "nlines": 26,
+  "next": "return num, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 12,
+  "file": "internal/reflect/number.go",
+  "lines": "297-322",
+  "func": "FromFloat",
+  "nlines": 26,
+  "next": "return num, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 13,
+  "file": "internal/reflect/number.go",
+  "lines": "343-368",
+  "func": "FromBigFloat",
+  "nlines": 26,
+  "next": "return num, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 14,
+  "file": "internal/reflect/number.go",
+  "lines": "390-415",
+  "func": "FromBigInt",
+  "nlines": 26,
+  "next": "return num, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 15,
+  "file": "internal/reflect/pointer.go",
+  "lines": "108-133",
+  "func": "FromPointer",
+  "nlines": 26,
+  "next": "return attrVal, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 16,
+  "file": "internal/reflect/primitive.go",
+  "lines": "77-102",
+  "func": "FromString",
+  "nlines": 26,
+  "next": "return str, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 17,
+  "file": "internal/reflect/primitive.go",
+  "lines": "123-148",
+  "func": "FromBool",
+  "nlines": 26,
+  "next": "return b, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 18,
+  "file": "internal/reflect/slice.go",
+  "lines": "200-225",
+  "func": "FromSlice",
+  "nlines": 26,
+  "next": "return attrVal, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 19,
+  "file": "internal/reflect/slice.go",
+  "lines": "262-287",
+  "func": "FromSlice",
+  "nlines": 26,
+  "next": "tfElems = append(tfElems, tfVal)",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 20,
+  "file": "internal/reflect/slice.go",
+  "lines": "352-377",
+  "func": "FromSlice",
+  "nlines": 26,
+  "next": "tfElems = append(tfElems, tfVal)",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 21,
+  "file": "internal/reflect/slice.go",
+  "lines": "409-434",
+  "func": "FromSlice",
+  "nlines": 26,
+  "next": "return attrVal, diags",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 22,
+  "file": "internal/reflect/struct.go",
+  "lines": "276-301",
+  "func": "FromStruct",
+  "nlines": 26,
+  "next": "tfObjTyp := tfObjVal.Type()",
+  "norm_hash": 5280881567280002183
+ },
+ {
+  "id": 23,
+  "file": "internal/reflect/struct.go",
+  "lines": "325-350",
+  "func": "FromStruct",
+  "nlines": 26,
+  "next": "return ret, diags",
+  "norm_hash": 5280881567280002183
+ }
+]

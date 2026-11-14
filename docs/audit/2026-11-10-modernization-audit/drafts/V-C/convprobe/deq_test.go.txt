@@ -1,0 +1,22 @@
+package convprobe
+
+import (
+	"bytes"
+	"maps"
+	"reflect"
+	"testing"
+)
+
+func TestDeepEqualVsEqualFunc(t *testing.T) {
+	cases := []struct {
+		name string
+		a, b map[string][]byte
+	}{
+		{"nil vs empty", nil, map[string][]byte{}},
+		{"nil-value vs empty-value", map[string][]byte{"k": nil}, map[string][]byte{"k": {}}},
+		{"equal", map[string][]byte{"k": []byte("x")}, map[string][]byte{"k": []byte("x")}},
+	}
+	for _, c := range cases {
+		t.Logf("%-26s DeepEqual=%v EqualFunc(bytes.Equal)=%v", c.name, reflect.DeepEqual(c.a, c.b), maps.EqualFunc(c.a, c.b, bytes.Equal))
+	}
+}

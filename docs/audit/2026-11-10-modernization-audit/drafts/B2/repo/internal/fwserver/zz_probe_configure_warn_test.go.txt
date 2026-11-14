@@ -1,0 +1,122 @@
+package fwserver_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/action"
+	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
+	ephschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+func TestProbeConfigureWarning(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	st := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String}}
+	sch := schema.Schema{Attributes: map[string]schema.Attribute{"id": schema.StringAttribute{Optional: true, Computed: true}}}
+	v := tftypes.NewValue(st, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "x")})
+	warn := func(_ context.Context, _ resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+		resp.Diagnostics.AddWarning("configure warning", "detail")
+	}
+	s := &fwserver.Server{Provider: &testprovider.Provider{}}
+
+	{
+		resp := &fwserver.CreateResourceResponse{}
+		s.CreateResource(ctx, &fwserver.CreateResourceRequest{
+			Config: &tfsdk.Config{Raw: v, Schema: sch}, PlannedState: &tfsdk.Plan{Raw: v, Schema: sch}, ResourceSchema: sch,
+			Resource: &testprovider.ResourceWithConfigure{ConfigureMethod: warn, Resource: &testprovider.Resource{
+				CreateMethod: func(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+					resp.State.Raw = req.Plan.Raw
+				}}},
+		}, resp)
+		t.Logf("CreateResource diags: %v", resp.Diagnostics)
+	}
+	{
+		resp := &fwserver.ReadResourceResponse{}
+		s.ReadResource(ctx, &fwserver.ReadResourceRequest{
+			CurrentState: &tfsdk.State{Raw: v, Schema: sch},
+			Resource:     &testprovider.ResourceWithConfigure{ConfigureMethod: warn, Resource: &testprovider.Resource{}},
+		}, resp)
+		t.Logf("ReadResource diags: %v", resp.Diagnostics)
+	}
+	{
+		resp := &fwserver.UpdateResourceResponse{}
+		s.UpdateResource(ctx, &fwserver.UpdateResourceRequest{
+			Config: &tfsdk.Config{Raw: v, Schema: sch}, PlannedState: &tfsdk.Plan{Raw: v, Schema: sch}, PriorState: &tfsdk.State{Raw: v, Schema: sch}, ResourceSchema: sch,
+			Resource: &testprovider.ResourceWithConfigure{ConfigureMethod: warn, Resource: &testprovider.Resource{}},
+		}, resp)
+		t.Logf("UpdateResource diags: %v", resp.Diagnostics)
+	}
+	{
+		resp := &fwserver.DeleteResourceResponse{}
+		s.DeleteResource(ctx, &fwserver.DeleteResourceRequest{
+			PriorState: &tfsdk.State{Raw: v, Schema: sch}, ResourceSchema: sch,
+			Resource: &testprovider.ResourceWithConfigure{ConfigureMethod: warn, Resource: &testprovider.Resource{}},
+		}, resp)
+		t.Logf("DeleteResource diags: %v", resp.Diagnostics)
+	}
+	{
+		resp := &fwserver.PlanResourceChangeResponse{}
+		s.PlanResourceChange(ctx, &fwserver.PlanResourceChangeRequest{
+			Config: &tfsdk.Config{Raw: v, Schema: sch}, ProposedNewState: &tfsdk.Plan{Raw: v, Schema: sch}, PriorState: &tfsdk.State{Raw: v, Schema: sch}, ResourceSchema: sch,
+			Resource: &testprovider.ResourceWithConfigure{ConfigureMethod: warn, Resource: &testprovider.Resource{}},
+		}, resp)
+		t.Logf("PlanResourceChange diags (control): %v", resp.Diagnostics)
+	}
+	{
+		dsch := dsschema.Schema{Attributes: map[string]dsschema.Attribute{"id": dsschema.StringAttribute{Optional: true}}}
+		resp := &fwserver.ReadDataSourceResponse{}
+		s.ReadDataSource(ctx, &fwserver.ReadDataSourceRequest{
+			Config: &tfsdk.Config{Raw: v, Schema: dsch}, DataSourceSchema: dsch,
+			DataSource: &testprovider.DataSourceWithConfigure{ConfigureMethod: func(_ context.Context, _ datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+				resp.Diagnostics.AddWarning("configure warning", "detail")
+			}, DataSource: &testprovider.DataSource{}},
+		}, resp)
+		t.Logf("ReadDataSource diags: %v", resp.Diagnostics)
+	}
+	{
+		esch := ephschema.Schema{Attributes: map[string]ephschema.Attribute{"id": ephschema.StringAttribute{Optional: true}}}
+		ewarn := func(_ context.Context, _ ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
+			resp.Diagnostics.AddWarning("configure warning", "detail")
+		}
+		resp := &fwserver.OpenEphemeralResourceResponse{}
+		s.OpenEphemeralResource(ctx, &fwserver.OpenEphemeralResourceRequest{
+			Config: &tfsdk.Config{Raw: v, Schema: esch}, EphemeralResourceSchema: esch,
+			EphemeralResource: &testprovider.EphemeralResourceWithConfigure{ConfigureMethod: ewarn, EphemeralResource: &testprovider.EphemeralResource{}},
+		}, resp)
+		t.Logf("OpenEphemeralResource diags: %v", resp.Diagnostics)
+		cresp := &fwserver.CloseEphemeralResourceResponse{}
+		s.CloseEphemeralResource(ctx, &fwserver.CloseEphemeralResourceRequest{
+			EphemeralResource: &testprovider.EphemeralResourceWithConfigureAndClose{ConfigureMethod: ewarn, EphemeralResource: &testprovider.EphemeralResource{}},
+		}, cresp)
+		t.Logf("CloseEphemeralResource diags: %v", cresp.Diagnostics)
+	}
+	{
+		asch := actionschema.Schema{Attributes: map[string]actionschema.Attribute{"id": actionschema.StringAttribute{Optional: true}}}
+		awarn := func(_ context.Context, _ action.ConfigureRequest, resp *action.ConfigureResponse) {
+			resp.Diagnostics.AddWarning("configure warning", "detail")
+		}
+		resp := &fwserver.InvokeActionResponse{ProgressEvents: make(chan fwserver.InvokeProgressEvent, 10)}
+		s.InvokeAction(ctx, &fwserver.InvokeActionRequest{
+			ActionSchema: asch,
+			Action:       &testprovider.ActionWithConfigure{ConfigureMethod: awarn, Action: &testprovider.Action{}},
+		}, resp)
+		t.Logf("InvokeAction diags: %v", resp.Diagnostics)
+		presp := &fwserver.PlanActionResponse{}
+		s.PlanAction(ctx, &fwserver.PlanActionRequest{
+			ActionSchema: asch,
+			Action:       &testprovider.ActionWithConfigure{ConfigureMethod: awarn, Action: &testprovider.Action{}},
+		}, presp)
+		t.Logf("PlanAction diags (control, no ModifyPlan): %v", presp.Diagnostics)
+	}
+}

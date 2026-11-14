@@ -1,0 +1,52 @@
+package convprobe
+
+import (
+	"math"
+	"reflect"
+	"testing"
+)
+
+type I8 int8
+type U16 uint16
+type F32 float32
+type I int
+type U uint
+
+func TestConvertSameKind(t *testing.T) {
+	cases := []struct {
+		v   any
+		tgt reflect.Type
+	}{
+		{int8(math.MinInt8), reflect.TypeFor[I8]()},
+		{int8(math.MaxInt8), reflect.TypeFor[I8]()},
+		{uint16(math.MaxUint16), reflect.TypeFor[U16]()},
+		{float32(math.MaxFloat32), reflect.TypeFor[F32]()},
+		{float32(math.SmallestNonzeroFloat32), reflect.TypeFor[F32]()},
+		{int(math.MinInt64), reflect.TypeFor[I]()},
+		{uint(math.MaxUint64), reflect.TypeFor[U]()},
+		{int64(math.MinInt64), reflect.TypeFor[int64]()},
+		{float64(-0.0), reflect.TypeFor[float64]()},
+	}
+	for _, c := range cases {
+		in := reflect.ValueOf(c.v)
+		out := in.Convert(c.tgt)
+		// identical bits?
+		same := false
+		switch in.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			same = in.Int() == out.Int()
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			same = in.Uint() == out.Uint()
+		case reflect.Float32, reflect.Float64:
+			same = math.Float64bits(in.Float()) == math.Float64bits(out.Float())
+		}
+		t.Logf("%T(%v) -> %s = %v same=%v canset=%v canaddr=%v", c.v, c.v, out.Type(), out.Interface(), same, out.CanSet(), out.CanAddr())
+		if !same {
+			t.Errorf("changed")
+		}
+	}
+	// same-type Convert identity
+	v := reflect.ValueOf(int64(5))
+	w := v.Convert(reflect.TypeFor[int64]())
+	t.Logf("identity: %v %v type-equal=%v", v.Interface(), w.Interface(), v.Type() == w.Type())
+}

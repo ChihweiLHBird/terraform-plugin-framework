@@ -1,0 +1,36 @@
+// Copyright IBM Corp. 2021, 2026
+// SPDX-License-Identifier: MPL-2.0
+
+package fwschema
+
+// TypedAttributesEqual returns true if o has the same concrete type as a and
+// AttributesEqual returns true.
+func TypedAttributesEqual[T Attribute](a T, o Attribute) bool {
+	if _, ok := o.(T); !ok {
+		return false
+	}
+
+	return AttributesEqual(a, o)
+}
+
+// TypedNestedAttributesEqual returns true if o has the same concrete type as
+// a and NestedAttributesEqual returns true.
+func TypedNestedAttributesEqual[T NestedAttribute](a T, o Attribute) bool {
+	other, ok := o.(T)
+
+	if !ok {
+		return false
+	}
+
+	return NestedAttributesEqual(a, other)
+}
+
+// TypedBlocksEqual returns true if o has the same concrete type as b and
+// BlocksEqual returns true.
+func TypedBlocksEqual[T Block](b T, o Block) bool {
+	if _, ok := o.(T); !ok {
+		return false
+	}
+
+	return BlocksEqual(b, o)
+}

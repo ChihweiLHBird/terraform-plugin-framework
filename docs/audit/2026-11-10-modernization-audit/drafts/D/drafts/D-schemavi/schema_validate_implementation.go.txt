@@ -1,0 +1,47 @@
+// Copyright IBM Corp. 2021, 2026
+// SPDX-License-Identifier: MPL-2.0
+
+package fwschema
+
+import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+)
+
+// SchemaValidateImplementation contains the shared logic of the concept
+// schema ValidateImplementation methods. If reservedName is non-nil, it is
+// called for every top-level attribute and block name before the attribute
+// or block implementation is validated.
+func SchemaValidateImplementation(ctx context.Context, s Schema, reservedName func(string, path.Path) diag.Diagnostics) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for attributeName, attribute := range s.GetAttributes() {
+		req := ValidateImplementationRequest{
+			Name: attributeName,
+			Path: path.Root(attributeName),
+		}
+
+		if reservedName != nil {
+			diags.Append(reservedName(req.Name, req.Path)...)
+		}
+
+		diags.Append(ValidateAttributeImplementation(ctx, attribute, req)...)
+	}
+
+	for blockName, block := range s.GetBlocks() {
+		req := ValidateImplementationRequest{
+			Name: blockName,
+			Path: path.Root(blockName),
+		}
+
+		if reservedName != nil {
+			diags.Append(reservedName(req.Name, req.Path)...)
+		}
+
+		diags.Append(ValidateBlockImplementation(ctx, block, req)...)
+	}
+
+	return diags
+}

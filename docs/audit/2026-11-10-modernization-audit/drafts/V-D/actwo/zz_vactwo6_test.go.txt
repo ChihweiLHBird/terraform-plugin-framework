@@ -1,0 +1,43 @@
+package proto6server
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/action"
+	"github.com/hashicorp/terraform-plugin-framework/action/schema"
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+func TestZZVActWO6(t *testing.T) {
+	ty := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"secret": tftypes.String}}
+	s := schema.Schema{Attributes: map[string]schema.Attribute{"secret": schema.StringAttribute{Required: true, WriteOnly: true}}}
+	srv := &Server{FrameworkServer: fwserver.Server{Provider: &testprovider.Provider{
+		ActionsMethod: func(_ context.Context) []func() action.Action {
+			return []func() action.Action{func() action.Action {
+				return &testprovider.Action{
+					SchemaMethod:   func(_ context.Context, _ action.SchemaRequest, r *action.SchemaResponse) { r.Schema = s },
+					MetadataMethod: func(_ context.Context, _ action.MetadataRequest, r *action.MetadataResponse) { r.TypeName = "test_action" },
+				}
+			}}
+		},
+	}}}
+	for _, v := range []tftypes.Value{tftypes.NewValue(tftypes.String, "hunter2"), tftypes.NewValue(tftypes.String, tftypes.UnknownValue)} {
+		dv, err := tfprotov6.NewDynamicValue(ty, tftypes.NewValue(ty, map[string]tftypes.Value{"secret": v}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := srv.ValidateActionConfig(context.Background(), &tfprotov6.ValidateActionConfigRequest{ActionType: "test_action", Config: &dv})
+		fmt.Printf("VACTWO6 value=%v err=%v diags=%d", v, err, len(resp.Diagnostics))
+		for _, d := range resp.Diagnostics {
+			fmt.Printf(" | %v %q %q attr=%v", d.Severity, d.Summary, d.Detail, d.Attribute)
+		}
+		fmt.Println()
+	}
+	gps, _ := srv.GetProviderSchema(context.Background(), &tfprotov6.GetProviderSchemaRequest{})
+	fmt.Printf("VACTWO6 GetProviderSchema diags=%d action write_only=%v\n", len(gps.Diagnostics), gps.ActionSchemas["test_action"].Schema.Block.Attributes[0].WriteOnly)
+}

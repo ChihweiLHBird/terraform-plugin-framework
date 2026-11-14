@@ -84,7 +84,7 @@ git apply G1-newexpr-pr.patch on baseline, then diff against mine: EMPTY
 
 ## G10
 - `make website` on the copy gives `make[1]: *** website: No such file or directory.  Stop.` and `make: *** [Makefile:8: website] Error 2`, exit 2. `make -n` is the same, because recursive $(MAKE) still runs.
-- `git show d2548a9` ("chore: remove old docs (#1212)", 2025-08-28; 160 files, -26986): "Documentation has moved to https://github.com/hashicorp/web-unified-docs". This is the target for CONTRIBUTING.md:50.
+- `git show d2548a9` ("chore: remove old docs (#1212)", 2025-08-28; 160 files, -26986): "Documentation has moved to https://github.com/hashicorp/web-unified-docs". This is the target for .github/CONTRIBUTING.md:50.
 - The finding misses some residue: `.github/CODEOWNERS:3-17` (/website/, data, public, content, docs, img, README.md rules; CODEOWNERS was last touched in #1320 without removing them) and `.gitignore:1-3` (website-preview, node_modules).
 - Siblings: terraform-plugin-testing, -sdk and -log Makefiles have 3 `$(MAKE) -C website` targets and website/Makefile returns HTTP 404. terraform-plugin-go has 0 such targets.
 

@@ -1,0 +1,57 @@
+package probepublic
+
+import (
+	"context"
+	"fmt"
+	"math/big"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+type bigModel struct {
+	Count *big.Int    `tfsdk:"count_value"`
+	Ratio *big.Float  `tfsdk:"ratio"`
+	Name  *types.String `tfsdk:"name"`
+}
+
+func TestNilBigIntRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	s := schema.Schema{Attributes: map[string]schema.Attribute{
+		"count_value": schema.NumberAttribute{Optional: true},
+		"ratio":       schema.NumberAttribute{Optional: true},
+		"name":        schema.StringAttribute{Optional: true},
+	}}
+	state := tfsdk.State{Schema: s, Raw: tftypes.NewValue(s.Type().TerraformType(ctx), map[string]tftypes.Value{
+		"count_value": tftypes.NewValue(tftypes.Number, nil),
+		"ratio":       tftypes.NewValue(tftypes.Number, nil),
+		"name":        tftypes.NewValue(tftypes.String, nil),
+	})}
+	type getModel struct {
+		Count *big.Int   `tfsdk:"count_value"`
+		Ratio *big.Float `tfsdk:"ratio"`
+		Name  types.String `tfsdk:"name"`
+	}
+	var g getModel
+	fmt.Println("State.Get diags:", state.Get(ctx, &g), "Count is nil:", g.Count == nil)
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("State.Set(model read by Get) PANIC:", r)
+			}
+		}()
+		fmt.Println("State.Set diags:", state.Set(ctx, g))
+	}()
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("State.SetAttribute(nil *types.String) PANIC:", r)
+			}
+		}()
+		var n *types.String
+		fmt.Println("SetAttribute diags:", state.SetAttribute(ctx, pathRoot("name"), n))
+	}()
+}

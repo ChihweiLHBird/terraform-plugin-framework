@@ -1,0 +1,32 @@
+package probepublic
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+func TestResourceDescriptionTitle(t *testing.T) {
+	ctx := context.Background()
+	s := schema.Schema{Attributes: map[string]schema.Attribute{"name": schema.StringAttribute{Required: true}}}
+	raw := tftypes.NewValue(s.Type().TerraformType(ctx), map[string]tftypes.Value{"name": tftypes.NewValue(tftypes.String, "x")})
+	r := tfsdk.Resource{Schema: s, Raw: raw}
+	diags := r.SetAttribute(ctx, path.Root("name"), 123)
+	for _, d := range diags {
+		fmt.Printf("tfsdk.Resource.SetAttribute: summary=%q\n", d.Summary())
+	}
+	st := tfsdk.State{Schema: s, Raw: raw}
+	diags = st.SetAttribute(ctx, path.Root("name"), 123)
+	for _, d := range diags {
+		fmt.Printf("tfsdk.State.SetAttribute:    summary=%q\n", d.Summary())
+	}
+	diags = r.SetAttribute(ctx, path.Root("missing"), "x")
+	for _, d := range diags {
+		fmt.Printf("tfsdk.Resource.SetAttribute(missing): summary=%q detail=%.90q\n", d.Summary(), d.Detail())
+	}
+}

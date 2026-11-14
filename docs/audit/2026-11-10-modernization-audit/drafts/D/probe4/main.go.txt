@@ -1,0 +1,38 @@
+package main
+
+import "fmt"
+
+type Base interface{ Name() string }
+type Concept interface {
+	Base
+	Concept()
+}
+type A struct{}
+
+func (A) Name() string { return "A" }
+func (A) Concept()     {}
+
+func today(m map[string]Concept) map[string]Base {
+	result := make(map[string]Base, len(m))
+	for k, v := range m {
+		result[k] = v
+	}
+	return result
+}
+
+func generic[T Base](m map[string]T) map[string]Base {
+	result := make(map[string]Base, len(m))
+	for k, v := range m {
+		result[k] = v
+	}
+	return result
+}
+
+func main() {
+	in := map[string]Concept{"a": A{}, "nil": nil}
+	t, g := today(in), generic(in)
+	fmt.Printf("today:   nil-entry==nil %v  type %T\n", t["nil"] == nil, t["a"])
+	fmt.Printf("generic: nil-entry==nil %v  type %T\n", g["nil"] == nil, g["a"])
+	var nilMap map[string]Concept
+	fmt.Printf("nil map -> today nil? %v len %d ; generic nil? %v len %d\n", today(nilMap) == nil, len(today(nilMap)), generic(nilMap) == nil, len(generic(nilMap)))
+}

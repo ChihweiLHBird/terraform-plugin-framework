@@ -1,0 +1,535 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validateactionconfig.go b/internal/fwserver/server_validateactionconfig.go
+--- a/internal/fwserver/server_validateactionconfig.go	2026-10-24 21:30:10.535597579 +0000
++++ b/internal/fwserver/server_validateactionconfig.go	2026-10-24 23:17:43.023027861 +0000
+@@ -9,7 +9,6 @@
+ 	"github.com/hashicorp/terraform-plugin-framework/action"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+ 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+ )
+ 
+@@ -58,29 +57,14 @@
+ 	if actionWithConfigValidators, ok := req.Action.(action.ActionWithConfigValidators); ok {
+ 		logging.FrameworkTrace(ctx, "Action implements ActionWithConfigValidators")
+ 
+-		for _, configValidator := range actionWithConfigValidators.ConfigValidators(ctx) {
++		runConfigValidators(ctx, "ActionConfigValidator", actionWithConfigValidators.ConfigValidators(ctx), &resp.Diagnostics, func(configValidator action.ConfigValidator) diag.Diagnostics {
+ 			// Instantiate a new response for each request to prevent validators
+ 			// from modifying or removing diagnostics.
+ 			vdscResp := &action.ValidateConfigResponse{}
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Calling provider defined ActionConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 			configValidator.ValidateAction(ctx, vdscReq, vdscResp)
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Called provider defined ActionConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 
+-			resp.Diagnostics.Append(vdscResp.Diagnostics...)
+-		}
++			return vdscResp.Diagnostics
++		})
+ 	}
+ 
+ 	if actionWithValidateConfig, ok := req.Action.(action.ActionWithValidateConfig); ok {
+@@ -97,23 +81,5 @@
+ 		resp.Diagnostics.Append(vdscResp.Diagnostics...)
+ 	}
+ 
+-	schemaCapabilities := validator.ValidateSchemaClientCapabilities{
+-		// The SchemaValidate function is shared between provider, resource,
+-		// data source, ephemeral resource, and action schemas; however, WriteOnlyAttributesAllowed
+-		// capability is only valid for resource schemas, so this is explicitly set to false
+-		// for all other schema types.
+-		WriteOnlyAttributesAllowed: false,
+-	}
+-
+-	validateSchemaReq := ValidateSchemaRequest{
+-		ClientCapabilities: schemaCapabilities,
+-		Config:             *req.Config,
+-	}
+-	// Instantiate a new response for each request to prevent validators
+-	// from modifying or removing diagnostics.
+-	validateSchemaResp := ValidateSchemaResponse{}
+-
+-	SchemaValidate(ctx, req.Config.Schema, validateSchemaReq, &validateSchemaResp)
+-
+-	resp.Diagnostics.Append(validateSchemaResp.Diagnostics...)
++	resp.Diagnostics.Append(validateConfigSchema(ctx, *req.Config, false)...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validateconfig.go b/internal/fwserver/server_validateconfig.go
+--- a/internal/fwserver/server_validateconfig.go	1970-01-01 00:00:00.000000000 +0000
++++ b/internal/fwserver/server_validateconfig.go	2026-10-24 23:17:36.273594164 +0000
+@@ -0,0 +1,56 @@
++// Copyright IBM Corp. 2021, 2026
++// SPDX-License-Identifier: MPL-2.0
++
++package fwserver
++
++import (
++	"context"
++
++	"github.com/hashicorp/terraform-plugin-framework/diag"
++	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
++	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
++	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
++)
++
++// runConfigValidators calls validate for each provider-defined config
++// validator, logging name around each call, and appends the diagnostics.
++func runConfigValidators[V interface{ Description(context.Context) string }](ctx context.Context, name string, configValidators []V, diags *diag.Diagnostics, validate func(V) diag.Diagnostics) {
++	for _, configValidator := range configValidators {
++		logging.FrameworkTrace(
++			ctx,
++			"Calling provider defined "+name,
++			map[string]interface{}{
++				logging.KeyDescription: configValidator.Description(ctx),
++			},
++		)
++		validateDiags := validate(configValidator)
++		logging.FrameworkTrace(
++			ctx,
++			"Called provider defined "+name,
++			map[string]interface{}{
++				logging.KeyDescription: configValidator.Description(ctx),
++			},
++		)
++
++		diags.Append(validateDiags...)
++	}
++}
++
++// validateConfigSchema validates config against its schema. The
++// WriteOnlyAttributesAllowed capability is only valid for resource schemas,
++// so it must be false for all other schema types.
++func validateConfigSchema(ctx context.Context, config tfsdk.Config, writeOnlyAttributesAllowed bool) diag.Diagnostics {
++	validateSchemaReq := ValidateSchemaRequest{
++		ClientCapabilities: validator.ValidateSchemaClientCapabilities{
++			WriteOnlyAttributesAllowed: writeOnlyAttributesAllowed,
++		},
++		Config: config,
++	}
++	// Instantiate a new response for each request to prevent validators
++	// from modifying or removing diagnostics.
++	validateSchemaResp := ValidateSchemaResponse{}
++
++	SchemaValidate(ctx, config.Schema, validateSchemaReq, &validateSchemaResp)
++
++	return validateSchemaResp.Diagnostics
++}
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validatedatasourceconfig.go b/internal/fwserver/server_validatedatasourceconfig.go
+--- a/internal/fwserver/server_validatedatasourceconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validatedatasourceconfig.go	2026-10-24 23:17:43.030970096 +0000
+@@ -9,7 +9,6 @@
+ 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+ 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+ )
+ 
+@@ -58,29 +57,14 @@
+ 	if dataSource, ok := req.DataSource.(datasource.DataSourceWithConfigValidators); ok {
+ 		logging.FrameworkTrace(ctx, "DataSource implements DataSourceWithConfigValidators")
+ 
+-		for _, configValidator := range dataSource.ConfigValidators(ctx) {
++		runConfigValidators(ctx, "ConfigValidator", dataSource.ConfigValidators(ctx), &resp.Diagnostics, func(configValidator datasource.ConfigValidator) diag.Diagnostics {
+ 			// Instantiate a new response for each request to prevent validators
+ 			// from modifying or removing diagnostics.
+ 			vdscResp := &datasource.ValidateConfigResponse{}
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Calling provider defined ConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 			configValidator.ValidateDataSource(ctx, vdscReq, vdscResp)
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Called provider defined ConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 
+-			resp.Diagnostics.Append(vdscResp.Diagnostics...)
+-		}
++			return vdscResp.Diagnostics
++		})
+ 	}
+ 
+ 	if dataSource, ok := req.DataSource.(datasource.DataSourceWithValidateConfig); ok {
+@@ -97,23 +81,5 @@
+ 		resp.Diagnostics.Append(vdscResp.Diagnostics...)
+ 	}
+ 
+-	schemaCapabilities := validator.ValidateSchemaClientCapabilities{
+-		// The SchemaValidate function is shared between provider, resource,
+-		// data source and ephemeral resource schemas; however, WriteOnlyAttributesAllowed
+-		// capability is only valid for resource schemas, so this is explicitly set to false
+-		// for all other schema types.
+-		WriteOnlyAttributesAllowed: false,
+-	}
+-
+-	validateSchemaReq := ValidateSchemaRequest{
+-		ClientCapabilities: schemaCapabilities,
+-		Config:             *req.Config,
+-	}
+-	// Instantiate a new response for each request to prevent validators
+-	// from modifying or removing diagnostics.
+-	validateSchemaResp := ValidateSchemaResponse{}
+-
+-	SchemaValidate(ctx, req.Config.Schema, validateSchemaReq, &validateSchemaResp)
+-
+-	resp.Diagnostics.Append(validateSchemaResp.Diagnostics...)
++	resp.Diagnostics.Append(validateConfigSchema(ctx, *req.Config, false)...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validateephemeralresourceconfig.go b/internal/fwserver/server_validateephemeralresourceconfig.go
+--- a/internal/fwserver/server_validateephemeralresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validateephemeralresourceconfig.go	2026-10-24 23:17:43.038949305 +0000
+@@ -9,7 +9,6 @@
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+ 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+ )
+ 
+@@ -58,29 +57,14 @@
+ 	if ephemeralResourceWithConfigValidators, ok := req.EphemeralResource.(ephemeral.EphemeralResourceWithConfigValidators); ok {
+ 		logging.FrameworkTrace(ctx, "EphemeralResource implements EphemeralResourceWithConfigValidators")
+ 
+-		for _, configValidator := range ephemeralResourceWithConfigValidators.ConfigValidators(ctx) {
++		runConfigValidators(ctx, "EphemeralResourceConfigValidator", ephemeralResourceWithConfigValidators.ConfigValidators(ctx), &resp.Diagnostics, func(configValidator ephemeral.ConfigValidator) diag.Diagnostics {
+ 			// Instantiate a new response for each request to prevent validators
+ 			// from modifying or removing diagnostics.
+ 			vdscResp := &ephemeral.ValidateConfigResponse{}
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Calling provider defined EphemeralResourceConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 			configValidator.ValidateEphemeralResource(ctx, vdscReq, vdscResp)
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Called provider defined EphemeralResourceConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 
+-			resp.Diagnostics.Append(vdscResp.Diagnostics...)
+-		}
++			return vdscResp.Diagnostics
++		})
+ 	}
+ 
+ 	if ephemeralResourceWithValidateConfig, ok := req.EphemeralResource.(ephemeral.EphemeralResourceWithValidateConfig); ok {
+@@ -97,23 +81,5 @@
+ 		resp.Diagnostics.Append(vdscResp.Diagnostics...)
+ 	}
+ 
+-	schemaCapabilities := validator.ValidateSchemaClientCapabilities{
+-		// The SchemaValidate function is shared between provider, resource,
+-		// data source and ephemeral resource schemas; however, WriteOnlyAttributesAllowed
+-		// capability is only valid for resource schemas, so this is explicitly set to false
+-		// for all other schema types.
+-		WriteOnlyAttributesAllowed: false,
+-	}
+-
+-	validateSchemaReq := ValidateSchemaRequest{
+-		ClientCapabilities: schemaCapabilities,
+-		Config:             *req.Config,
+-	}
+-	// Instantiate a new response for each request to prevent validators
+-	// from modifying or removing diagnostics.
+-	validateSchemaResp := ValidateSchemaResponse{}
+-
+-	SchemaValidate(ctx, req.Config.Schema, validateSchemaReq, &validateSchemaResp)
+-
+-	resp.Diagnostics.Append(validateSchemaResp.Diagnostics...)
++	resp.Diagnostics.Append(validateConfigSchema(ctx, *req.Config, false)...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validatelistresourceconfig.go b/internal/fwserver/server_validatelistresourceconfig.go
+--- a/internal/fwserver/server_validatelistresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validatelistresourceconfig.go	2026-10-24 23:17:43.046895847 +0000
+@@ -9,7 +9,6 @@
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+ 	"github.com/hashicorp/terraform-plugin-framework/list"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource"
+-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+ 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+ )
+ 
+@@ -58,27 +57,14 @@
+ 	if listResourceWithConfigValidators, ok := req.ListResource.(list.ListResourceWithConfigValidators); ok {
+ 		logging.FrameworkTrace(ctx, "ListResource implements ListResourceWithConfigValidators")
+ 
+-		for _, configValidator := range listResourceWithConfigValidators.ListResourceConfigValidators(ctx) {
++		runConfigValidators(ctx, "ListResourceConfigValidator", listResourceWithConfigValidators.ListResourceConfigValidators(ctx), &resp.Diagnostics, func(configValidator list.ConfigValidator) diag.Diagnostics {
++			// Instantiate a new response for each request to prevent validators
++			// from modifying or removing diagnostics.
+ 			vdscResp := &list.ValidateConfigResponse{}
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Calling provider defined ListResourceConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 			configValidator.ValidateListResourceConfig(ctx, vdscReq, vdscResp)
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Called provider defined ListResourceConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 
+-			resp.Diagnostics.Append(vdscResp.Diagnostics...)
+-		}
++			return vdscResp.Diagnostics
++		})
+ 	}
+ 
+ 	if listResourceWithValidateConfig, ok := req.ListResource.(list.ListResourceWithValidateConfig); ok {
+@@ -93,17 +79,5 @@
+ 		resp.Diagnostics.Append(vdscResp.Diagnostics...)
+ 	}
+ 
+-	schemaCapabilities := validator.ValidateSchemaClientCapabilities{
+-		WriteOnlyAttributesAllowed: false,
+-	}
+-
+-	validateSchemaReq := ValidateSchemaRequest{
+-		ClientCapabilities: schemaCapabilities,
+-		Config:             *req.Config,
+-	}
+-	validateSchemaResp := ValidateSchemaResponse{}
+-
+-	SchemaValidate(ctx, req.Config.Schema, validateSchemaReq, &validateSchemaResp)
+-
+-	resp.Diagnostics.Append(validateSchemaResp.Diagnostics...)
++	resp.Diagnostics.Append(validateConfigSchema(ctx, *req.Config, false)...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validateproviderconfig.go b/internal/fwserver/server_validateproviderconfig.go
+--- a/internal/fwserver/server_validateproviderconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validateproviderconfig.go	2026-10-24 23:17:43.054650211 +0000
+@@ -9,7 +9,6 @@
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+ 	"github.com/hashicorp/terraform-plugin-framework/provider"
+-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+ 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+ )
+ 
+@@ -39,29 +38,14 @@
+ 	if providerWithConfigValidators, ok := s.Provider.(provider.ProviderWithConfigValidators); ok {
+ 		logging.FrameworkTrace(ctx, "Provider implements ProviderWithConfigValidators")
+ 
+-		for _, configValidator := range providerWithConfigValidators.ConfigValidators(ctx) {
++		runConfigValidators(ctx, "ConfigValidator", providerWithConfigValidators.ConfigValidators(ctx), &resp.Diagnostics, func(configValidator provider.ConfigValidator) diag.Diagnostics {
+ 			// Instantiate a new response for each request to prevent validators
+ 			// from modifying or removing diagnostics.
+ 			vpcRes := &provider.ValidateConfigResponse{}
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Calling provider defined ConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 			configValidator.ValidateProvider(ctx, vpcReq, vpcRes)
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Called provider defined ConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 
+-			resp.Diagnostics.Append(vpcRes.Diagnostics...)
+-		}
++			return vpcRes.Diagnostics
++		})
+ 	}
+ 
+ 	if providerWithValidateConfig, ok := s.Provider.(provider.ProviderWithValidateConfig); ok {
+@@ -78,25 +62,7 @@
+ 		resp.Diagnostics.Append(vpcRes.Diagnostics...)
+ 	}
+ 
+-	schemaCapabilities := validator.ValidateSchemaClientCapabilities{
+-		// The SchemaValidate function is shared between provider, resource,
+-		// data source and ephemeral resource schemas; however, WriteOnlyAttributesAllowed
+-		// capability is only valid for resource schemas, so this is explicitly set to false
+-		// for all other schema types.
+-		WriteOnlyAttributesAllowed: false,
+-	}
+-
+-	validateSchemaReq := ValidateSchemaRequest{
+-		ClientCapabilities: schemaCapabilities,
+-		Config:             *req.Config,
+-	}
+-	// Instantiate a new response for each request to prevent validators
+-	// from modifying or removing diagnostics.
+-	validateSchemaResp := ValidateSchemaResponse{}
+-
+-	SchemaValidate(ctx, req.Config.Schema, validateSchemaReq, &validateSchemaResp)
+-
+-	resp.Diagnostics.Append(validateSchemaResp.Diagnostics...)
++	resp.Diagnostics.Append(validateConfigSchema(ctx, *req.Config, false)...)
+ 
+ 	// This RPC allows a modified configuration to be returned. This was
+ 	// previously used to allow a "required" provider attribute (as defined
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validateresourceconfig.go b/internal/fwserver/server_validateresourceconfig.go
+--- a/internal/fwserver/server_validateresourceconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validateresourceconfig.go	2026-10-24 23:17:43.061770106 +0000
+@@ -9,7 +9,6 @@
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+ 	"github.com/hashicorp/terraform-plugin-framework/resource"
+-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+ 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+ )
+ 
+@@ -60,29 +59,14 @@
+ 	if resourceWithConfigValidators, ok := req.Resource.(resource.ResourceWithConfigValidators); ok {
+ 		logging.FrameworkTrace(ctx, "Resource implements ResourceWithConfigValidators")
+ 
+-		for _, configValidator := range resourceWithConfigValidators.ConfigValidators(ctx) {
++		runConfigValidators(ctx, "ResourceConfigValidator", resourceWithConfigValidators.ConfigValidators(ctx), &resp.Diagnostics, func(configValidator resource.ConfigValidator) diag.Diagnostics {
+ 			// Instantiate a new response for each request to prevent validators
+ 			// from modifying or removing diagnostics.
+ 			vdscResp := &resource.ValidateConfigResponse{}
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Calling provider defined ResourceConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 			configValidator.ValidateResource(ctx, vdscReq, vdscResp)
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Called provider defined ResourceConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 
+-			resp.Diagnostics.Append(vdscResp.Diagnostics...)
+-		}
++			return vdscResp.Diagnostics
++		})
+ 	}
+ 
+ 	if resourceWithValidateConfig, ok := req.Resource.(resource.ResourceWithValidateConfig); ok {
+@@ -99,19 +83,5 @@
+ 		resp.Diagnostics.Append(vdscResp.Diagnostics...)
+ 	}
+ 
+-	schemaCapabilities := validator.ValidateSchemaClientCapabilities{
+-		WriteOnlyAttributesAllowed: req.ClientCapabilities.WriteOnlyAttributesAllowed,
+-	}
+-
+-	validateSchemaReq := ValidateSchemaRequest{
+-		ClientCapabilities: schemaCapabilities,
+-		Config:             *req.Config,
+-	}
+-	// Instantiate a new response for each request to prevent validators
+-	// from modifying or removing diagnostics.
+-	validateSchemaResp := ValidateSchemaResponse{}
+-
+-	SchemaValidate(ctx, req.Config.Schema, validateSchemaReq, &validateSchemaResp)
+-
+-	resp.Diagnostics.Append(validateSchemaResp.Diagnostics...)
++	resp.Diagnostics.Append(validateConfigSchema(ctx, *req.Config, req.ClientCapabilities.WriteOnlyAttributesAllowed)...)
+ }
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_validatestatestoreconfig.go b/internal/fwserver/server_validatestatestoreconfig.go
+--- a/internal/fwserver/server_validatestatestoreconfig.go	2026-10-24 21:30:10.539597579 +0000
++++ b/internal/fwserver/server_validatestatestoreconfig.go	2026-10-24 23:17:43.075939417 +0000
+@@ -8,7 +8,6 @@
+ 
+ 	"github.com/hashicorp/terraform-plugin-framework/diag"
+ 	"github.com/hashicorp/terraform-plugin-framework/internal/logging"
+-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+ 	"github.com/hashicorp/terraform-plugin-framework/statestore"
+ 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+ )
+@@ -58,29 +57,14 @@
+ 	if statestoreWithConfigValidators, ok := req.StateStore.(statestore.StateStoreWithConfigValidators); ok {
+ 		logging.FrameworkTrace(ctx, "StateStore implements StateStoreWithConfigValidators")
+ 
+-		for _, configValidator := range statestoreWithConfigValidators.ConfigValidators(ctx) {
++		runConfigValidators(ctx, "StateStoreConfigValidator", statestoreWithConfigValidators.ConfigValidators(ctx), &resp.Diagnostics, func(configValidator statestore.ConfigValidator) diag.Diagnostics {
+ 			// Instantiate a new response for each request to prevent validators
+ 			// from modifying or removing diagnostics.
+ 			vdscResp := &statestore.ValidateConfigResponse{}
+-
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Calling provider defined StateStoreConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 			configValidator.ValidateStateStore(ctx, vdscReq, vdscResp)
+-			logging.FrameworkTrace(
+-				ctx,
+-				"Called provider defined StateStoreConfigValidator",
+-				map[string]interface{}{
+-					logging.KeyDescription: configValidator.Description(ctx),
+-				},
+-			)
+ 
+-			resp.Diagnostics.Append(vdscResp.Diagnostics...)
+-		}
++			return vdscResp.Diagnostics
++		})
+ 	}
+ 
+ 	if statestoreWithValidateConfig, ok := req.StateStore.(statestore.StateStoreWithValidateConfig); ok {
+@@ -97,23 +81,5 @@
+ 		resp.Diagnostics.Append(vdscResp.Diagnostics...)
+ 	}
+ 
+-	schemaCapabilities := validator.ValidateSchemaClientCapabilities{
+-		// The SchemaValidate function is shared between provider, resource,
+-		// data source, ephemeral resource, and statestore schemas; however, WriteOnlyAttributesAllowed
+-		// capability is only valid for resource schemas, so this is explicitly set to false
+-		// for all other schema types.
+-		WriteOnlyAttributesAllowed: false,
+-	}
+-
+-	validateSchemaReq := ValidateSchemaRequest{
+-		ClientCapabilities: schemaCapabilities,
+-		Config:             *req.Config,
+-	}
+-	// Instantiate a new response for each request to prevent validators
+-	// from modifying or removing diagnostics.
+-	validateSchemaResp := ValidateSchemaResponse{}
+-
+-	SchemaValidate(ctx, req.Config.Schema, validateSchemaReq, &validateSchemaResp)
+-
+-	resp.Diagnostics.Append(validateSchemaResp.Diagnostics...)
++	resp.Diagnostics.Append(validateConfigSchema(ctx, *req.Config, false)...)
+ }

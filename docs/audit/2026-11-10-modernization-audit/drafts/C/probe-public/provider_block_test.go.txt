@@ -1,0 +1,27 @@
+package probepublic
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	pschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+)
+
+func TestProviderSchemaBlockNamedCount(t *testing.T) {
+	ctx := context.Background()
+	for _, name := range []string{"count", "lifecycle", "provider", "alias"} {
+		s := pschema.Schema{
+			Blocks: map[string]pschema.Block{
+				name: pschema.ListNestedBlock{NestedObject: pschema.NestedBlockObject{Attributes: map[string]pschema.Attribute{"x": pschema.StringAttribute{Optional: true}}}},
+			},
+		}
+		diags := s.ValidateImplementation(ctx)
+		fmt.Printf("provider block %q: %d diags\n", name, len(diags))
+		for _, d := range diags {
+			fmt.Printf("   %s: %.110s\n", d.Summary(), d.Detail())
+		}
+		s2 := pschema.Schema{Attributes: map[string]pschema.Attribute{name: pschema.StringAttribute{Optional: true}}}
+		fmt.Printf("provider attribute %q: %d diags\n", name, len(s2.ValidateImplementation(ctx)))
+	}
+}

@@ -1,0 +1,108 @@
+diff -ruN -x .git -x docs -x '*.orig' -x '*.out' -x '*.test' a/internal/fwserver/server_planresourcechange.go b/internal/fwserver/server_planresourcechange.go
+--- a/internal/fwserver/server_planresourcechange.go	2026-10-24 21:30:10.531597579 +0000
++++ b/internal/fwserver/server_planresourcechange.go	2026-10-24 23:23:23.258035977 +0000
+@@ -203,48 +203,7 @@
+ 		// plan outputs and only needs to be done for resource update plans.
+ 		// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/627
+ 		if !req.PriorState.Raw.IsNull() {
+-			var allPaths, changedPaths path.Paths
+-
+-			for attrName := range resp.PlannedState.Schema.GetAttributes() {
+-				allPaths.Append(path.Root(attrName))
+-			}
+-
+-			for blockName := range resp.PlannedState.Schema.GetBlocks() {
+-				allPaths.Append(path.Root(blockName))
+-			}
+-
+-			for _, p := range allPaths {
+-				var plannedState, priorState attr.Value
+-
+-				// This logging is best effort and any errors should not be
+-				// returned to practitioners.
+-				_ = resp.PlannedState.GetAttribute(ctx, p, &plannedState)
+-				_ = req.PriorState.GetAttribute(ctx, p, &priorState)
+-
+-				// Due to ignoring diagnostics, the value may not be populated.
+-				// Prevent the panic and show the path as changed.
+-				if plannedState == nil {
+-					changedPaths.Append(p)
+-
+-					continue
+-				}
+-
+-				if plannedState.Equal(priorState) {
+-					continue
+-				}
+-
+-				changedPaths.Append(p)
+-			}
+-
+-			// Colocate these log entries to not intermix with GetAttribute logging
+-			for _, p := range changedPaths {
+-				logging.FrameworkDebug(ctx,
+-					"Detected value change between proposed new state and prior state",
+-					map[string]any{
+-						logging.KeyAttributePath: p.String(),
+-					},
+-				)
+-			}
++			logPlannedValueChanges(ctx, resp.PlannedState, req.PriorState)
+ 		}
+ 
+ 		logging.FrameworkDebug(ctx, "Marking Computed attributes with null configuration values as unknown (known after apply) in the plan to prevent potential Terraform errors")
+@@ -411,6 +370,54 @@
+ 	}
+ }
+ 
++// logPlannedValueChanges emits a debug log for each top level attribute or
++// block whose planned value differs from its prior state value. This logging
++// is best effort and any errors are not returned to practitioners.
++func logPlannedValueChanges(ctx context.Context, plannedState *tfsdk.State, priorState *tfsdk.State) {
++	var allPaths, changedPaths path.Paths
++
++	for attrName := range plannedState.Schema.GetAttributes() {
++		allPaths.Append(path.Root(attrName))
++	}
++
++	for blockName := range plannedState.Schema.GetBlocks() {
++		allPaths.Append(path.Root(blockName))
++	}
++
++	for _, p := range allPaths {
++		var plannedValue, priorValue attr.Value
++
++		// This logging is best effort and any errors should not be
++		// returned to practitioners.
++		_ = plannedState.GetAttribute(ctx, p, &plannedValue)
++		_ = priorState.GetAttribute(ctx, p, &priorValue)
++
++		// Due to ignoring diagnostics, the value may not be populated.
++		// Prevent the panic and show the path as changed.
++		if plannedValue == nil {
++			changedPaths.Append(p)
++
++			continue
++		}
++
++		if plannedValue.Equal(priorValue) {
++			continue
++		}
++
++		changedPaths.Append(p)
++	}
++
++	// Colocate these log entries to not intermix with GetAttribute logging
++	for _, p := range changedPaths {
++		logging.FrameworkDebug(ctx,
++			"Detected value change between proposed new state and prior state",
++			map[string]any{
++				logging.KeyAttributePath: p.String(),
++			},
++		)
++	}
++}
++
+ func MarkComputedNilsAsUnknown(ctx context.Context, config tftypes.Value, resourceSchema fwschema.Schema) func(*tftypes.AttributePath, tftypes.Value) (tftypes.Value, error) {
+ 	return func(path *tftypes.AttributePath, val tftypes.Value) (tftypes.Value, error) {
+ 		ctx = logging.FrameworkWithAttributePath(ctx, path.String())

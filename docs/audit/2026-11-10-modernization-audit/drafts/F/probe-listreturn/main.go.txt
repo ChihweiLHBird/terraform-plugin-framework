@@ -1,0 +1,72 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+// MyListType is a custom list type in the common "embed basetypes" pattern.
+type MyListType struct{ basetypes.ListType }
+
+func (t MyListType) Equal(o attr.Type) bool {
+	other, ok := o.(MyListType)
+	return ok && t.ListType.Equal(other.ListType)
+}
+func (t MyListType) String() string { return "MyListType" }
+func (t MyListType) ValueFromList(ctx context.Context, in basetypes.ListValue) (basetypes.ListValuable, diag.Diagnostics) {
+	return MyListValue{ListValue: in}, nil
+}
+func (t MyListType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	v, err := t.ListType.ValueFromTerraform(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	lv, _ := v.(basetypes.ListValue)
+	return MyListValue{ListValue: lv}, nil
+}
+func (t MyListType) ValueType(ctx context.Context) attr.Value { return MyListValue{} }
+
+// MyListValue derives its Type from the embedded value (same as basetypes.ListValue.Type does).
+type MyListValue struct{ basetypes.ListValue }
+
+func (v MyListValue) Type(ctx context.Context) attr.Type {
+	return MyListType{ListType: basetypes.ListType{ElemType: v.ListValue.ElementType(ctx)}}
+}
+func (v MyListValue) Equal(o attr.Value) bool {
+	other, ok := o.(MyListValue)
+	return ok && v.ListValue.Equal(other.ListValue)
+}
+
+func main() {
+	runPlain()
+	runGeneric()
+	runFixed()
+	runObject()
+}
+
+func unitProbe() {
+	ctx := context.Background()
+	ct := MyListType{ListType: basetypes.ListType{ElemType: types.StringType}}
+
+	// Path 1: function return result data, as fwserver.CallFunction creates it.
+	r := function.ListReturn{CustomType: ct}
+	rd, ferr := r.NewResultData(ctx)
+	fmt.Printf("NewResultData err=%v value=%#v\n", ferr, rd.Value())
+	fmt.Printf("result data value type: %s\n", rd.Value().Type(ctx))
+	ferr = rd.Set(ctx, []string{"a", "b"})
+	fmt.Printf("Set([]string) err=%v\n", ferr)
+	if ferr == nil {
+		fmt.Printf("value after set: %s\n", rd.Value())
+	}
+
+	// Path 2: how the schema side creates an unknown for the same custom type.
+	v, err := ct.ValueFromTerraform(ctx, tftypes.NewValue(ct.TerraformType(ctx), tftypes.UnknownValue))
+	fmt.Printf("schema-style unknown: err=%v type=%s\n", err, v.Type(ctx))
+}

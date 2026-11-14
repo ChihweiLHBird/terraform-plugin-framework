@@ -1,0 +1,17 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+)
+
+func main() {
+	fmt.Printf("%q\n", path.Paths{path.Empty(), path.Root("a")}.String())
+	fmt.Printf("%q\n", path.Paths{path.Path{}, path.Root("a")}.String())
+	fmt.Printf("%q\n", path.Paths{path.Root("a"), path.Path{}}.String())
+	fmt.Printf("%q\n", path.Paths{path.Root("a"), path.Empty(), path.Root("b")}.String())
+	fmt.Printf("%q\n", path.Expressions{path.MatchRelative(), path.MatchRoot("a")}.String())
+	fmt.Printf("%q\n", path.Expressions{path.Expression{}, path.MatchRoot("a")}.String())
+	fmt.Printf("%q\n", path.Expressions{path.Empty().Expression(), path.MatchRoot("a")}.String())
+}

@@ -1,0 +1,47 @@
+package fwserver_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
+	"github.com/hashicorp/terraform-plugin-framework/internal/fwserver"
+	"github.com/hashicorp/terraform-plugin-framework/internal/testing/testprovider"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/dynamicplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+)
+
+func TestZZVD2(t *testing.T) {
+	ctx := context.Background()
+	s := schema.Schema{Attributes: map[string]schema.Attribute{
+		"test_required": schema.StringAttribute{Required: true},
+		"test_dyn":      schema.DynamicAttribute{Computed: true, PlanModifiers: []planmodifier.Dynamic{dynamicplanmodifier.UseNonNullStateForUnknown()}},
+		"test_dyn_usfu": schema.DynamicAttribute{Computed: true, PlanModifiers: []planmodifier.Dynamic{dynamicplanmodifier.UseStateForUnknown()}},
+	}}
+	ty := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"test_required": tftypes.String, "test_dyn": tftypes.DynamicPseudoType, "test_dyn_usfu": tftypes.DynamicPseudoType}}
+	run := func(label string, prior tftypes.Value) {
+		obj := func(req string, dyn tftypes.Value) tftypes.Value {
+			return tftypes.NewValue(ty, map[string]tftypes.Value{"test_required": tftypes.NewValue(tftypes.String, req), "test_dyn": dyn, "test_dyn_usfu": dyn})
+		}
+		req := &fwserver.PlanResourceChangeRequest{
+			Config:           &tfsdk.Config{Raw: obj("new", tftypes.NewValue(tftypes.DynamicPseudoType, nil)), Schema: s},
+			ProposedNewState: &tfsdk.Plan{Raw: obj("new", prior), Schema: s},
+			PriorState:       &tfsdk.State{Raw: obj("old", prior), Schema: s},
+			ResourceSchema:   s,
+			Resource:         &testprovider.Resource{},
+		}
+		resp := &fwserver.PlanResourceChangeResponse{}
+		srv := &fwserver.Server{Provider: &testprovider.Provider{}}
+		srv.PlanResourceChange(ctx, req, resp)
+		var m map[string]tftypes.Value
+		_ = resp.PlannedState.Raw.As(&m)
+		fmt.Printf("VD2 %-40s prior=%v | planned UseNonNull=%v (type %v) | planned UseStateForUnknown=%v | diags=%d\n", label, prior, m["test_dyn"], m["test_dyn"].Type(), m["test_dyn_usfu"], len(resp.Diagnostics))
+	}
+	run("typed-null prior (string null)", tftypes.NewValue(tftypes.String, nil))
+	run("untyped null prior (dynamic null)", tftypes.NewValue(tftypes.DynamicPseudoType, nil))
+	run("non-null prior", tftypes.NewValue(tftypes.String, "keep"))
+}
