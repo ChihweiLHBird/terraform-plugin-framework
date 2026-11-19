@@ -1,8 +1,8 @@
 {
  "meta": {
   "repo": "ChihweiLHBird/terraform-plugin-framework (fork of hashicorp/terraform-plugin-framework), module github.com/hashicorp/terraform-plugin-framework",
-  "commit": "00badb1 (hashicorp/terraform-plugin-framework main, still the upstream HEAD on 2026-11-14)",
-  "date": "2026-11-14 (rechecked against upstream HEAD; audit run 2026-10-24 to 2026-11-10)",
+  "commit": "00badb1 (hashicorp/terraform-plugin-framework main, still the upstream HEAD on 2026-11-19)",
+  "date": "2026-11-19 (rechecked against upstream HEAD on 2026-11-14 and 2026-11-19; audit run 2026-10-24 to 2026-11-10)",
   "scope": "Swept exhaustively: every non-test Go file in internal/ (fwserver, fwschemadata, reflect, fwschema, fwtype, fwfunction, privatestate, toproto5/6, fromproto5/6, proto5server/6server, totftypes, fromtftypes, logging), the public packages (types, types/basetypes, attr, path, diag, tfsdk, resource, datasource, provider, ephemeral, action, list, statestore, function, providerserver) and the nine schema package families with their plan-modifier and default sub-packages; internal/testing fixtures; tooling and CI files. Test files (340k lines) were swept by tool (go fix, golangci-lint scratch config, staticcheck, deadcode) and read by sample where a lead pointed at them. Excluded: CHANGELOG.md, .changes/, docs/design (historical design records), META.d, LICENSE. No generated or vendored code exists in the module.",
   "inventory": "Go only: 1887 files, 450,062 lines (109,321 non-test, 340,741 test). Build: Go modules, go.mod `go 1.26.0`; CI lints with the go.mod version and runs `go test` on a Go 1.26 and 1.27 matrix. Direct dependencies: github.com/google/go-cmp v0.7.0, github.com/hashicorp/go-uuid v1.0.3, github.com/hashicorp/terraform-plugin-go v0.31.0, github.com/hashicorp/terraform-plugin-log v0.10.0; a separate tools/ module pins github.com/hashicorp/copywrite v0.22.0 for licence headers. Test harness: standard `testing`, table-driven, cmp.Diff comparisons, t.Parallel() everywhere (paralleltest lint); `go test ./...` = 56 packages, ~27 s on 4 cores, all green at this commit. CI proofs (.github/workflows/ci-go.yml): golangci-lint v2 with .golangci.yml (copyloopvar durationcheck errcheck forcetypeassert govet ineffassign makezero misspell nilerr paralleltest predeclared staticcheck unconvert unparam unused usetesting; gofmt), `go test` with coverage, and terraform-provider-corner acceptance tests for tfprotov5 and tfprotov6 against real Terraform versions. At this commit: golangci-lint (project config) 0 issues, go vet clean, gofmt -s clean. Library with a strict compatibility promise: every exported identifier outside internal/ is public API."
  },
@@ -29,7 +29,7 @@
     "Field audit: every other tfprotov5/6 response field is either set or intentionally unset (UnsafeToUseLegacyTypeSystem, SchemaBlock.Version, SchemaNestedBlock.MinItems/MaxItems); GenerateResourceConfig is the only fwserver field the converters never read.",
     "Git: commit 2ee75aa touched fwserver/server_capabilities.go and its tests but no toproto file.",
     "Area B's auditor reproduced this independently while checking the fwserver side.",
-    "Upstream PR #1297 reworks the framework's config generation (upstream tracker, read 2026-11-14). This capability flag decides whether Terraform calls that code at all, so the two should be reviewed together."
+    "Upstream PR #1297 reworks the framework's config generation (upstream tracker, read 2026-11-14 and 2026-11-19). This capability flag decides whether Terraform calls that code at all, so the two should be reviewed together."
    ]
   },
   {
@@ -394,7 +394,7 @@
     "If B10 lands first the fix is one line in schemaModifyPlanAtRoot (verified in the cumulative draft).",
     "No upstream issue found for this.",
     "Replace 'No upstream issue found for this.' with: known upstream as #1258 (open, 2026-01-21, empty expression at top level) and #1219 (open, 2025-09-10, missing parent in nested single objects). Open fix PRs #1260 (2026-01-23) and #1311 (2026-07-06) add the same path.MatchRoot(name) line to both loops, with schema-level tests. The plan should review and land one of these rather than open a new PR. If B10 lands first, the fix is one line in schemaModifyPlanAtRoot (verified in the cumulative draft).",
-    "Both upstream PRs, #1260 and #1311, were still open on 2026-11-14; #1260 is waiting for one approving review (upstream tracker, read 2026-11-14)."
+    "Both upstream PRs, #1260 and #1311, were still open on 2026-11-19; #1260 is waiting for one approving review (upstream tracker, read 2026-11-14 and 2026-11-19)."
    ]
   },
   {
@@ -724,7 +724,7 @@
    "notes": [
     "MoveResourceState's `resp.Diagnostics = moveStateResp.Diagnostics` (:224, :243) looks similar but is intended: test 'response-Diagnostics-first-error-always-responds' documents that earlier movers' warnings are dropped. It also drops warnings the proto layer appended before the call; leave it to maintainers.",
     "GenerateResourceConfig (:183) and ConfigureStateStore (:71) also overwrite resp.Diagnostics; they have no Configure step, so they only drop proto-layer warnings (first-fetch schema warnings, conversion warnings). Add them to the same PR (2 more lines) if consistency is wanted.",
-    "Upstream PR #1324 edits the same four handlers (CreateResource, ReadResource, UpdateResource, ReadDataSource); expect a rebase (upstream tracker, read 2026-11-14)."
+    "Upstream PR #1324 edits the same four handlers (CreateResource, ReadResource, UpdateResource, ReadDataSource); expect a rebase (upstream tracker, read 2026-11-14 and 2026-11-19)."
    ]
   },
   {
@@ -748,7 +748,7 @@
    "notes": [
     "Performance defect with identical output; it can also be reviewed as a refactor because the logs and values are byte-identical.",
     "Repo-wide only these two closures reassign a captured ctx (grep -rn -B3 'ctx = logging.FrameworkWith' --include=*.go . | grep -v _test: the other 5 hits reassign a function parameter at function scope, which is fine).",
-    "Upstream PR #1332, opened 2026-10-24 and still open, contains exactly this fix with a 314-line test (upstream tracker, read 2026-11-14). Review it rather than opening a new PR."
+    "Upstream PR #1332, opened 2026-10-24 and still open, contains exactly this fix with a 314-line test (upstream tracker, read 2026-11-14 and 2026-11-19). Review it rather than opening a new PR. Its CLA check still showed unsigned on 2026-11-19."
    ]
   },
   {
@@ -996,7 +996,7 @@
    "proof": "Draft builds, vet and project lint clean; tests pass; semantic equality is exercised in each handler's tests (grep -ci semantic: 27, 31, 23, 25 lines).",
    "notes": [
     "Handler sizes with B24, B29 and B30 combined (estimated): ReadResource 209->~165, UpdateResource 208->~165, CreateResource 181->~140.",
-    "Upstream PR #1324 rewrites the semantic-equality step of CreateResource, ReadResource, UpdateResource and ReadDataSource (upstream tracker, read 2026-11-14). Land or rebase this extraction after it."
+    "Upstream PR #1324 rewrites the semantic-equality step of CreateResource, ReadResource, UpdateResource and ReadDataSource (upstream tracker, read 2026-11-14 and 2026-11-19). Land or rebase this extraction after it."
    ]
   },
   {
@@ -1079,7 +1079,7 @@
    "proof": "Draft builds; TestServerGenerateResourceConfig passes.",
    "notes": [
     "The RPC is currently never called by Terraform because the capability is not advertised (area A, A1).",
-    "Upstream PR #1297 reworks GenerateResourceConfig extensively (upstream tracker, read 2026-11-14); this small refactor should wait for it."
+    "Upstream PR #1297 reworks GenerateResourceConfig extensively (upstream tracker, read 2026-11-14 and 2026-11-19); this small refactor should wait for it."
    ]
   },
   {
@@ -1170,7 +1170,7 @@
     "The error text also says 'The resource contains ...' for an action; consider a neutral wording when touching it.",
     "Found by the independent verifier of area D while checking that area.",
     "Re-checked independently by the verifier of area B (RPC handlers): confirmed.",
-    "Upstream PR #1335, opened 2026-11-05 and still open, makes this one-line change with a test and a changelog entry (upstream tracker, read 2026-11-14). It does not update the ValidateSchemaClientCapabilities doc comment. Review it and ask for the doc update rather than opening a new PR."
+    "Upstream PR #1335, opened 2026-11-05, still open and described as fixing issue #1334, makes this one-line change with a test and a changelog entry (upstream tracker, read 2026-11-14 and 2026-11-19). It does not update the ValidateSchemaClientCapabilities doc comment. Review it and ask for the doc update rather than opening a new PR."
    ]
   },
   {
@@ -1216,7 +1216,7 @@
    "impact": "Provider crash on an ordinary Read/Set round trip of an optional number modelled as *big.Int when the value is null.",
    "notes": [
     "*types.String fields are rejected by Get (NewAttributeValue type mismatch diagnostic), so that part is less likely in practice; the *big.Int round trip is the realistic trigger.",
-    "Upstream PR #1301 (computed blocks) edits Into, BuildValue, FromValue and FromPointer in internal/reflect (upstream tracker, read 2026-11-14); expect a rebase."
+    "Upstream PR #1301 (computed blocks) edits Into, BuildValue, FromValue and FromPointer in internal/reflect (upstream tracker, read 2026-11-14 and 2026-11-19); expect a rebase."
    ]
   },
   {
@@ -1399,7 +1399,7 @@
     "Update the 'before reaching the switch statement below' comments (slice.go:243-245, 337-339, map.go:163-165, struct.go:261-263) when applying.",
     "Keep the FromUnknownable/FromNullable `return res, nil` lines as they are in this PR; changing them is bug C6.",
     "The 3 similar blocks in internal/fwschemadata (data_value.go:92, data_set_at_path.go:118, :269) log around the calls and one logs a different message, so they are not folded into this helper (see notes/auditor-C.md).",
-    "Upstream PR #1301 (computed blocks) edits Into, BuildValue, FromValue and FromPointer in internal/reflect (upstream tracker, read 2026-11-14); expect a rebase."
+    "Upstream PR #1301 (computed blocks) edits Into, BuildValue, FromValue and FromPointer in internal/reflect (upstream tracker, read 2026-11-14 and 2026-11-19); expect a rebase."
    ]
   },
   {
@@ -1527,7 +1527,7 @@
    "proof": "TestValueSemanticEqualityList/Map/Set/Object and TestValueSemanticEquality pass on the draft (plus internal/fwserver, internal/proto6server); golangci-lint project config: 0 issues; dupl leads in non-test fwschemadata drop from 2 pairs to the Map/Object Elements pair.",
    "notes": [
     "Map and object element loops range over Go maps, so the order of element SemanticEquals calls (and of their warnings) is random; unchanged by this refactor, noted in notes/auditor-C.md.",
-    "Upstream PR #1315, for issue #1314, rewrites ValueSemanticEqualityListElements, MapElements and SetElements (upstream tracker, read 2026-11-14). Do this refactor after it lands or is closed."
+    "Upstream PR #1315, for issue #1314, rewrites ValueSemanticEqualityListElements, MapElements and SetElements (upstream tracker, read 2026-11-14 and 2026-11-19). Do this refactor after it lands or is closed."
    ]
   },
   {
@@ -1550,7 +1550,7 @@
    "notes": [
     "Fold into any PR that touches these files (C10 touches all of them).",
     "Its reflect.TypeFor part is the same rewrite as M2, which covers the whole repo. Land whichever comes first and drop the overlap from the other.",
-    "Upstream PR #1301 (computed blocks) edits Into, BuildValue, FromValue and FromPointer in internal/reflect (upstream tracker, read 2026-11-14); expect a rebase."
+    "Upstream PR #1301 (computed blocks) edits Into, BuildValue, FromValue and FromPointer in internal/reflect (upstream tracker, read 2026-11-14 and 2026-11-19); expect a rebase."
    ]
   },
   {
@@ -1944,7 +1944,7 @@
    "notes": [
     "Land before E9: E9 rewrites the same key-collection lines with slices.Sorted(maps.Keys(m.elements)).",
     "ListValue.String, SetValue.String and TupleValue.String copy once per call (harmless) and are left alone.",
-    "Upstream PR #1323, for issue #1322, makes SetValue.Equal linear by grouping elements on String(), which also removes the per-element copy in the set part of this item (upstream tracker, read 2026-11-14). The map and object String() parts are not covered. attr.Value documents String() as intentionally lossy with no compatibility guarantee, so that grouping assumes equal values of custom element types render the same."
+    "Upstream PR #1323, for issue #1322, makes SetValue.Equal linear by grouping elements on String(), which also removes the per-element copy in the set part of this item (upstream tracker, read 2026-11-14 and 2026-11-19). The map and object String() parts are not covered. attr.Value documents String() as intentionally lossy with no compatibility guarantee, so that grouping assumes equal values of custom element types render the same."
    ]
   },
   {
@@ -2124,7 +2124,7 @@
     "Once fixed, the benchmark exposes SetType.Validate's O(n^2) tftypes.Value.Equal duplicate scan (called from fwschemadata for every set attribute); see notes. Optionally switch the loops to b.Loop().",
     "Area G found the same bug independently (its G4), with the same one-line fix and the same advice to cap or drop the 100,000 and 1,000,000 variants.",
     "Land before G12 (b.Loop) and keep the two as separate PRs.",
-    "Issue #1322 reports the same quadratic SetType.Validate duplicate scan this benchmark would expose, and PR #1323 makes it linear (upstream tracker, read 2026-11-14). Re-measure after #1323 before choosing the benchmark sizes."
+    "Issue #1322 reports the same quadratic SetType.Validate duplicate scan this benchmark would expose, and PR #1323 makes it linear (upstream tracker, read 2026-11-14 and 2026-11-19). Re-measure after #1323 before choosing the benchmark sizes."
    ]
   },
   {
@@ -2700,7 +2700,7 @@
    "proof": "Applied on top of M1 on a copy: go vet and gofmt clean, full suite green (56 packages ok, 0 failed). internal/reflect's Into/BuildValue tests exercise the four Implements checks.",
    "notes": [
     "C17's reflect.TypeFor part is the same rewrite, limited to internal/reflect. Land whichever comes first and drop the overlap from the other.",
-    "Upstream PR #1301 (computed blocks) edits Into, BuildValue, FromValue and FromPointer in internal/reflect (upstream tracker, read 2026-11-14); expect a rebase."
+    "Upstream PR #1301 (computed blocks) edits Into, BuildValue, FromValue and FromPointer in internal/reflect (upstream tracker, read 2026-11-14 and 2026-11-19); expect a rebase."
    ],
    "section": "M",
    "section_title": "Repo-wide mechanical modernization (go fix, Go 1.26)"
